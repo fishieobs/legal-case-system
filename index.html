@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="案件管理">
+    <title>⚖ 律師案件管理系統 - 雲端同步版</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #020817; --bg2: #0a1628; --bg3: #0f172a; --bg4: #1e293b;
+            --gold: #c8a96e; --gold2: #a07840;
+            --text: #e2e8f0; --text2: #94a3b8; --text3: #64748b;
+            --link: #3b82f6; --success: #22c55e;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; line-height: 1.5; }
+        .app-container { min-height: 100vh; padding-bottom: 60px; }
+        header { background: var(--bg2); padding: 16px 20px; border-bottom: 1px solid var(--bg4); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .header-title { font-family: 'Noto Serif TC', serif; font-size: 1.25rem; color: var(--gold); }
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; padding: 20px; }
+        .case-card { background: var(--bg3); border: 1px solid var(--bg4); border-radius: 12px; padding: 16px; cursor: pointer; transition: transform 0.2s; position: relative; }
+        .case-card:active { transform: scale(0.98); }
+        .form-container { padding: 20px; max-width: 800px; margin: 0 auto; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 0.8rem; color: var(--text2); margin-bottom: 6px; }
+        input, textarea, select { width: 100%; background: var(--bg4); border: 1px solid transparent; border-radius: 8px; padding: 12px; color: #fff; font-size: 1rem; outline: none; }
+        input:focus { border-color: var(--gold); }
+        .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 14px; }
+        .btn-gold { background: var(--gold); color: var(--bg); }
+        .btn-outline { background: transparent; border: 1px solid var(--bg4); color: var(--text); }
+        .btn-call { background: rgba(200, 169, 110, 0.1); color: var(--gold); border: 1px solid var(--gold2); }
+        .btn-link { background: rgba(59, 130, 246, 0.1); color: var(--link); border: 1px solid var(--link); }
+        .sync-indicator { font-size: 10px; color: var(--success); display: flex; align-items: center; gap: 4px; }
+        @media (max-width: 600px) { .grid-layout { grid-template-columns: 1fr; padding: 12px; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 您的 Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",
+            authDomain: "legalcasemanageer.firebaseapp.com",
+            projectId: "legalcasemanageer",
+            storageBucket: "legalcasemanageer.firebasestorage.app",
+            messagingSenderId: "559838504556",
+            appId: "1:559838504556:web:ba10c071a12650bbd85a49"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 將 Firebase 實例掛載到 window，以便 React 元件讀取
+        window.db = db;
+        window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const emptyCase = {
+            id: "", firmCaseNo: "", clientName: "", phone: "", 
+            feeReceived: "", feeUnpaid: "", caseType: "民事", 
+            status: "進行中", notes: "", courtCaseNo: "",
+            judgementLink: "" 
+        };
+
+        function App() {
+            const [cases, setCases] = useState([]);
+            const [view, setView] = useState("list");
+            const [selectedId, setSelectedId] = useState(null);
+            const [formData, setFormData] = useState(emptyCase);
+            const [search, setSearch] = useState("");
+            const [isSyncing, setIsSyncing] = useState(true);
+
+            // --- 即時同步邏輯 (Firebase Real-time Sync) ---
+            useEffect(() => {
+                if (!window.db) return;
+                const { collection, onSnapshot } = window.fbMethods;
+                
+                // 監聽 Firebase 上的 'cases' 集合
+                const unsubscribe = onSnapshot(collection(window.db, "cases"), (snapshot) => {
+                    const caseData = snapshot.docs.map(doc => ({
+                        ...doc.data(),
+                        id: doc.id
+                    }));
+                    setCases(caseData);
+                    setIsSyncing(false);
+                }, (error) => {
+                    console.error("同步失敗:", error);
+                    setIsSyncing(false);
+                });
+
+                return () => unsubscribe();
+            }, []);
+
+            const selected = cases.find(c => c.id === selectedId);
+            const filtered = cases.filter(c => 
+                (c.clientName || "").includes(search) || (c.firmCaseNo || "").includes(search)
+            );
+
+            // --- 儲存至雲端 ---
+            const saveToCloud = async () => {
+                if (!formData.clientName || !formData.firmCaseNo) return alert("請填寫姓名與案號");
+                
+                const { doc, setDoc } = window.fbMethods;
+                const id = view === "add" ? Date.now().toString() : formData.id;
+                
+                try {
+                    await setDoc(doc(window.db, "cases", id), { ...formData, id: id });
+                    setView("list");
+                } catch (e) {
+                    alert("儲存失敗，請檢查權限設定");
+                }
+            };
+
+            // --- 列表畫面 ---
+            if (view === "list") return (
+                <div className="app-container">
+                    <header>
+                        <div>
+                            <div className="header-title">⚖ 案件管理</div>
+                            <div className="sync-indicator">
+                                {isSyncing ? "⌛ 同步中..." : "● 雲端已連線"}
+                            </div>
+                        </div>
+                        <button className="btn btn-gold" onClick={() => { setFormData(emptyCase); setView("add"); }}>＋ 新增</button>
+                    </header>
+                    <div style={{padding: "16px 20px"}}>
+                        <input placeholder="🔍 搜尋當事人、案號..." value={search} onChange={e => setSearch(e.target.value)} />
+                    </div>
+                    <div className="grid-layout">
+                        {filtered.map(c => (
+                            <div key={c.id} className="case-card" onClick={() => { setSelectedId(c.id); setView("detail"); }}>
+                                <div style={{display: "flex", justifyContent: "space-between", marginBottom: 8}}>
+                                    <span style={{color: "var(--gold)", fontSize: "0.8rem", fontWeight: "bold"}}>{c.firmCaseNo}</span>
+                                    <span style={{fontSize: "0.7rem", color: "var(--text3)"}}>{c.status}</span>
+                                </div>
+                                <div style={{fontSize: "1.2rem", fontWeight: "bold", marginBottom: 4}}>{c.clientName}</div>
+                                <div style={{fontSize: "0.8rem", color: "var(--text2)"}}>{c.courtCaseNo || "無法院案號"}</div>
+                                {c.judgementLink && <div style={{marginTop: 8, fontSize: "0.7rem", color: "var(--link)"}}>📄 已關聯判決書</div>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            // --- 詳細內容 ---
+            if (view === "detail" && selected) return (
+                <div className="app-container">
+                    <header>
+                        <button className="btn btn-outline" onClick={() => setView("list")}>← 返回</button>
+                        <div style={{fontWeight: "bold"}}>{selected.clientName}</div>
+                        <button className="btn btn-outline" onClick={() => { setFormData(selected); setView("edit"); }}>編輯</button>
+                    </header>
+                    <div className="grid-layout">
+                        <div className="case-card">
+                            <div style={{fontSize: "0.7rem", color: "var(--text3)", marginBottom: 12}}>聯絡資訊</div>
+                            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+                                <span>{selected.phone || "未輸入電話"}</span>
+                                <a href={`tel:${selected.phone}`} className="btn btn-call">撥打電話 📞</a>
+                            </div>
+                        </div>
+                        <div className="case-card">
+                            <div style={{fontSize: "0.7rem", color: "var(--text3)", marginBottom: 12}}>法律連結</div>
+                            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+                                <span style={{fontSize: "0.9rem"}}>{selected.courtCaseNo || "無案號"}</span>
+                                {selected.judgementLink && (
+                                    <a href={selected.judgementLink} target="_blank" className="btn btn-link">開啟判決 📄</a>
+                                )}
+                            </div>
+                        </div>
+                        <div className="case-card">
+                            <div style={{fontSize: "0.7rem", color: "var(--text3)", marginBottom: 8}}>備註</div>
+                            <div style={{whiteSpace: "pre-wrap", fontSize: "0.9rem"}}>{selected.notes || "無內容"}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // --- 編輯/新增表單 ---
+            return (
+                <div className="app-container">
+                    <header>
+                        <button className="btn btn-outline" onClick={() => setView("list")}>取消</button>
+                        <div style={{fontWeight: "bold"}}>{view === "add" ? "新增案件" : "修改案件"}</div>
+                        <button className="btn btn-gold" onClick={saveToCloud}>儲存雲端</button>
+                    </header>
+                    <div className="form-container">
+                        <div className="form-group">
+                            <label className="form-label">事務所案號</label>
+                            <input value={formData.firmCaseNo} onChange={e => setFormData({...formData, firmCaseNo: e.target.value})} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">當事人姓名</label>
+                            <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">電話</label>
+                            <input type="tel" inputMode="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">法院案號</label>
+                            <input value={formData.courtCaseNo} onChange={e => setFormData({...formData, courtCaseNo: e.target.value})} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">判決連結</label>
+                            <input type="url" value={formData.judgementLink} onChange={e => setFormData({...formData, judgementLink: e.target.value})} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">備註</label>
+                            <textarea rows="5" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="案件管理">
-    <title>⚖ 律師案件管理系統 - 完整雲端同步版</title>
+    <title>⚖ 律師案件管理系統 - 專業優化版</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     
@@ -27,12 +27,10 @@
         header { background: var(--bg2); padding: 16px 20px; border-bottom: 1px solid var(--bg4); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .header-title { font-family: 'Noto Serif TC', serif; font-size: 1.25rem; color: var(--gold); }
         
-        /* Grid Layout */
         .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; padding: 20px; }
         .case-card { background: var(--bg3); border: 1px solid var(--bg4); border-radius: 12px; padding: 16px; cursor: pointer; transition: transform 0.2s; position: relative; }
         .case-card:active { transform: scale(0.98); }
         
-        /* Form & Detail Layout */
         .form-container { padding: 20px; max-width: 900px; margin: 0 auto; }
         .section-title { font-size: 0.9rem; color: var(--gold); margin: 24px 0 12px 0; font-weight: bold; border-left: 3px solid var(--gold); padding-left: 10px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -41,15 +39,16 @@
         input, textarea, select { width: 100%; background: var(--bg4); border: 1px solid transparent; border-radius: 8px; padding: 12px; color: #fff; font-size: 1rem; outline: none; }
         input:focus { border-color: var(--gold); }
         
-        /* Buttons */
         .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 14px; transition: 0.2s; }
         .btn-gold { background: var(--gold); color: var(--bg); }
         .btn-outline { background: transparent; border: 1px solid var(--bg4); color: var(--text); }
+        .btn-circle { width: 28px; height: 28px; padding: 0; justify-content: center; border-radius: 50%; font-size: 18px; }
         .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
         
-        /* List Items */
         .item-row { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; }
         .badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: var(--bg4); color: var(--text2); }
+
+        .multi-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 
         @media (max-width: 600px) { .grid-layout { grid-template-columns: 1fr; padding: 12px; } .form-grid { grid-template-columns: 1fr; } }
     </style>
@@ -57,7 +56,6 @@
 <body>
     <div id="root"></div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -73,22 +71,19 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
         window.db = db;
         window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc };
     </script>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect } = React;
 
-        const CASE_TYPES = ["刑事", "民事", "行政", "家事", "勞動", "智財"];
-        const CASE_STATUS = ["進行中", "已結案", "上訴中", "停止中"];
-        const INSTANCES = ["地院", "高院", "最高院", "高行院", "最高行"];
+        const INSTANCES = ["地院", "高院", "最高院", "地檢署", "高檢署"];
 
         const emptyCase = {
-            id: "", firmCaseNo: "", volumeNo: "", courtCaseNo: "", division: "",
+            id: "", firmCaseNo: "", courtCaseNos: [""], division: "",
             clientName: "", phone: "", feeReceived: 0, feeUnpaid: 0, disbursements: 0,
-            caseType: "民事", status: "進行中", instance: "地院", court: "台北地院",
+            caseType: "民事", status: "進行中", instance: "地院", currentAgency: "",
             attorney: "", retainerDate: "", opposingParty: "",
             judgementLink: "", notes: "", hearings: [], todos: []
         };
@@ -99,16 +94,13 @@
             const [selectedId, setSelectedId] = useState(null);
             const [formData, setFormData] = useState(emptyCase);
             const [search, setSearch] = useState("");
-            const [isSyncing, setIsSyncing] = useState(true);
 
             useEffect(() => {
                 if (!window.db) return;
                 const { collection, onSnapshot } = window.fbMethods;
-                const unsubscribe = onSnapshot(collection(window.db, "cases"), (snapshot) => {
+                return onSnapshot(collection(window.db, "cases"), (snapshot) => {
                     setCases(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                    setIsSyncing(false);
                 });
-                return () => unsubscribe();
             }, []);
 
             const selected = cases.find(c => c.id === selectedId);
@@ -120,34 +112,30 @@
                 setView("list");
             };
 
-            const deleteCase = async (id) => {
-                if(window.confirm("確定要刪除此案件嗎？資料將無法恢復。")) {
-                    await window.fbMethods.deleteDoc(window.fbMethods.doc(window.db, "cases", id));
-                    setView("list");
+            const addCaseNoField = () => {
+                setFormData({...formData, courtCaseNos: [...(formData.courtCaseNos || [""]), ""]});
+            };
+
+            const updateCaseNo = (index, value) => {
+                const newNos = [...formData.courtCaseNos];
+                newNos[index] = value;
+                setFormData({...formData, courtCaseNos: newNos});
+            };
+
+            const removeCaseNo = (index) => {
+                if (formData.courtCaseNos.length > 1) {
+                    const newNos = formData.courtCaseNos.filter((_, i) => i !== index);
+                    setFormData({...formData, courtCaseNos: newNos});
                 }
-            };
-
-            // Helpers for nested items
-            const addHearing = () => {
-                const date = prompt("開庭日期 (YYYY-MM-DD)");
-                if(date) setFormData({...formData, hearings: [...(formData.hearings||[]), {date, time:"", location:"", note:""}]});
-            };
-
-            const addTodo = () => {
-                const text = prompt("待辦事項內容");
-                if(text) setFormData({...formData, todos: [...(formData.todos||[]), {id: Date.now(), text, done: false, due:""}]});
             };
 
             if (view === "list") return (
                 <div className="app-container">
                     <header>
-                        <div>
-                            <div className="header-title">⚖ 律師案件管理系統</div>
-                            <div style={{fontSize: "10px", color: "var(--success)"}}>{isSyncing ? "⌛ 同步中" : "● 雲端已連線"}</div>
-                        </div>
+                        <div className="header-title">⚖ 案件管理系統</div>
                         <button className="btn btn-gold" onClick={() => { setFormData(emptyCase); setView("add"); }}>＋ 新增案件</button>
                     </header>
-                    <div style={{padding: "16px 20px"}}><input placeholder="🔍 搜尋當事人或事務所案號..." value={search} onChange={e => setSearch(e.target.value)} /></div>
+                    <div style={{padding: "16px 20px"}}><input placeholder="🔍 搜尋當事人或案號..." value={search} onChange={e => setSearch(e.target.value)} /></div>
                     <div className="grid-layout">
                         {filtered.map(c => (
                             <div key={c.id} className="case-card" onClick={() => { setSelectedId(c.id); setView("detail"); }}>
@@ -156,10 +144,9 @@
                                     <span className="badge">{c.status}</span>
                                 </div>
                                 <div style={{fontSize: "1.2rem", fontWeight: "bold"}}>{c.clientName}</div>
-                                <div style={{fontSize: "0.8rem", color: "var(--text3)", margin: "4px 0"}}>{c.court} | {c.courtCaseNo}</div>
-                                <div style={{display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: "0.75rem"}}>
-                                    <span style={{color: "var(--text2)"}}>{c.caseType}</span>
-                                    <span style={{color: "var(--danger)"}}>未收: ${Number(c.feeUnpaid).toLocaleString()}</span>
+                                <div style={{fontSize: "0.8rem", color: "var(--text3)", margin: "4px 0"}}>{c.currentAgency || "未填寫機關"}</div>
+                                <div style={{fontSize: "0.75rem", color: "var(--text2)"}}>
+                                    案號: {(c.courtCaseNos && c.courtCaseNos[0]) || "無"} {c.courtCaseNos?.length > 1 ? "..." : ""}
                                 </div>
                             </div>
                         ))}
@@ -172,64 +159,39 @@
                     <header>
                         <button className="btn btn-outline" onClick={() => setView("list")}>← 返回</button>
                         <div style={{fontWeight: "bold"}}>{selected.clientName}</div>
-                        <button className="btn btn-gold" onClick={() => { setFormData(selected); setView("edit"); }}>編輯資料</button>
+                        <button className="btn btn-gold" onClick={() => { setFormData(selected); setView("edit"); }}>編輯</button>
                     </header>
                     <div className="form-container">
                         <div className="form-grid">
                             <div className="case-card">
-                                <div className="section-title">事務所資訊</div>
-                                <p>案號: {selected.firmCaseNo}</p>
-                                <p>卷號: {selected.volumeNo}</p>
+                                <div className="section-title">基本資訊</div>
+                                <p>事務所案號: {selected.firmCaseNo}</p>
                                 <p>委任日期: {selected.retainerDate}</p>
                                 <p>承辦律師: {selected.attorney}</p>
                             </div>
                             <div className="case-card">
-                                <div className="section-title">法院資訊</div>
+                                <div className="section-title">訴訟詳情</div>
+                                <p>現在繫屬機關: {selected.currentAgency}</p>
                                 <p>審級: {selected.instance}</p>
-                                <p>法院: {selected.court}</p>
-                                <p>案號: {selected.courtCaseNo}</p>
                                 <p>股別: {selected.division}</p>
+                                <div style={{marginTop: 8}}>
+                                    <div style={{fontSize: "0.75rem", color: "var(--text2)"}}>法院或地檢署案號:</div>
+                                    {selected.courtCaseNos?.map((no, i) => (
+                                        <div key={i} className="item-row" style={{margin: "4px 0"}}>{no}</div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="section-title">財務與連結</div>
-                        <div className="form-grid">
-                            <div className="item-row">
-                                <div style={{color:"var(--text2)"}}>當事人電話</div>
-                                <a href={`tel:${selected.phone}`} style={{color: "var(--gold)", fontWeight:"bold"}}>{selected.phone || "未輸入"}</a>
-                            </div>
-                            <div className="item-row">
-                                <div style={{color:"var(--text2)"}}>判決連結</div>
-                                {selected.judgementLink ? <a href={selected.judgementLink} target="_blank" style={{color: "var(--link)"}}>點此開啟 📄</a> : "無"}
-                            </div>
-                        </div>
-
-                        <div className="section-title">開庭紀錄 ({selected.hearings?.length || 0})</div>
-                        {selected.hearings?.map((h, i) => (
-                            <div key={i} className="item-row">📅 {h.date} {h.time} | 📍 {h.location} <br/><small>{h.note}</small></div>
-                        ))}
-
-                        <div className="section-title">待辦事項 ({selected.todos?.filter(t=>!t.done).length || 0})</div>
-                        {selected.todos?.map((t, i) => (
-                            <div key={i} className="item-row" style={{opacity: t.done ? 0.5 : 1}}>
-                                {t.done ? "✅" : "⭕"} {t.text} <small>({t.due})</small>
-                            </div>
-                        ))}
-                        
-                        <div style={{marginTop: 40, textAlign: "center"}}>
-                            <button className="btn btn-danger" onClick={() => deleteCase(selected.id)}>刪除此案件</button>
                         </div>
                     </div>
                 </div>
             );
 
-            // Add/Edit View
             return (
                 <div className="app-container">
                     <header>
                         <button className="btn btn-outline" onClick={() => setView("list")}>取消</button>
-                        <div style={{fontWeight: "bold"}}>{view === "add" ? "新增案件" : "修改案件"}</div>
-                        <button className="btn btn-gold" onClick={saveToCloud}>儲存至雲端</button>
+                        <div style={{fontWeight: "bold"}}>案件編輯</div>
+                        <button className="btn btn-gold" onClick={saveToCloud}>儲存雲端</button>
                     </header>
                     <div className="form-container">
                         <div className="section-title">基本資訊</div>
@@ -237,33 +199,35 @@
                             <div className="form-group"><label className="form-label">當事人姓名</label><input value={formData.clientName} onChange={e=>setFormData({...formData, clientName: e.target.value})} /></div>
                             <div className="form-group"><label className="form-label">電話</label><input type="tel" value={formData.phone} onChange={e=>setFormData({...formData, phone: e.target.value})} /></div>
                             <div className="form-group"><label className="form-label">事務所案號</label><input value={formData.firmCaseNo} onChange={e=>setFormData({...formData, firmCaseNo: e.target.value})} /></div>
-                            <div className="form-group"><label className="form-label">卷號</label><input value={formData.volumeNo} onChange={e=>setFormData({...formData, volumeNo: e.target.value})} /></div>
                         </div>
 
                         <div className="section-title">訴訟詳情</div>
+                        <div className="form-group">
+                            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8}}>
+                                <label className="form-label" style={{margin: 0}}>法院或地檢署案號</label>
+                                <button className="btn btn-gold btn-circle" onClick={addCaseNoField}>+</button>
+                            </div>
+                            {formData.courtCaseNos?.map((no, index) => (
+                                <div key={index} className="multi-input-row">
+                                    <input value={no} onChange={e => updateCaseNo(index, e.target.value)} placeholder={`案號 ${index + 1}`} />
+                                    {formData.courtCaseNos.length > 1 && (
+                                        <button className="btn btn-danger btn-circle" onClick={() => removeCaseNo(index)}>−</button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                         <div className="form-grid">
-                            <div className="form-group"><label className="form-label">法院案號</label><input value={formData.courtCaseNo} onChange={e=>setFormData({...formData, courtCaseNo: e.target.value})} /></div>
-                            <div className="form-group"><label className="form-label">法院名稱</label><input value={formData.court} onChange={e=>setFormData({...formData, court: e.target.value})} /></div>
-                            <div className="form-group"><label className="form-label">股別</label><input value={formData.division} onChange={e=>setFormData({...formData, division: e.target.value})} /></div>
+                            <div className="form-group"><label className="form-label">現在繫屬機關</label><input value={formData.currentAgency} onChange={e=>setFormData({...formData, currentAgency: e.target.value})} /></div>
                             <div className="form-group"><label className="form-label">審級</label>
                                 <select value={formData.instance} onChange={e=>setFormData({...formData, instance: e.target.value})}>
                                     {INSTANCES.map(i => <option key={i} value={i}>{i}</option>)}
                                 </select>
                             </div>
+                            <div className="form-group"><label className="form-label">股別</label><input value={formData.division} onChange={e=>setFormData({...formData, division: e.target.value})} /></div>
                         </div>
-
-                        <div className="section-title">財務與備註</div>
-                        <div className="form-grid">
-                            <div className="form-group"><label className="form-label">未收費用</label><input type="number" value={formData.feeUnpaid} onChange={e=>setFormData({...formData, feeUnpaid: e.target.value})} /></div>
-                            <div className="form-group"><label className="form-label">代墊款</label><input type="number" value={formData.disbursements} onChange={e=>setFormData({...formData, disbursements: e.target.value})} /></div>
-                        </div>
-                        <div className="form-group"><label className="form-label">判決連結</label><input value={formData.judgementLink} onChange={e=>setFormData({...formData, judgementLink: e.target.value})} /></div>
-                        <div className="form-group"><label className="form-label">備註事項</label><textarea rows="4" value={formData.notes} onChange={e=>setFormData({...formData, notes: e.target.value})} /></div>
                         
-                        <div style={{display: "flex", gap: 10, marginTop: 20}}>
-                            <button className="btn btn-outline" onClick={addHearing}>＋ 增加開庭日期</button>
-                            <button className="btn btn-outline" onClick={addTodo}>＋ 增加待辦事項</button>
-                        </div>
+                        <div className="section-title">備註事項</div>
+                        <textarea rows="4" value={formData.notes} onChange={e=>setFormData({...formData, notes: e.target.value})} />
                     </div>
                 </div>
             );

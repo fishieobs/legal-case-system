@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- 手機桌面 APP ICON 設定 -->
     <meta name="apple-mobile-web-app-title" content="案件管理">
-    <title>⚖ 律師案件管理系統 - 專業優化版</title>
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <title>⚖ 律師案件管理系統 - 專業完整版</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     
@@ -132,11 +138,10 @@
                 }
             };
 
-            // Enhanced Hearing Logic
             const addHearing = () => {
                 const date = prompt("開庭日期 (YYYY-MM-DD)");
                 if (date) {
-                    const agency = prompt("機關名稱 (例如: 桃園地院 / 台北地檢)") || "";
+                    const agency = prompt("機關名稱 (例如: 台北地院 / 台中地檢)") || "";
                     const courtroom = prompt("法庭/偵查庭 (例如: 第 5 法庭 / 3 偵查庭)") || "";
                     const time = prompt("開庭時間 (例如: 09:30)") || "";
                     setFormData({
@@ -205,6 +210,7 @@
                                 <div className="section-title">訴訟詳情</div>
                                 <p>現在繫屬機關: {selected.currentAgency}</p>
                                 <p>案號: {selected.courtCaseNos?.join(", ")}</p>
+                                <p>審級: {selected.instance} | 股別: {selected.division}</p>
                             </div>
                         </div>
 
@@ -258,6 +264,16 @@
                             ))}
                         </div>
                         <div className="form-group"><label className="form-label">現在繫屬機關</label><input value={formData.currentAgency} onChange={e=>setFormData({...formData, currentAgency: e.target.value})} /></div>
+                        
+                        <div className="form-grid">
+                            <div className="form-group">
+                                <label className="form-label">審級</label>
+                                <select value={formData.instance} onChange={e=>setFormData({...formData, instance: e.target.value})}>
+                                    {INSTANCES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-group"><label className="form-label">股別</label><input value={formData.division} onChange={e=>setFormData({...formData, division: e.target.value})} /></div>
+                        </div>
                         
                         <div className="section-title">
                             開庭紀錄

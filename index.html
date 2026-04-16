@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="案件管理">
-    <title>⚖ 律師案件管理系統 - 專業優化版</title>
+    <title>⚖ 律師案件管理系統 - 完整功能版</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     
@@ -32,7 +32,7 @@
         .case-card:active { transform: scale(0.98); }
         
         .form-container { padding: 20px; max-width: 900px; margin: 0 auto; }
-        .section-title { font-size: 0.9rem; color: var(--gold); margin: 24px 0 12px 0; font-weight: bold; border-left: 3px solid var(--gold); padding-left: 10px; }
+        .section-title { font-size: 0.9rem; color: var(--gold); margin: 24px 0 12px 0; font-weight: bold; border-left: 3px solid var(--gold); padding-left: 10px; display: flex; justify-content: space-between; align-items: center; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .form-group { margin-bottom: 16px; }
         .form-label { display: block; font-size: 0.75rem; color: var(--text2); margin-bottom: 6px; }
@@ -42,10 +42,11 @@
         .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 14px; transition: 0.2s; }
         .btn-gold { background: var(--gold); color: var(--bg); }
         .btn-outline { background: transparent; border: 1px solid var(--bg4); color: var(--text); }
-        .btn-circle { width: 28px; height: 28px; padding: 0; justify-content: center; border-radius: 50%; font-size: 18px; }
+        .btn-circle { width: 28px; height: 28px; padding: 0; justify-content: center; border-radius: 50%; font-size: 18px; flex-shrink: 0; }
         .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
         
-        .item-row { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; }
+        .item-row { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; position: relative; display: flex; justify-content: space-between; align-items: center; }
+        .item-info { flex-grow: 1; margin-right: 10px; }
         .badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: var(--bg4); color: var(--text2); }
 
         .multi-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
@@ -129,6 +130,35 @@
                 }
             };
 
+            // Dynamic Lists Logic
+            const addHearing = () => {
+                const date = prompt("開庭日期 (例如: 2026-05-20)");
+                if (date) {
+                    const time = prompt("開庭時間 (例如: 09:30)") || "";
+                    const location = prompt("地點 (例如: 第 5 法庭)") || "";
+                    setFormData({...formData, hearings: [...(formData.hearings || []), { date, time, location, note: "" }]});
+                }
+            };
+
+            const removeHearing = (index) => {
+                const newHearings = [...formData.hearings];
+                newHearings.splice(index, 1);
+                setFormData({...formData, hearings: newHearings});
+            };
+
+            const addTodo = () => {
+                const text = prompt("待辦事項內容");
+                if (text) {
+                    setFormData({...formData, todos: [...(formData.todos || []), { text, done: false, id: Date.now() }]});
+                }
+            };
+
+            const removeTodo = (index) => {
+                const newTodos = [...formData.todos];
+                newTodos.splice(index, 1);
+                setFormData({...formData, todos: newTodos});
+            };
+
             if (view === "list") return (
                 <div className="app-container">
                     <header>
@@ -168,6 +198,7 @@
                                 <p>事務所案號: {selected.firmCaseNo}</p>
                                 <p>委任日期: {selected.retainerDate}</p>
                                 <p>承辦律師: {selected.attorney}</p>
+                                <p>聯絡電話: <a href={`tel:${selected.phone}`} style={{color: "var(--gold)"}}>{selected.phone}</a></p>
                             </div>
                             <div className="case-card">
                                 <div className="section-title">訴訟詳情</div>
@@ -177,11 +208,24 @@
                                 <div style={{marginTop: 8}}>
                                     <div style={{fontSize: "0.75rem", color: "var(--text2)"}}>法院或地檢署案號:</div>
                                     {selected.courtCaseNos?.map((no, i) => (
-                                        <div key={i} className="item-row" style={{margin: "4px 0"}}>{no}</div>
+                                        <div key={i} className="item-row" style={{margin: "4px 0", fontSize: "0.8rem"}}>{no}</div>
                                     ))}
                                 </div>
                             </div>
                         </div>
+
+                        <div className="section-title">開庭紀錄 ({selected.hearings?.length || 0})</div>
+                        {selected.hearings?.map((h, i) => (
+                            <div key={i} className="item-row">📅 {h.date} {h.time} | 📍 {h.location}</div>
+                        ))}
+
+                        <div className="section-title">待辦事項 ({selected.todos?.length || 0})</div>
+                        {selected.todos?.map((t, i) => (
+                            <div key={i} className="item-row">{t.text}</div>
+                        ))}
+
+                        <div className="section-title">備註</div>
+                        <div className="case-card" style={{whiteSpace: "pre-wrap"}}>{selected.notes || "無"}</div>
                     </div>
                 </div>
             );
@@ -190,7 +234,7 @@
                 <div className="app-container">
                     <header>
                         <button className="btn btn-outline" onClick={() => setView("list")}>取消</button>
-                        <div style={{fontWeight: "bold"}}>案件編輯</div>
+                        <div style={{fontWeight: "bold"}}>{view === "add" ? "新增案件" : "修改案件"}</div>
                         <button className="btn btn-gold" onClick={saveToCloud}>儲存雲端</button>
                     </header>
                     <div className="form-container">
@@ -201,12 +245,12 @@
                             <div className="form-group"><label className="form-label">事務所案號</label><input value={formData.firmCaseNo} onChange={e=>setFormData({...formData, firmCaseNo: e.target.value})} /></div>
                         </div>
 
-                        <div className="section-title">訴訟詳情</div>
+                        <div className="section-title">
+                            訴訟詳情
+                            <button className="btn btn-gold btn-circle" onClick={addCaseNoField} title="增加案號">+</button>
+                        </div>
                         <div className="form-group">
-                            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8}}>
-                                <label className="form-label" style={{margin: 0}}>法院或地檢署案號</label>
-                                <button className="btn btn-gold btn-circle" onClick={addCaseNoField}>+</button>
-                            </div>
+                            <label className="form-label">法院或地檢署案號</label>
                             {formData.courtCaseNos?.map((no, index) => (
                                 <div key={index} className="multi-input-row">
                                     <input value={no} onChange={e => updateCaseNo(index, e.target.value)} placeholder={`案號 ${index + 1}`} />
@@ -226,6 +270,28 @@
                             <div className="form-group"><label className="form-label">股別</label><input value={formData.division} onChange={e=>setFormData({...formData, division: e.target.value})} /></div>
                         </div>
                         
+                        <div className="section-title">
+                            開庭紀錄
+                            <button className="btn btn-outline btn-circle" onClick={addHearing}>+</button>
+                        </div>
+                        {formData.hearings?.map((h, i) => (
+                            <div key={i} className="item-row">
+                                <div className="item-info">📅 {h.date} {h.time} - {h.location}</div>
+                                <button className="btn btn-danger btn-circle" onClick={() => removeHearing(i)}>×</button>
+                            </div>
+                        ))}
+
+                        <div className="section-title">
+                            待辦事項
+                            <button className="btn btn-outline btn-circle" onClick={addTodo}>+</button>
+                        </div>
+                        {formData.todos?.map((t, i) => (
+                            <div key={i} className="item-row">
+                                <div className="item-info">{t.text}</div>
+                                <button className="btn btn-danger btn-circle" onClick={() => removeTodo(i)}>×</button>
+                            </div>
+                        ))}
+
                         <div className="section-title">備註事項</div>
                         <textarea rows="4" value={formData.notes} onChange={e=>setFormData({...formData, notes: e.target.value})} />
                     </div>

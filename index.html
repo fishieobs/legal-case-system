@@ -5,307 +5,800 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <!-- 手機桌面 APP ICON 設定 -->
     <meta name="apple-mobile-web-app-title" content="案件管理">
+    <meta name="theme-color" content="#0a1628">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
     <meta name="mobile-web-app-capable" content="yes">
-
-    <title>⚖ 律師案件管理系統 - 專業完整版</title>
-    
+    <title>⚖ 律師案件管理系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <style>
-        :root {
-            --bg: #020817; --bg2: #0a1628; --bg3: #0f172a; --bg4: #1e293b;
-            --gold: #c8a96e; --gold2: #a07840;
-            --text: #e2e8f0; --text2: #94a3b8; --text3: #64748b;
-            --link: #3b82f6; --success: #22c55e; --danger: #ef4444;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; line-height: 1.5; }
-        .app-container { min-height: 100vh; padding-bottom: 80px; }
-        header { background: var(--bg2); padding: 16px 20px; border-bottom: 1px solid var(--bg4); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .header-title { font-family: 'Noto Serif TC', serif; font-size: 1.25rem; color: var(--gold); }
-        
-        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; padding: 20px; }
-        .case-card { background: var(--bg3); border: 1px solid var(--bg4); border-radius: 12px; padding: 16px; cursor: pointer; transition: transform 0.2s; position: relative; }
-        .case-card:active { transform: scale(0.98); }
-        
-        .form-container { padding: 20px; max-width: 900px; margin: 0 auto; }
-        .section-title { font-size: 0.9rem; color: var(--gold); margin: 24px 0 12px 0; font-weight: bold; border-left: 3px solid var(--gold); padding-left: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-size: 0.75rem; color: var(--text2); margin-bottom: 6px; }
-        input, textarea, select { width: 100%; background: var(--bg4); border: 1px solid transparent; border-radius: 8px; padding: 12px; color: #fff; font-size: 1rem; outline: none; }
-        input:focus { border-color: var(--gold); }
-        
-        .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 14px; transition: 0.2s; }
-        .btn-gold { background: var(--gold); color: var(--bg); }
-        .btn-outline { background: transparent; border: 1px solid var(--bg4); color: var(--text); }
-        .btn-circle { width: 28px; height: 28px; padding: 0; justify-content: center; border-radius: 50%; font-size: 18px; flex-shrink: 0; }
-        .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
-        
-        .item-row { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; margin-bottom: 10px; font-size: 0.9rem; position: relative; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--bg4); }
-        .item-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; margin-bottom: 4px; }
-        .item-agency { color: var(--gold); font-weight: bold; }
-        .item-detail { font-size: 0.8rem; color: var(--text2); }
-        
-        .badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: var(--bg4); color: var(--text2); }
-        .multi-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+<style>
+:root {
+    --bg:#020817; --bg2:#0a1628; --bg3:#0f172a; --bg4:#1e293b;
+    --gold:#c8a96e; --gold2:#a07840;
+    --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b; --text4:#475569;
+    --green:#22c55e; --red:#ef4444; --yellow:#f59e0b; --purple:#8b5cf6; --blue:#3b82f6;
+    --border:#1e293b;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.5;}
 
-        @media (max-width: 600px) { .grid-layout { grid-template-columns: 1fr; padding: 12px; } .form-grid { grid-template-columns: 1fr; } }
-    </style>
+/* ── LAYOUT ── */
+.app{min-height:100vh;padding-bottom:80px;}
+.header{background:var(--bg2);padding:12px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:200;gap:10px;flex-wrap:wrap;}
+.header-title{font-family:'Noto Serif TC',serif;font-size:1.1rem;color:var(--gold);display:flex;align-items:center;gap:8px;}
+.content{padding:16px;max-width:960px;margin:0 auto;}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 18px;border-radius:8px;font-weight:700;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-family:inherit;transition:opacity .15s;white-space:nowrap;}
+.btn:active{opacity:.8;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0a0a;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.4);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-icon{width:30px;height:30px;padding:0;justify-content:center;border-radius:50%;font-size:16px;flex-shrink:0;}
+
+/* ── STATS ── */
+.stats-row{display:flex;gap:10px;overflow-x:auto;padding:14px 16px;scrollbar-width:none;}
+.stats-row::-webkit-scrollbar{display:none;}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 18px;min-width:105px;flex-shrink:0;}
+.stat-val{font-size:22px;font-weight:800;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums;}
+.stat-unit{font-size:12px;font-weight:500;margin-left:2px;}
+.stat-lbl{font-size:11px;color:var(--text4);margin-top:5px;}
+
+/* ── UPCOMING ── */
+.upcoming{margin:0 16px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.sec-title{font-size:10px;color:var(--text3);letter-spacing:.1em;font-weight:700;margin-bottom:10px;text-transform:uppercase;}
+.chip-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.chip-row::-webkit-scrollbar{display:none;}
+.chip{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;min-width:150px;flex-shrink:0;}
+.chip:active{opacity:.8;}
+
+/* ── FILTERS ── */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+.search-inp{flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--text);font-size:13px;outline:none;font-family:inherit;}
+.search-inp:focus{border-color:var(--gold);}
+.fsel{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;cursor:pointer;outline:none;font-family:inherit;}
+
+/* ── CASE CARDS (mobile) ── */
+.case-cards{display:flex;flex-direction:column;gap:10px;}
+.case-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .2s;}
+.case-card:active{border-color:var(--gold);}
+
+/* ── DESKTOP TABLE ── */
+@media(min-width:860px){.case-cards{display:none;}.tbl-wrap{display:block;}}
+@media(max-width:859px){.tbl-wrap{display:none;}}
+.tbl-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{text-align:left;padding:10px 12px;color:var(--text4);font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg2);white-space:nowrap;}
+.trow{border-bottom:1px solid var(--bg);cursor:pointer;}
+.trow:hover{background:var(--bg2);}
+.trow:active{background:var(--bg4);}
+td{padding:11px 12px;color:var(--text2);vertical-align:middle;white-space:nowrap;}
+
+/* ── BADGE ── */
+.badge{display:inline-block;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+
+/* ── DETAIL ── */
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+.card-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:10px;}
+.info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;gap:10px;border-bottom:1px solid #0a0f1e;}
+.info-lbl{font-size:11px;color:var(--text4);white-space:nowrap;min-width:80px;padding-top:1px;}
+.info-val{font-size:13px;color:var(--text);text-align:right;word-break:break-all;}
+.hearing-item{border-left:3px solid var(--border);padding-left:12px;margin-bottom:12px;}
+.todo-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid var(--border);}
+.todo-check{width:18px;height:18px;border-radius:4px;border:2px solid var(--bg4);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .2s;}
+.todo-check.done{background:var(--green);border-color:var(--green);}
+
+/* ── FORM ── */
+.form-wrap{padding:16px;max-width:960px;margin:0 auto;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:4px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fl{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+.fi{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;font-family:inherit;width:100%;}
+.fi:focus{border-color:var(--gold);}
+textarea.fi{resize:vertical;min-height:80px;}
+.section-hdr{font-size:11px;color:var(--gold);font-weight:700;border-left:3px solid var(--gold);padding-left:10px;margin:22px 0 12px;display:flex;justify-content:space-between;align-items:center;}
+.item-row{background:rgba(255,255,255,.03);padding:11px 14px;border-radius:8px;margin-bottom:8px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.add-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.add-row .fi{flex:1;min-width:100px;}
+
+/* ── BOTTOM NAV ── */
+.bnav{display:none;}
+@media(max-width:600px){
+    .bnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:100;}
+    .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;font-size:10px;color:var(--text3);cursor:pointer;gap:3px;border:none;background:transparent;font-family:inherit;}
+    .bnav-btn.active{color:var(--gold);}
+    .bnav-icon{font-size:18px;}
+    .app{padding-bottom:80px;}
+}
+
+/* ── OVERLAY ── */
+.overlay{position:fixed;inset:0;background:#000000aa;display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.dialog{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:380px;width:100%;}
+
+/* ── LOADING ── */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:var(--text3);}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--gold);color:var(--gold);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;}
+
+/* ── MISC ── */
+.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
+.empty{text-align:center;padding:50px 20px;color:var(--text3);}
+.empty .ico{font-size:40px;margin-bottom:12px;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+a{color:var(--blue);}
+@media(max-width:600px){.header{padding:10px 12px;}.content{padding:12px;}}
+</style>
 </head>
 <body>
-    <div id="root"></div>
+<div id="root"></div>
+<div id="toast"></div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+<!-- Firebase -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    const firebaseConfig = {
+        apiKey: "AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",
+        authDomain: "legalcasemanageer.firebaseapp.com",
+        projectId: "legalcasemanageer",
+        storageBucket: "legalcasemanageer.firebasestorage.app",
+        messagingSenderId: "559838504556",
+        appId: "1:559838504556:web:ba10c071a12650bbd85a49"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.db = db;
+    window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc };
+    window.firebaseReady = true;
+</script>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",
-            authDomain: "legalcasemanageer.firebaseapp.com",
-            projectId: "legalcasemanageer",
-            storageBucket: "legalcasemanageer.firebasestorage.app",
-            messagingSenderId: "559838504556",
-            appId: "1:559838504556:web:ba10c071a12650bbd85a49"
-        };
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        window.db = db;
-        window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc };
-    </script>
+// ── Constants ──
+const CASE_TYPES = ["刑事","民事","行政","家事","勞動","智財","非訟"];
+const CASE_STATUS = ["進行中","已結案","上訴中","停止中","準備委任"];
+const INSTANCES = ["地院","高院","最高院","地檢署","高檢署","高行院","最高行政法院"];
+const COURTS = ["台北地院","士林地院","新北地院","桃園地院","新竹地院","苗栗地院","台中地院","南投地院","彰化地院","雲林地院","嘉義地院","台南地院","高雄地院","橋頭地院","屏東地院","花蓮地院","台東地院","基隆地院","宜蘭地院","澎湖地院","金門地院","台北地檢","士林地檢","新北地檢","桃園地檢","新竹地檢","台中地檢","台南地檢","高雄地檢","台北高院","台中高院","台南高院","高雄高院","最高法院","台北高行院","台中高行院","高雄高行院","最高行政法院"];
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+const TYPE_COLOR={刑事:"#ef4444",民事:"#3b82f6",行政:"#8b5cf6",家事:"#ec4899",勞動:"#f97316",智財:"#14b8a6",非訟:"#06b6d4"};
+const STATUS_COLOR={"進行中":"#22c55e","已結案":"#94a3b8","上訴中":"#f59e0b","停止中":"#ef4444","準備委任":"#3b82f6"};
 
-        const INSTANCES = ["地院", "高院", "最高院", "地檢署", "高檢署"];
+const emptyCase = {
+    id:"", firmCaseNo:"", courtCaseNos:[""], division:"",
+    clientName:"", phone:"", feeReceived:0, feeUnpaid:0, disbursements:0,
+    caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
+    attorney:"", retainerDate:"", opposingParty:"", judgementLink:"", notes:"",
+    hearings:[], todos:[]
+};
 
-        const emptyCase = {
-            id: "", firmCaseNo: "", courtCaseNos: [""], division: "",
-            clientName: "", phone: "", feeReceived: 0, feeUnpaid: 0, disbursements: 0,
-            caseType: "民事", status: "進行中", instance: "地院", currentAgency: "",
-            attorney: "", retainerDate: "", opposingParty: "",
-            judgementLink: "", notes: "", hearings: [], todos: []
-        };
+// ── Helpers ──
+function today(){ return new Date().toISOString().split("T")[0]; }
+function daysUntil(d){ return Math.ceil((new Date(d)-new Date(today()))/86400000); }
+function fmt(n){ return n ? Number(n).toLocaleString("zh-TW")+" 元" : "—"; }
+function fmtK(n){ return (Number(n||0)/10000).toFixed(1); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
 
-        function App() {
-            const [cases, setCases] = useState([]);
-            const [view, setView] = useState("list");
-            const [selectedId, setSelectedId] = useState(null);
-            const [formData, setFormData] = useState(emptyCase);
-            const [search, setSearch] = useState("");
+function toast(msg){
+    const t=document.getElementById("toast");
+    t.textContent=msg; t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"),2200);
+}
 
-            useEffect(() => {
-                if (!window.db) return;
-                const { collection, onSnapshot } = window.fbMethods;
-                return onSnapshot(collection(window.db, "cases"), (snapshot) => {
-                    setCases(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                });
-            }, []);
+function Badge({label,color}){
+    return <span className="badge" style={{background:color+"22",color,border:`1px solid ${color}44`}}>{label}</span>;
+}
 
-            const selected = cases.find(c => c.id === selectedId);
-            const filtered = cases.filter(c => (c.clientName || "").includes(search) || (c.firmCaseNo || "").includes(search));
+// ══════════════════════════════════════════
+//  APP
+// ══════════════════════════════════════════
+function App(){
+    const [cases, setCases] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [view, setView] = useState("list"); // list | detail | form | stats
+    const [selectedId, setSelectedId] = useState(null);
+    const [formData, setFormData] = useState(emptyCase);
+    const [editId, setEditId] = useState(null);
+    const [search, setSearch] = useState("");
+    const [filterStatus, setFilterStatus] = useState("全部");
+    const [filterType, setFilterType] = useState("全部");
+    const [deleteConfirm, setDeleteConfirm] = useState(false);
+    // inline add forms
+    const [newH, setNewH] = useState({date:"",time:"",agency:"",courtroom:"",note:""});
+    const [newT, setNewT] = useState({text:"",due:""});
 
-            const saveToCloud = async () => {
-                const id = view === "add" ? Date.now().toString() : formData.id;
-                await window.fbMethods.setDoc(window.fbMethods.doc(window.db, "cases", id), { ...formData, id });
-                setView("list");
-            };
+    // ── Firebase listener ──
+    useEffect(()=>{
+        const wait = setInterval(()=>{
+            if(!window.db) return;
+            clearInterval(wait);
+            const {collection,onSnapshot} = window.fbMethods;
+            const unsub = onSnapshot(collection(window.db,"cases"), snap=>{
+                setCases(snap.docs.map(d=>({...d.data(),id:d.id})));
+                setLoading(false);
+            }, err=>{ console.error(err); setLoading(false); });
+            return ()=>unsub();
+        },200);
+        return ()=>clearInterval(wait);
+    },[]);
 
-            const addCaseNoField = () => {
-                setFormData({...formData, courtCaseNos: [...(formData.courtCaseNos || [""]), ""]});
-            };
+    const selected = cases.find(c=>c.id===selectedId);
 
-            const updateCaseNo = (index, value) => {
-                const newNos = [...formData.courtCaseNos];
-                newNos[index] = value;
-                setFormData({...formData, courtCaseNos: newNos});
-            };
+    const filtered = cases.filter(c=>{
+        const q=search.toLowerCase();
+        const ms=!q||[c.clientName,c.firmCaseNo,c.opposingParty,c.attorney,c.currentAgency,...(c.courtCaseNos||[])].some(x=>(x||"").toLowerCase().includes(q));
+        const mst=filterStatus==="全部"||c.status===filterStatus;
+        const mt=filterType==="全部"||c.caseType===filterType;
+        return ms&&mst&&mt;
+    });
 
-            const removeCaseNo = (index) => {
-                if (formData.courtCaseNos.length > 1) {
-                    const newNos = formData.courtCaseNos.filter((_, i) => i !== index);
-                    setFormData({...formData, courtCaseNos: newNos});
-                }
-            };
+    const upcoming = [];
+    cases.forEach(c=>{
+        (c.hearings||[]).forEach(h=>{
+            const d=daysUntil(h.date);
+            if(d>=0&&d<=30) upcoming.push({...h,caseId:c.id,clientName:c.clientName,firmCaseNo:c.firmCaseNo});
+        });
+    });
+    upcoming.sort((a,b)=>a.date.localeCompare(b.date));
 
-            const addHearing = () => {
-                const date = prompt("開庭日期 (YYYY-MM-DD)");
-                if (date) {
-                    const agency = prompt("機關名稱 (例如: 台北地院 / 台中地檢)") || "";
-                    const courtroom = prompt("法庭/偵查庭 (例如: 第 5 法庭 / 3 偵查庭)") || "";
-                    const time = prompt("開庭時間 (例如: 09:30)") || "";
-                    setFormData({
-                        ...formData, 
-                        hearings: [...(formData.hearings || []), { date, agency, courtroom, time, id: Date.now() }]
-                    });
-                }
-            };
+    // ── Save to Firebase ──
+    const saveCase = async()=>{
+        if(!formData.clientName.trim()){ toast("⚠️ 請輸入當事人姓名"); return; }
+        if(!formData.firmCaseNo.trim()){ toast("⚠️ 請輸入事務所案件編號"); return; }
+        try{
+            const id = editId || uid();
+            const data = {...formData, id};
+            await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"cases",id), data);
+            toast("✅ 案件已儲存至雲端");
+            setSelectedId(id);
+            setView(editId?"detail":"list");
+        }catch(e){ toast("❌ 儲存失敗："+e.message); }
+    };
 
-            const removeHearing = (index) => {
-                const newHearings = [...formData.hearings];
-                newHearings.splice(index, 1);
-                setFormData({...formData, hearings: newHearings});
-            };
+    const deleteCase = async()=>{
+        try{
+            await window.fbMethods.deleteDoc(window.fbMethods.doc(window.db,"cases",selectedId));
+            toast("🗑 案件已刪除");
+            setDeleteConfirm(false); setView("list");
+        }catch(e){ toast("❌ 刪除失敗"); }
+    };
 
-            const addTodo = () => {
-                const text = prompt("待辦事項內容");
-                if (text) {
-                    setFormData({...formData, todos: [...(formData.todos || []), { text, done: false, id: Date.now() }]});
-                }
-            };
+    const toggleTodo = async(c, todoId)=>{
+        const todos = (c.todos||[]).map(t=>t.id===todoId?{...t,done:!t.done}:t);
+        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{todos});
+    };
 
-            const removeTodo = (index) => {
-                const newTodos = [...formData.todos];
-                newTodos.splice(index, 1);
-                setFormData({...formData, todos: newTodos});
-            };
+    // ── Form helpers ──
+    const sf = (key,val)=>setFormData(f=>({...f,[key]:val}));
+    const addHearing=()=>{
+        if(!newH.date){ toast("請填開庭日期"); return; }
+        sf("hearings",[...(formData.hearings||[]),{...newH,id:uid()}]);
+        setNewH({date:"",time:"",agency:"",courtroom:"",note:""});
+    };
+    const removeHearing=i=>sf("hearings",formData.hearings.filter((_,idx)=>idx!==i));
+    const addTodo=()=>{
+        if(!newT.text.trim()){ toast("請填待辦內容"); return; }
+        sf("todos",[...(formData.todos||[]),{...newT,id:uid(),done:false}]);
+        setNewT({text:"",due:""});
+    };
+    const removeTodo=i=>sf("todos",formData.todos.filter((_,idx)=>idx!==i));
+    const addCaseNo=()=>sf("courtCaseNos",[...(formData.courtCaseNos||[]),""]); 
+    const updateCaseNo=(i,v)=>{const a=[...(formData.courtCaseNos||[])];a[i]=v;sf("courtCaseNos",a);};
+    const removeCaseNo=i=>sf("courtCaseNos",formData.courtCaseNos.filter((_,idx)=>idx!==i));
 
-            if (view === "list") return (
-                <div className="app-container">
-                    <header>
-                        <div className="header-title">⚖ 案件管理系統</div>
-                        <button className="btn btn-gold" onClick={() => { setFormData(emptyCase); setView("add"); }}>＋ 新增案件</button>
-                    </header>
-                    <div style={{padding: "16px 20px"}}><input placeholder="🔍 搜尋當事人或案號..." value={search} onChange={e => setSearch(e.target.value)} /></div>
-                    <div className="grid-layout">
-                        {filtered.map(c => (
-                            <div key={c.id} className="case-card" onClick={() => { setSelectedId(c.id); setView("detail"); }}>
-                                <div style={{display: "flex", justifyContent: "space-between", marginBottom: 8}}>
-                                    <span style={{color: "var(--gold)", fontWeight: "bold", fontSize: "0.8rem"}}>{c.firmCaseNo}</span>
-                                    <span className="badge">{c.status}</span>
+    const openAdd=()=>{ setFormData({...emptyCase,id:""}); setEditId(null); setView("form"); };
+    const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
+
+    // ── LOADING ──
+    if(loading) return(
+        <div className="loading">
+            <div className="spinner"/>
+            <div>連線雲端中…</div>
+        </div>
+    );
+
+    // ══ LIST VIEW ══
+    if(view==="list") return(
+        <div className="app">
+            <div className="header">
+                <div className="header-title">⚖ 案件管理系統</div>
+                <div style={{display:"flex",gap:8}}>
+                    <button className="btn btn-outline btn-sm" onClick={()=>setView("stats")}>📊 統計</button>
+                    <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
+                </div>
+            </div>
+
+            {/* Stats bar */}
+            <div className="stats-row">
+                {[
+                    ["案件總數", cases.length, "件", "var(--gold)"],
+                    ["進行中", cases.filter(c=>c.status==="進行中").length, "件", "var(--green)"],
+                    ["近期開庭", upcoming.length, "場", "var(--yellow)"],
+                    ["已收款", fmtK(cases.reduce((s,c)=>s+Number(c.feeReceived||0),0)), "萬", "var(--gold)"],
+                    ["未收款", fmtK(cases.reduce((s,c)=>s+Number(c.feeUnpaid||0),0)), "萬", cases.some(c=>Number(c.feeUnpaid)>0)?"var(--red)":"var(--text3)"],
+                    ["代墊款", fmtK(cases.reduce((s,c)=>s+Number(c.disbursements||0),0)), "萬", "var(--purple)"],
+                ].map(([l,v,u,c])=>(
+                    <div key={l} className="stat-card">
+                        <div className="stat-val" style={{color:c}}>{v}<span className="stat-unit">{u}</span></div>
+                        <div className="stat-lbl">{l}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Upcoming hearings */}
+            {upcoming.length>0 && (
+                <div className="upcoming">
+                    <div className="sec-title">🗓 近30日開庭（{upcoming.length}場）</div>
+                    <div className="chip-row">
+                        {upcoming.map((h,i)=>{
+                            const d=daysUntil(h.date);
+                            return(
+                                <div key={i} className="chip" style={{borderColor:d<=3?"var(--red)":d<=7?"var(--yellow)":"var(--border)"}}
+                                    onClick={()=>{setSelectedId(h.caseId);setView("detail");}}>
+                                    <div style={{color:d<=3?"var(--red)":"var(--gold)",fontWeight:700,fontSize:12}}>{h.date} {h.time}</div>
+                                    <div style={{color:"var(--text)",fontSize:12,marginTop:2}}>{h.clientName} · {h.note||h.agency||"開庭"}</div>
+                                    <div style={{color:"var(--text3)",fontSize:11,marginTop:2}}>{d===0?"今天！":d===1?"明天":`${d}天後`}</div>
                                 </div>
-                                <div style={{fontSize: "1.2rem", fontWeight: "bold"}}>{c.clientName}</div>
-                                <div style={{fontSize: "0.8rem", color: "var(--text3)", margin: "4px 0"}}>{c.currentAgency || "未填寫機關"}</div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            <div className="content">
+                {/* Filters */}
+                <div className="filter-row">
+                    <input className="search-inp" placeholder="🔍 搜尋當事人、案號、律師…" value={search} onChange={e=>setSearch(e.target.value)}/>
+                    <select className="fsel" value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+                        {["全部",...CASE_STATUS].map(s=><option key={s}>{s}</option>)}
+                    </select>
+                    <select className="fsel" value={filterType} onChange={e=>setFilterType(e.target.value)}>
+                        {["全部",...CASE_TYPES].map(t=><option key={t}>{t}</option>)}
+                    </select>
+                    <span style={{color:"var(--text4)",fontSize:12,whiteSpace:"nowrap"}}>{filtered.length} 件</span>
+                </div>
+
+                {/* Mobile cards */}
+                <div className="case-cards">
+                    {filtered.length===0 && <div className="empty"><div className="ico">📂</div>查無案件</div>}
+                    {filtered.map(c=>{
+                        const nh=(c.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
+                        const pt=(c.todos||[]).filter(t=>!t.done).length;
+                        return(
+                            <div key={c.id} className="case-card" onClick={()=>{setSelectedId(c.id);setView("detail");}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                                    <div>
+                                        <div style={{color:"var(--gold)",fontWeight:700,fontFamily:"monospace",fontSize:12}}>{c.firmCaseNo}</div>
+                                        <div style={{fontWeight:700,fontSize:16,color:"var(--text)",marginTop:2}}>{c.clientName}</div>
+                                        <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{c.currentAgency||c.court||""}</div>
+                                    </div>
+                                    <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
+                                        <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/>
+                                        <Badge label={c.status} color={STATUS_COLOR[c.status]||"#64748b"}/>
+                                    </div>
+                                </div>
+                                <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:6,fontSize:12}}>
+                                    {nh && <span style={{color:daysUntil(nh.date)<=7?"var(--yellow)":"var(--text3)"}}>🗓 {nh.date}</span>}
+                                    {pt>0 && <span style={{background:"#ef444422",color:"var(--red)",borderRadius:10,padding:"1px 8px",fontWeight:700}}>✅ {pt}項</span>}
+                                </div>
+                                <div style={{display:"flex",gap:14,marginTop:8,fontSize:12}}>
+                                    <div><div style={{color:"var(--text4)",fontSize:10}}>已收</div><div style={{color:"var(--green)",fontWeight:700}}>{c.feeReceived?Number(c.feeReceived).toLocaleString():"—"}</div></div>
+                                    <div><div style={{color:"var(--text4)",fontSize:10}}>未收</div><div style={{color:c.feeUnpaid>0?"var(--red)":"var(--text3)",fontWeight:700}}>{c.feeUnpaid?Number(c.feeUnpaid).toLocaleString():"—"}</div></div>
+                                    <div><div style={{color:"var(--text4)",fontSize:10}}>代墊</div><div style={{color:"var(--purple)",fontWeight:700}}>{c.disbursements?Number(c.disbursements).toLocaleString():"—"}</div></div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Desktop table */}
+                <div className="tbl-wrap">
+                    <table>
+                        <thead><tr>
+                            <th>案件編號</th><th>當事人</th><th>對造</th><th>繫屬機關</th><th>類型</th><th>狀態</th>
+                            <th style={{textAlign:"right"}}>已收(元)</th><th style={{textAlign:"right"}}>未收(元)</th><th style={{textAlign:"right"}}>代墊(元)</th>
+                            <th>最近開庭</th><th>待辦</th><th></th>
+                        </tr></thead>
+                        <tbody>
+                            {filtered.length===0 && <tr><td colSpan={12} style={{textAlign:"center",padding:40,color:"var(--text3)"}}>查無案件</td></tr>}
+                            {filtered.map(c=>{
+                                const nh=(c.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
+                                const pt=(c.todos||[]).filter(t=>!t.done).length;
+                                return(
+                                    <tr key={c.id} className="trow" onClick={()=>{setSelectedId(c.id);setView("detail");}}>
+                                        <td><span style={{color:"var(--gold)",fontWeight:700,fontFamily:"monospace",fontSize:11}}>{c.firmCaseNo}</span></td>
+                                        <td><span style={{fontWeight:700,color:"var(--text)"}}>{c.clientName}</span></td>
+                                        <td style={{color:"var(--text3)",fontSize:11}}>{c.opposingParty||"—"}</td>
+                                        <td style={{color:"var(--text3)",fontSize:11}}>{c.currentAgency||"—"}</td>
+                                        <td><Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/></td>
+                                        <td><Badge label={c.status} color={STATUS_COLOR[c.status]||"#64748b"}/></td>
+                                        <td style={{textAlign:"right",color:"var(--green)"}}>{c.feeReceived?Number(c.feeReceived).toLocaleString():"—"}</td>
+                                        <td style={{textAlign:"right",color:c.feeUnpaid>0?"var(--red)":"var(--text3)"}}>{c.feeUnpaid?Number(c.feeUnpaid).toLocaleString():"—"}</td>
+                                        <td style={{textAlign:"right",color:"var(--purple)"}}>{c.disbursements?Number(c.disbursements).toLocaleString():"—"}</td>
+                                        <td style={{color:nh&&daysUntil(nh.date)<=7?"var(--yellow)":"var(--text3)",fontSize:11}}>{nh?nh.date:"—"}</td>
+                                        <td>{pt>0?<span style={{background:"#ef444422",color:"var(--red)",borderRadius:10,padding:"1px 8px",fontSize:11,fontWeight:700}}>{pt}</span>:"—"}</td>
+                                        <td onClick={e=>e.stopPropagation()}>
+                                            <button className="btn btn-outline btn-sm" style={{fontSize:11}} onClick={()=>openEdit(c)}>編輯</button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div className="bnav">
+                <button className="bnav-btn active"><span className="bnav-icon">📋</span>案件</button>
+                <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
+            </div>
+        </div>
+    );
+
+    // ══ DETAIL VIEW ══
+    if(view==="detail"&&selected) return(
+        <div className="app">
+            <div className="header">
+                <button className="btn btn-outline btn-sm" onClick={()=>setView("list")}>← 返回</button>
+                <div style={{fontWeight:700,color:"var(--text)",fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,textAlign:"center"}}>{selected.clientName}</div>
+                <div style={{display:"flex",gap:8}}>
+                    <button className="btn btn-outline btn-sm" onClick={()=>openEdit(selected)}>✏️ 編輯</button>
+                    <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm(true)}>🗑</button>
+                </div>
+            </div>
+
+            {deleteConfirm && (
+                <div className="overlay">
+                    <div className="dialog">
+                        <div style={{fontWeight:700,fontSize:16,marginBottom:10}}>確認刪除案件？</div>
+                        <div style={{color:"var(--text2)",marginBottom:20}}>「{selected.clientName}」將被永久刪除，無法復原。</div>
+                        <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+                            <button className="btn btn-outline btn-sm" onClick={()=>setDeleteConfirm(false)}>取消</button>
+                            <button className="btn btn-sm" style={{background:"var(--red)",color:"#fff"}} onClick={deleteCase}>確認刪除</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="content">
+                {/* Badge row */}
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+                    <Badge label={selected.caseType} color={TYPE_COLOR[selected.caseType]||"#64748b"}/>
+                    <Badge label={selected.status} color={STATUS_COLOR[selected.status]||"#64748b"}/>
+                    <Badge label={selected.instance} color="#64748b"/>
+                </div>
+
+                <div className="detail-grid">
+                    {/* 基本資料 */}
+                    <div className="card">
+                        <div className="card-title">📋 案件基本資料</div>
+                        {[
+                            ["事務所案件編號", selected.firmCaseNo],
+                            ["法院／地檢案號", (selected.courtCaseNos||[]).filter(Boolean).join("、")],
+                            ["股別", selected.division],
+                            ["現在繫屬機關", selected.currentAgency],
+                            ["法院", selected.court],
+                            ["審級", selected.instance],
+                            ["案件類型", selected.caseType],
+                            ["案件狀態", selected.status],
+                            ["委任日期", selected.retainerDate],
+                            ["承辦律師", selected.attorney],
+                        ].map(([l,v])=>(
+                            <div key={l} className="info-row">
+                                <div className="info-lbl">{l}</div>
+                                <div className="info-val">{v||"—"}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 當事人 & 費用 */}
+                    <div className="card">
+                        <div className="card-title">👤 當事人 & 費用</div>
+                        <div className="info-row"><div className="info-lbl">當事人姓名</div><div className="info-val">{selected.clientName||"—"}</div></div>
+                        <div className="info-row">
+                            <div className="info-lbl">連絡電話</div>
+                            <div className="info-val">
+                                {selected.phone?<a href={`tel:${selected.phone}`}>{selected.phone}</a>:"—"}
+                            </div>
+                        </div>
+                        <div className="info-row"><div className="info-lbl">對造當事人</div><div className="info-val">{selected.opposingParty||"—"}</div></div>
+                        <hr className="divider"/>
+                        <div className="info-row">
+                            <div className="info-lbl">律師費已收</div>
+                            <div className="info-val" style={{color:"var(--green)",fontWeight:700}}>{fmt(selected.feeReceived)}</div>
+                        </div>
+                        <div className="info-row">
+                            <div className="info-lbl">律師費未收</div>
+                            <div className="info-val" style={{color:selected.feeUnpaid>0?"var(--red)":"var(--text3)",fontWeight:700}}>{fmt(selected.feeUnpaid)}</div>
+                        </div>
+                        <div className="info-row">
+                            <div className="info-lbl">代墊款項</div>
+                            <div className="info-val" style={{color:"var(--purple)",fontWeight:700}}>{fmt(selected.disbursements)}</div>
+                        </div>
+                        <hr className="divider"/>
+                        {selected.judgementLink && (
+                            <div className="info-row">
+                                <div className="info-lbl">判決連結</div>
+                                <div className="info-val"><a href={selected.judgementLink} target="_blank" rel="noreferrer">開啟 🔗</a></div>
+                            </div>
+                        )}
+                        <div className="info-row" style={{alignItems:"flex-start"}}>
+                            <div className="info-lbl">備註</div>
+                            <div className="info-val" style={{color:"var(--text2)",whiteSpace:"pre-wrap",textAlign:"left"}}>{selected.notes||"—"}</div>
+                        </div>
+                    </div>
+
+                    {/* 開庭 */}
+                    <div className="card">
+                        <div className="card-title">🏛 開庭日期（{(selected.hearings||[]).length}場）</div>
+                        {(selected.hearings||[]).length===0 && <div style={{color:"var(--text3)",padding:"12px 0"}}>尚無開庭記錄</div>}
+                        {(selected.hearings||[]).sort((a,b)=>a.date.localeCompare(b.date)).map((h,i)=>{
+                            const d=daysUntil(h.date);
+                            return(
+                                <div key={i} className="hearing-item" style={{borderLeftColor:d>=0&&d<=7?"var(--yellow)":d<0?"var(--border)":"var(--border)"}}>
+                                    <div style={{color:"var(--gold)",fontWeight:700}}>{h.date} {h.time&&`${h.time}`}</div>
+                                    <div style={{color:"var(--text)",fontSize:13}}>{h.agency} {h.note&&`· ${h.note}`}</div>
+                                    <div style={{color:"var(--text3)",fontSize:11}}>{h.courtroom} {d>=0?`（${d===0?"今天":d===1?"明天":d+"天後"}）`:"（已過）"}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* 待辦 */}
+                    <div className="card">
+                        <div className="card-title">✅ 待辦事項（{(selected.todos||[]).filter(t=>!t.done).length}項未完成）</div>
+                        {(selected.todos||[]).length===0 && <div style={{color:"var(--text3)",padding:"12px 0"}}>尚無待辦事項</div>}
+                        {(selected.todos||[]).map(t=>(
+                            <div key={t.id} className="todo-row" onClick={()=>toggleTodo(selected,t.id)}>
+                                <div className={`todo-check${t.done?" done":""}`}>
+                                    {t.done && <span style={{color:"#000",fontSize:10,fontWeight:900}}>✓</span>}
+                                </div>
+                                <div style={{flex:1}}>
+                                    <div style={{color:t.done?"var(--text3)":"var(--text)",textDecoration:t.done?"line-through":"none"}}>{t.text}</div>
+                                    {t.due && <div style={{color:"var(--text4)",fontSize:11}}>期限：{t.due}</div>}
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
-            );
+            </div>
 
-            if (view === "detail" && selected) return (
-                <div className="app-container">
-                    <header>
-                        <button className="btn btn-outline" onClick={() => setView("list")}>← 返回</button>
-                        <div style={{fontWeight: "bold"}}>{selected.clientName}</div>
-                        <button className="btn btn-gold" onClick={() => { setFormData(selected); setView("edit"); }}>編輯</button>
-                    </header>
-                    <div className="form-container">
-                        <div className="form-grid">
-                            <div className="case-card">
-                                <div className="section-title">基本資訊</div>
-                                <p>事務所案號: {selected.firmCaseNo}</p>
-                                <p>聯絡電話: <a href={`tel:${selected.phone}`} style={{color: "var(--gold)"}}>{selected.phone}</a></p>
-                            </div>
-                            <div className="case-card">
-                                <div className="section-title">訴訟詳情</div>
-                                <p>現在繫屬機關: {selected.currentAgency}</p>
-                                <p>案號: {selected.courtCaseNos?.join(", ")}</p>
-                                <p>審級: {selected.instance} | 股別: {selected.division}</p>
-                            </div>
-                        </div>
+            <div className="bnav">
+                <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
+                <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
+            </div>
+        </div>
+    );
 
-                        <div className="section-title">開庭紀錄 ({selected.hearings?.length || 0})</div>
-                        {selected.hearings?.map((h, i) => (
-                            <div key={i} className="item-row">
-                                <div className="item-header">
-                                    <span className="item-agency">{h.agency || "未填機關"}</span>
-                                    <span className="badge">{h.date}</span>
-                                </div>
-                                <div className="item-detail">
-                                    🏛 {h.courtroom || "未填法庭"} | 🕒 {h.time || "未填時間"}
-                                </div>
-                            </div>
-                        ))}
-
-                        <div className="section-title">待辦事項 ({selected.todos?.length || 0})</div>
-                        {selected.todos?.map((t, i) => (
-                            <div key={i} className="item-row">{t.text}</div>
-                        ))}
-                    </div>
+    // ══ STATS VIEW ══
+    if(view==="stats"){
+        const byType={}, byStatus={};
+        CASE_TYPES.forEach(t=>byType[t]=0); CASE_STATUS.forEach(s=>byStatus[s]=0);
+        cases.forEach(c=>{byType[c.caseType]=(byType[c.caseType]||0)+1; byStatus[c.status]=(byStatus[c.status]||0)+1;});
+        const totalFee=cases.reduce((s,c)=>s+Number(c.feeReceived||0)+Number(c.feeUnpaid||0),0);
+        const recv=cases.reduce((s,c)=>s+Number(c.feeReceived||0),0);
+        const unpaid=cases.reduce((s,c)=>s+Number(c.feeUnpaid||0),0);
+        const disb=cases.reduce((s,c)=>s+Number(c.disbursements||0),0);
+        const pct=totalFee>0?(recv/totalFee*100).toFixed(1):0;
+        return(
+            <div className="app">
+                <div className="header">
+                    <button className="btn btn-outline btn-sm" onClick={()=>setView("list")}>← 返回</button>
+                    <div className="header-title">📊 財務統計</div>
+                    <div/>
                 </div>
-            );
-
-            return (
-                <div className="app-container">
-                    <header>
-                        <button className="btn btn-outline" onClick={() => setView("list")}>取消</button>
-                        <div style={{fontWeight: "bold"}}>案件編輯</div>
-                        <button className="btn btn-gold" onClick={saveToCloud}>儲存雲端</button>
-                    </header>
-                    <div className="form-container">
-                        <div className="section-title">基本資訊</div>
-                        <div className="form-grid">
-                            <div className="form-group"><label className="form-label">當事人姓名</label><input value={formData.clientName} onChange={e=>setFormData({...formData, clientName: e.target.value})} /></div>
-                            <div className="form-group"><label className="form-label">電話</label><input type="tel" value={formData.phone} onChange={e=>setFormData({...formData, phone: e.target.value})} /></div>
-                            <div className="form-group"><label className="form-label">事務所案號</label><input value={formData.firmCaseNo} onChange={e=>setFormData({...formData, firmCaseNo: e.target.value})} /></div>
+                <div className="content">
+                    <div className="detail-grid">
+                        <div className="card">
+                            <div className="card-title">💰 律師費總覽</div>
+                            {[["應收總計",totalFee,"var(--gold)"],["已收款",recv,"var(--green)"],["未收款",unpaid,"var(--red)"],["代墊款",disb,"var(--purple)"]].map(([l,v,c])=>(
+                                <div key={l} className="info-row">
+                                    <div className="info-lbl">{l}</div>
+                                    <div className="info-val" style={{color:c,fontWeight:700}}>{Number(v).toLocaleString()} 元</div>
+                                </div>
+                            ))}
+                            {totalFee>0 && <>
+                                <div style={{margin:"14px 0 6px",fontSize:11,color:"var(--text3)"}}>收款進度 {pct}%</div>
+                                <div style={{background:"var(--bg4)",borderRadius:6,height:10,overflow:"hidden"}}>
+                                    <div style={{background:"var(--green)",height:"100%",width:`${Math.min(100,pct)}%`,borderRadius:6,transition:"width .6s"}}/>
+                                </div>
+                            </>}
                         </div>
-
-                        <div className="section-title">
-                            訴訟詳情
-                            <button className="btn btn-gold btn-circle" onClick={addCaseNoField}>+</button>
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label">法院或地檢署案號</label>
-                            {formData.courtCaseNos?.map((no, index) => (
-                                <div key={index} className="multi-input-row">
-                                    <input value={no} onChange={e => updateCaseNo(index, e.target.value)} />
-                                    {formData.courtCaseNos.length > 1 && <button className="btn btn-danger btn-circle" onClick={() => removeCaseNo(index)}>×</button>}
+                        <div className="card">
+                            <div className="card-title">📊 案件類型</div>
+                            {CASE_TYPES.filter(t=>byType[t]>0).map(t=>(
+                                <div key={t} className="info-row">
+                                    <div><Badge label={t} color={TYPE_COLOR[t]||"#64748b"}/></div>
+                                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                        <div style={{background:"var(--bg4)",borderRadius:4,height:6,width:80,overflow:"hidden"}}>
+                                            <div style={{background:TYPE_COLOR[t]||"#64748b",height:"100%",width:`${(byType[t]/cases.length*100).toFixed(0)}%`}}/>
+                                        </div>
+                                        <div style={{color:"var(--text)",fontWeight:700,minWidth:28,textAlign:"right"}}>{byType[t]}</div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="form-group"><label className="form-label">現在繫屬機關</label><input value={formData.currentAgency} onChange={e=>setFormData({...formData, currentAgency: e.target.value})} /></div>
-                        
-                        <div className="form-grid">
-                            <div className="form-group">
-                                <label className="form-label">審級</label>
-                                <select value={formData.instance} onChange={e=>setFormData({...formData, instance: e.target.value})}>
-                                    {INSTANCES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                </select>
-                            </div>
-                            <div className="form-group"><label className="form-label">股別</label><input value={formData.division} onChange={e=>setFormData({...formData, division: e.target.value})} /></div>
-                        </div>
-                        
-                        <div className="section-title">
-                            開庭紀錄
-                            <button className="btn btn-outline btn-circle" onClick={addHearing}>+</button>
-                        </div>
-                        {formData.hearings?.map((h, i) => (
-                            <div key={i} className="item-row" style={{flexDirection: "row", justifyContent:"space-between", alignItems:"center"}}>
-                                <div>
-                                    <div style={{fontWeight:"bold", color:"var(--gold)"}}>{h.date} - {h.agency}</div>
-                                    <div style={{fontSize:"0.75rem", color:"var(--text2)"}}>{h.courtroom} {h.time}</div>
+                        <div className="card">
+                            <div className="card-title">📈 案件狀態</div>
+                            {CASE_STATUS.filter(s=>byStatus[s]>0).map(s=>(
+                                <div key={s} className="info-row">
+                                    <div><Badge label={s} color={STATUS_COLOR[s]||"#64748b"}/></div>
+                                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                        <div style={{background:"var(--bg4)",borderRadius:4,height:6,width:80,overflow:"hidden"}}>
+                                            <div style={{background:STATUS_COLOR[s]||"#64748b",height:"100%",width:`${(byStatus[s]/cases.length*100).toFixed(0)}%`}}/>
+                                        </div>
+                                        <div style={{color:"var(--text)",fontWeight:700,minWidth:28,textAlign:"right"}}>{byStatus[s]}</div>
+                                    </div>
                                 </div>
-                                <button className="btn btn-danger btn-circle" onClick={() => removeHearing(i)}>×</button>
-                            </div>
-                        ))}
-
-                        <div className="section-title">
-                            待辦事項
-                            <button className="btn btn-outline btn-circle" onClick={addTodo}>+</button>
+                            ))}
                         </div>
-                        {formData.todos?.map((t, i) => (
-                            <div key={i} className="item-row" style={{flexDirection: "row", justifyContent:"space-between", alignItems:"center"}}>
-                                <span>{t.text}</span>
-                                <button className="btn btn-danger btn-circle" onClick={() => removeTodo(i)}>×</button>
-                            </div>
-                        ))}
+                        <div className="card">
+                            <div className="card-title">⚠️ 提醒事項</div>
+                            {[
+                                ["未完成待辦", cases.reduce((s,c)=>s+(c.todos||[]).filter(t=>!t.done).length,0)+" 項", "var(--red)"],
+                                ["本週開庭", upcoming.filter(h=>daysUntil(h.date)<=7).length+" 場", "var(--yellow)"],
+                                ["本月開庭", upcoming.length+" 場", "var(--gold)"],
+                                ["未收款案件數", cases.filter(c=>Number(c.feeUnpaid)>0).length+" 件", "var(--red)"],
+                            ].map(([l,v,c])=>(
+                                <div key={l} className="info-row">
+                                    <div className="info-lbl">{l}</div>
+                                    <div className="info-val" style={{color:c,fontWeight:700}}>{v}</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
-            );
-        }
+                <div className="bnav">
+                    <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
+                    <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                    <button className="bnav-btn active"><span className="bnav-icon">📊</span>統計</button>
+                </div>
+            </div>
+        );
+    }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+    // ══ FORM VIEW ══
+    const isEdit=!!editId;
+    const F=formData;
+    return(
+        <div className="app">
+            <div className="header">
+                <button className="btn btn-outline btn-sm" onClick={()=>setView(isEdit?"detail":"list")}>← 取消</button>
+                <div style={{fontWeight:700,fontSize:14}}>{isEdit?"編輯案件":"新增案件"}</div>
+                <button className="btn btn-gold" onClick={saveCase}>☁️ 儲存</button>
+            </div>
+            <div className="form-wrap">
+
+                {/* 基本識別 */}
+                <div className="section-hdr">📁 案件識別資訊</div>
+                <div className="form-grid">
+                    {[["firmCaseNo","事務所案件編號","text","113-刑-001"],["retainerDate","委任日期","date",""],["attorney","承辦律師","text",""],["division","股別","text","刑一股"]].map(([k,l,t,p])=>(
+                        <div key={k} className="fg">
+                            <label className="fl">{l}</label>
+                            <input className="fi" type={t} placeholder={p} value={F[k]||""} onChange={e=>sf(k,e.target.value)}/>
+                        </div>
+                    ))}
+                    {[["caseType","案件類型",CASE_TYPES],["status","案件狀態",CASE_STATUS],["instance","審級",INSTANCES],["court","法院",COURTS]].map(([k,l,opts])=>(
+                        <div key={k} className="fg">
+                            <label className="fl">{l}</label>
+                            <select className="fi" value={F[k]||""} onChange={e=>sf(k,e.target.value)}>
+                                {opts.map(o=><option key={o}>{o}</option>)}
+                            </select>
+                        </div>
+                    ))}
+                </div>
+
+                {/* 法院案號（多筆） */}
+                <div className="section-hdr">
+                    法院／地檢署案號
+                    <button className="btn btn-outline btn-sm" onClick={addCaseNo}>＋ 新增案號</button>
+                </div>
+                {(F.courtCaseNos||[""]).map((no,i)=>(
+                    <div key={i} style={{display:"flex",gap:8,marginBottom:8}}>
+                        <input className="fi" style={{flex:1}} value={no} placeholder="113年度訴字第1234號" onChange={e=>updateCaseNo(i,e.target.value)}/>
+                        {(F.courtCaseNos||[]).length>1 && <button className="btn btn-danger btn-icon" onClick={()=>removeCaseNo(i)}>✕</button>}
+                    </div>
+                ))}
+
+                {/* 當事人 */}
+                <div className="section-hdr">👤 當事人資訊</div>
+                <div className="form-grid">
+                    {[["clientName","當事人姓名","text",""],["phone","連絡電話","tel","0912-345-678"],["opposingParty","對造當事人","text",""],["currentAgency","現在繫屬機關","text",""]].map(([k,l,t,p])=>(
+                        <div key={k} className="fg">
+                            <label className="fl">{l}</label>
+                            <input className="fi" type={t} placeholder={p} value={F[k]||""} onChange={e=>sf(k,e.target.value)}/>
+                        </div>
+                    ))}
+                </div>
+
+                {/* 費用 */}
+                <div className="section-hdr">💰 費用管理</div>
+                <div className="form-grid">
+                    {[["feeReceived","律師費已收款（元）"],["feeUnpaid","律師費未收款（元）"],["disbursements","代墊款項（元）"]].map(([k,l])=>(
+                        <div key={k} className="fg">
+                            <label className="fl">{l}</label>
+                            <input className="fi" type="number" min="0" value={F[k]||""} onChange={e=>sf(k,e.target.value)}/>
+                        </div>
+                    ))}
+                </div>
+
+                {/* 開庭 */}
+                <div className="section-hdr">🏛 開庭日期</div>
+                {(F.hearings||[]).map((h,i)=>(
+                    <div key={i} className="item-row">
+                        <div style={{flex:1}}>
+                            <div style={{color:"var(--gold)",fontWeight:700,fontSize:13}}>{h.date} {h.time}</div>
+                            <div style={{color:"var(--text2)",fontSize:12}}>{h.agency} {h.courtroom} {h.note&&`· ${h.note}`}</div>
+                        </div>
+                        <button className="btn btn-danger btn-icon" onClick={()=>removeHearing(i)}>✕</button>
+                    </div>
+                ))}
+                <div className="add-row">
+                    <input className="fi" type="date" style={{flex:"1 1 130px"}} value={newH.date} onChange={e=>setNewH(h=>({...h,date:e.target.value}))} placeholder="日期"/>
+                    <input className="fi" type="time" style={{flex:"0 0 100px"}} value={newH.time} onChange={e=>setNewH(h=>({...h,time:e.target.value}))}/>
+                    <input className="fi" style={{flex:"1 1 120px"}} value={newH.agency} onChange={e=>setNewH(h=>({...h,agency:e.target.value}))} placeholder="機關（台北地院）"/>
+                    <input className="fi" style={{flex:"1 1 100px"}} value={newH.courtroom} onChange={e=>setNewH(h=>({...h,courtroom:e.target.value}))} placeholder="法庭（第5庭）"/>
+                    <input className="fi" style={{flex:"1 1 100px"}} value={newH.note} onChange={e=>setNewH(h=>({...h,note:e.target.value}))} placeholder="庭期性質"/>
+                    <button className="btn btn-gold btn-sm" onClick={addHearing}>＋ 新增</button>
+                </div>
+
+                {/* 待辦 */}
+                <div className="section-hdr">✅ 待辦事項</div>
+                {(F.todos||[]).map((t,i)=>(
+                    <div key={i} className="item-row">
+                        <div style={{flex:1}}>
+                            <div style={{color:"var(--text)",fontSize:13}}>{t.text}</div>
+                            {t.due && <div style={{color:"var(--text3)",fontSize:11}}>期限：{t.due}</div>}
+                        </div>
+                        <button className="btn btn-danger btn-icon" onClick={()=>removeTodo(i)}>✕</button>
+                    </div>
+                ))}
+                <div className="add-row">
+                    <input className="fi" style={{flex:"2 1 180px"}} value={newT.text} onChange={e=>setNewT(t=>({...t,text:e.target.value}))} placeholder="待辦事項內容"/>
+                    <input className="fi" type="date" style={{flex:"1 1 140px"}} value={newT.due} onChange={e=>setNewT(t=>({...t,due:e.target.value}))}/>
+                    <button className="btn btn-gold btn-sm" onClick={addTodo}>＋ 新增</button>
+                </div>
+
+                {/* 判決連結 & 備註 */}
+                <div className="section-hdr">📝 其他資訊</div>
+                <div className="fg" style={{marginBottom:12}}>
+                    <label className="fl">判決書連結（可貼司法院裁判書網址）</label>
+                    <input className="fi" type="url" value={F.judgementLink||""} onChange={e=>sf("judgementLink",e.target.value)} placeholder="https://..."/>
+                </div>
+                <div className="fg">
+                    <label className="fl">備註</label>
+                    <textarea className="fi" value={F.notes||""} onChange={e=>sf("notes",e.target.value)} placeholder="案件備忘、特殊注意事項…"/>
+                </div>
+
+                <div style={{height:20}}/>
+            </div>
+
+            <div className="bnav">
+                <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
+                <button className="bnav-btn active"><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
+            </div>
+        </div>
+    );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
 </body>
 </html>

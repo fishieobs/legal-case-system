@@ -140,6 +140,116 @@ textarea.fi{resize:vertical;min-height:80px;}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
 a{color:var(--blue);}
 @media(max-width:600px){.header{padding:10px 12px;}.content{padding:12px;}}
+
+/* ══ KNOWLEDGE BASE ══ */
+.kb-app{display:flex;height:100vh;overflow:hidden;background:var(--bg);}
+
+/* KB sidebar */
+.kb-sb{width:240px;min-width:240px;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);}
+.kb-sb-logo{padding:16px 14px 12px;border-bottom:1px solid var(--border);}
+.kb-sb-title{font-family:'Noto Serif TC',serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;}
+.kb-sb-sub{font-size:10px;color:var(--text4);margin-top:2px;letter-spacing:1px;}
+.kb-sb-search{padding:10px 12px;border-bottom:1px solid var(--border);}
+.kb-sb-search input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:11px;font-family:inherit;outline:none;}
+.kb-sb-search input::placeholder{color:var(--text4);}
+.kb-sb-search input:focus{border-color:var(--gold);}
+.kb-tree{flex:1;overflow-y:auto;padding:4px 0;}
+.kb-tree::-webkit-scrollbar{width:3px;}
+.kb-tree::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.kb-bc-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px 7px;cursor:pointer;user-select:none;}
+.kb-bc-row:hover{background:rgba(255,255,255,.03);}
+.kb-bc-left{display:flex;align-items:center;gap:8px;}
+.kb-bc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.kb-bc-name{font-size:11px;font-weight:700;letter-spacing:1px;}
+.kb-bc-arrow{font-size:9px;color:var(--text4);transition:transform .2s;}
+.kb-bc-arrow.open{transform:rotate(90deg);}
+.kb-bc-count{font-size:10px;background:rgba(255,255,255,.07);color:var(--text3);padding:1px 6px;border-radius:8px;}
+.kb-sc-row{display:flex;align-items:center;gap:8px;padding:7px 12px 7px 28px;cursor:pointer;transition:background .15s;border-left:2px solid transparent;}
+.kb-sc-row:hover{background:rgba(255,255,255,.04);}
+.kb-sc-row.active{background:rgba(200,169,110,.1);border-left-color:var(--gold);}
+.kb-sc-name{font-size:11px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kb-sc-row.active .kb-sc-name{color:var(--gold);}
+.kb-sc-nums{display:flex;gap:3px;}
+.kb-sc-num{font-size:9px;background:rgba(255,255,255,.06);color:var(--text4);padding:1px 5px;border-radius:8px;}
+.kb-sc-row.active .kb-sc-num{background:rgba(200,169,110,.15);color:var(--gold2);}
+.kb-sb-foot{padding:12px;border-top:1px solid var(--border);}
+.kb-btn-new{width:100%;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0a0a;border:none;border-radius:6px;padding:9px;font-size:11px;font-weight:700;font-family:inherit;letter-spacing:1px;cursor:pointer;}
+
+/* KB main */
+.kb-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.kb-topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.kb-bc-badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:12px;}
+.kb-page-title{font-family:'Noto Serif TC',serif;font-size:16px;font-weight:700;color:var(--text);}
+.kb-tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;}
+.kb-tab{padding:10px 14px;font-size:12px;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;display:flex;align-items:center;gap:6px;}
+.kb-tab:hover{color:var(--text);}
+.kb-tab.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:600;}
+.kb-tab-count{background:var(--bg4);color:var(--text3);font-size:10px;padding:1px 6px;border-radius:8px;}
+.kb-tab.active .kb-tab-count{background:rgba(200,169,110,.15);color:var(--gold2);}
+.kb-content{flex:1;overflow-y:auto;padding:16px 20px;background:var(--bg);}
+.kb-content::-webkit-scrollbar{width:4px;}
+.kb-content::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+.kb-items-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.kb-isearch input{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 11px;color:var(--text);font-size:12px;font-family:inherit;outline:none;width:200px;}
+.kb-isearch input:focus{border-color:var(--gold);}
+
+/* KB cards */
+.kb-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;transition:border-color .2s;}
+.kb-card:hover{border-color:var(--bg4);}
+.kb-card-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;gap:10px;}
+.kb-card-hl{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.kb-card-icon{font-size:15px;flex-shrink:0;}
+.kb-card-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kb-card-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;}
+.kb-card-actions{display:flex;gap:5px;flex-shrink:0;}
+.kb-card-body{padding:0 14px 12px;display:none;}
+.kb-card-body.open{display:block;padding-top:10px;border-top:1px solid var(--bg);}
+.kb-card-text{font-size:12px;line-height:2;color:var(--text2);background:var(--bg);border-radius:6px;padding:12px 14px;max-height:320px;overflow-y:auto;white-space:pre-wrap;font-family:'Noto Sans TC',sans-serif;}
+.kb-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.kb-tag{font-size:10px;background:rgba(200,169,110,.1);color:var(--gold2);border:1px solid rgba(200,169,110,.25);border-radius:12px;padding:2px 8px;}
+
+/* KB result badge */
+.kb-result{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;}
+
+/* KB empty */
+.kb-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 0;color:var(--text3);gap:10px;}
+.kb-empty-icon{font-size:36px;opacity:.25;}
+.kb-empty-title{font-size:13px;}
+.kb-empty-sub{font-size:11px;color:var(--text4);}
+
+/* KB home */
+.kb-home{flex:1;overflow-y:auto;padding:24px 20px;}
+.kb-home-title{font-family:'Noto Serif TC',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.kb-home-sub{font-size:12px;color:var(--text3);margin-bottom:20px;}
+.kb-bc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px;}
+.kb-bc-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px 12px;cursor:pointer;transition:all .2s;text-align:center;border-top:3px solid;}
+.kb-bc-card:hover{transform:translateY(-2px);border-color:var(--gold);}
+.kb-bc-card-icon{font-size:24px;margin-bottom:8px;}
+.kb-bc-card-name{font-size:13px;font-weight:700;margin-bottom:4px;font-family:'Noto Serif TC',serif;}
+.kb-bc-card-stats{font-size:10px;color:var(--text4);display:flex;justify-content:center;gap:8px;}
+@media(max-width:860px){.kb-bc-grid{grid-template-columns:repeat(3,1fr);}.kb-sb{width:200px;min-width:200px;}}
+@media(max-width:600px){.kb-sb{display:none;}.kb-bc-grid{grid-template-columns:repeat(2,1fr);}}
+
+/* KB modal */
+.kb-overlay{position:fixed;inset:0;background:#000000bb;display:flex;align-items:center;justify-content:center;z-index:600;padding:20px;}
+.kb-modal{background:var(--bg3);border:1px solid var(--border);border-radius:12px;width:620px;max-width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;}
+.kb-modal-hd{background:var(--bg2);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.kb-modal-title{font-family:'Noto Serif TC',serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:1px;}
+.kb-modal-x{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;}
+.kb-modal-x:hover{color:var(--text);}
+.kb-modal-bd{flex:1;overflow-y:auto;padding:20px;}
+.kb-modal-bd::-webkit-scrollbar{width:4px;}
+.kb-modal-bd::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+.kb-modal-ft{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--bg2);}
+.kb-fl{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.kb-fi{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 11px;color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border .15s;}
+.kb-fi:focus{border-color:var(--gold);}
+.kb-fta{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 11px;color:var(--text);font-size:12px;font-family:inherit;outline:none;resize:vertical;min-height:240px;line-height:2;transition:border .15s;}
+.kb-fta:focus{border-color:var(--gold);}
+.kb-hint{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:11px;color:var(--text3);line-height:1.7;}
+.kb-field{margin-bottom:14px;}
+.kb-frow{display:flex;gap:10px;}
+.kb-frow .kb-field{flex:1;}
 </style>
 </head>
 <body>
@@ -166,7 +276,325 @@ a{color:var(--blue);}
 </script>
 
 <script type="text/babel">
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ══════════════════════════════════════════
+//  KNOWLEDGE BASE — Constants & Helpers
+// ══════════════════════════════════════════
+const KB_BIG_CATS = [
+    { id:"civil",    name:"民事", icon:"⚖️",  color:"#3b82f6", light:"rgba(59,130,246,.15)" },
+    { id:"family",   name:"家事", icon:"🏛️",  color:"#a855f7", light:"rgba(168,85,247,.15)" },
+    { id:"criminal", name:"刑事", icon:"🔏",  color:"#ef4444", light:"rgba(239,68,68,.15)"  },
+    { id:"admin",    name:"行政", icon:"📋",  color:"#22c55e", light:"rgba(34,197,94,.15)"  },
+    { id:"nonlit",   name:"非訟", icon:"📑",  color:"#f59e0b", light:"rgba(245,158,11,.15)" },
+];
+const KB_DEFAULT_SUBCATS = [
+    {id:"sc1",bigId:"civil",   name:"分割共有物"},{id:"sc2",bigId:"civil",   name:"損害賠償"},
+    {id:"sc3",bigId:"civil",   name:"借貸糾紛"},  {id:"sc4",bigId:"civil",   name:"所有權移轉登記"},
+    {id:"sc5",bigId:"civil",   name:"租賃糾紛"},  {id:"sc6",bigId:"family",  name:"離婚"},
+    {id:"sc7",bigId:"family",  name:"監護權"},    {id:"sc8",bigId:"family",  name:"繼承"},
+    {id:"sc9",bigId:"criminal",name:"販賣毒品"},  {id:"sc10",bigId:"criminal",name:"詐欺"},
+    {id:"sc11",bigId:"criminal",name:"傷害"},     {id:"sc12",bigId:"admin",  name:"訴願"},
+    {id:"sc13",bigId:"admin",  name:"行政訴訟"},  {id:"sc14",bigId:"nonlit", name:"本票裁定"},
+    {id:"sc15",bigId:"nonlit", name:"支付命令"},  {id:"sc16",bigId:"nonlit", name:"假扣押"},
+];
+function kbGet(k){try{return JSON.parse(localStorage.getItem(k));}catch{return null;}}
+function kbSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+function useKbPersist(key,init){
+    const [val,setVal]=useState(()=>{ const s=kbGet(key); return s!==null?s:init; });
+    const update=v=>{ const n=typeof v==="function"?v(val):v; setVal(n); kbSet(key,n); };
+    return [val,update];
+}
+const kbUid=()=>"k"+Date.now().toString(36)+Math.random().toString(36).slice(2);
+const kbToday2=()=>new Date().toLocaleDateString("zh-TW",{year:"numeric",month:"2-digit",day:"2-digit"});
+
+function KbModal({title,onClose,onSave,saveLabel="儲存",children}){
+    return(
+        <div className="kb-overlay" onClick={onClose}>
+            <div className="kb-modal" onClick={e=>e.stopPropagation()}>
+                <div className="kb-modal-hd">
+                    <div className="kb-modal-title">{title}</div>
+                    <button className="kb-modal-x" onClick={onClose}>×</button>
+                </div>
+                <div className="kb-modal-bd">{children}</div>
+                <div className="kb-modal-ft">
+                    <button className="btn btn-outline btn-sm" onClick={onClose}>取消</button>
+                    <button className="btn btn-gold btn-sm" onClick={onSave}>{saveLabel}</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+function KbItemCard({icon,title,meta,tags,content,actions,accentColor}){
+    const [open,setOpen]=useState(false);
+    return(
+        <div className="kb-card" style={accentColor?{borderLeft:"3px solid "+accentColor}:{}}>
+            <div className="kb-card-hd" onClick={()=>setOpen(o=>!o)}>
+                <div className="kb-card-hl">
+                    <span className="kb-card-icon">{icon}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                        <div className="kb-card-title">{title}</div>
+                        {meta&&<div className="kb-card-meta">{meta}</div>}
+                    </div>
+                </div>
+                <div className="kb-card-actions" onClick={e=>e.stopPropagation()}>{actions}</div>
+                <span style={{color:"var(--text4)",fontSize:10,marginLeft:6}}>{open?"▲":"▼"}</span>
+            </div>
+            <div className={"kb-card-body"+(open?" open":"")}>
+                <div className="kb-card-text">{content}</div>
+                {tags&&tags.length>0&&<div className="kb-tags">{tags.map(t=><span key={t} className="kb-tag">{t}</span>)}</div>}
+            </div>
+        </div>
+    );
+}
+function KbResultBadge({result}){
+    const M={"勝訴":["#14532d","#4ade80"],"敗訴":["#7f1d1d","#f87171"],"部分勝訴":["#78350f","#fbbf24"],"和解":["#1e3a5f","#60a5fa"],"撤回":["#1e293b","#94a3b8"]};
+    const [bg,fg]=(M[result]||["#1e293b","#94a3b8"]);
+    return <span className="kb-result" style={{background:bg,color:fg}}>{result}</span>;
+}
+function KbDocModal({initial,onClose,onSave}){
+    const [f,setF]=useState(initial||{title:"",date:kbToday2(),type:"起訴狀",content:""});
+    const TYPES=["起訴狀","答辯狀","準備書狀","聲請狀","陳報狀","上訴狀","抗告狀","委任狀","其他"];
+    return(
+        <KbModal title={initial?"編輯書狀":"新增書狀"} onClose={onClose} onSave={()=>onSave(f)}>
+            <div className="kb-frow">
+                <div className="kb-field" style={{flex:2}}>
+                    <div className="kb-fl">書狀名稱</div>
+                    <input className="kb-fi" value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} placeholder="例：起訴狀、答辯狀第一狀…"/>
+                </div>
+                <div className="kb-field">
+                    <div className="kb-fl">書狀類型</div>
+                    <select className="kb-fi" value={f.type} onChange={e=>setF(p=>({...p,type:e.target.value}))}>
+                        {TYPES.map(t=><option key={t}>{t}</option>)}
+                    </select>
+                </div>
+                <div className="kb-field">
+                    <div className="kb-fl">日期</div>
+                    <input className="kb-fi" value={f.date} onChange={e=>setF(p=>({...p,date:e.target.value}))}/>
+                </div>
+            </div>
+            <div className="kb-field">
+                <div className="kb-fl">書狀全文</div>
+                <textarea className="kb-fta" style={{minHeight:300}} value={f.content} onChange={e=>setF(p=>({...p,content:e.target.value}))} placeholder="貼上書狀全文…"/>
+            </div>
+            <div className="kb-hint">💡 可直接貼上 Word 文件複製的文字，格式會完整保留。</div>
+        </KbModal>
+    );
+}
+function KbJudgmentModal({initial,onClose,onSave}){
+    const [f,setF]=useState(initial||{title:"",caseNo:"",court:"",date:kbToday2(),result:"勝訴",content:""});
+    const RESULTS=["勝訴","敗訴","部分勝訴","和解","撤回","其他"];
+    const COURTS=["最高法院","最高行政法院","高等法院","高等行政法院","智慧財產法院","地方法院","其他"];
+    return(
+        <KbModal title={initial?"編輯判決":"新增判決"} onClose={onClose} onSave={()=>onSave(f)}>
+            <div className="kb-field">
+                <div className="kb-fl">判決標題／摘要</div>
+                <input className="kb-fi" value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} placeholder="例：上訴審判決（確認所有權）…"/>
+            </div>
+            <div className="kb-frow">
+                <div className="kb-field"><div className="kb-fl">案號</div><input className="kb-fi" value={f.caseNo} onChange={e=>setF(p=>({...p,caseNo:e.target.value}))} placeholder="113年度民字第123號"/></div>
+                <div className="kb-field"><div className="kb-fl">法院</div>
+                    <select className="kb-fi" value={f.court} onChange={e=>setF(p=>({...p,court:e.target.value}))}>
+                        <option value="">選擇法院</option>{COURTS.map(c=><option key={c}>{c}</option>)}
+                    </select>
+                </div>
+                <div className="kb-field"><div className="kb-fl">判決日期</div><input className="kb-fi" value={f.date} onChange={e=>setF(p=>({...p,date:e.target.value}))}/></div>
+                <div className="kb-field"><div className="kb-fl">結果</div>
+                    <select className="kb-fi" value={f.result} onChange={e=>setF(p=>({...p,result:e.target.value}))}>
+                        {RESULTS.map(r=><option key={r}>{r}</option>)}
+                    </select>
+                </div>
+            </div>
+            <div className="kb-field">
+                <div className="kb-fl">判決全文 / 重要段落</div>
+                <textarea className="kb-fta" style={{minHeight:260}} value={f.content} onChange={e=>setF(p=>({...p,content:e.target.value}))} placeholder="貼上判決全文，或摘錄重要理由段落…"/>
+            </div>
+        </KbModal>
+    );
+}
+function KbOpinionModal({initial,onClose,onSave}){
+    const [f,setF]=useState(initial||{title:"",source:"",tags:"",content:""});
+    const saveFn=()=>onSave({...f,tags:f.tags.split(/[,，、]/).map(t=>t.trim()).filter(Boolean)});
+    return(
+        <KbModal title={initial?"編輯實務見解":"新增實務見解"} onClose={onClose} onSave={saveFn}>
+            <div className="kb-frow">
+                <div className="kb-field" style={{flex:2}}><div className="kb-fl">見解標題</div><input className="kb-fi" value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} placeholder="例：共有物分割方式之選擇標準…"/></div>
+                <div className="kb-field" style={{flex:1}}><div className="kb-fl">來源（判決字號或文獻）</div><input className="kb-fi" value={f.source} onChange={e=>setF(p=>({...p,source:e.target.value}))} placeholder="最高法院112年台上字第100號"/></div>
+            </div>
+            <div className="kb-field"><div className="kb-fl">標籤（逗號分隔）</div><input className="kb-fi" value={f.tags} onChange={e=>setF(p=>({...p,tags:e.target.value}))} placeholder="例：共有物, 分割方法, 原物分配"/></div>
+            <div className="kb-field"><div className="kb-fl">見解內容</div><textarea className="kb-fta" style={{minHeight:240}} value={f.content} onChange={e=>setF(p=>({...p,content:e.target.value}))} placeholder="記錄法院見解、學說，或你自己的訴訟心得…"/></div>
+        </KbModal>
+    );
+}
+function KbSubCatModal({onClose,onSave}){
+    const [f,setF]=useState({name:"",bigId:"civil"});
+    return(
+        <KbModal title="新增案由小類" onClose={onClose} onSave={()=>onSave(f)} saveLabel="新增">
+            <div className="kb-frow">
+                <div className="kb-field"><div className="kb-fl">大類</div>
+                    <select className="kb-fi" value={f.bigId} onChange={e=>setF(p=>({...p,bigId:e.target.value}))}>
+                        {KB_BIG_CATS.map(b=><option key={b.id} value={b.id}>{b.icon} {b.name}</option>)}
+                    </select>
+                </div>
+                <div className="kb-field" style={{flex:2}}><div className="kb-fl">小類名稱</div><input className="kb-fi" value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))} placeholder="例：分割共有物、本票裁定…"/></div>
+            </div>
+        </KbModal>
+    );
+}
+
+function KnowledgeBase(){
+    const [subcats,setSubcats]=useKbPersist("kb-subcats",KB_DEFAULT_SUBCATS);
+    const [docs,setDocs]=useKbPersist("kb-docs",{});
+    const [judgments,setJudgments]=useKbPersist("kb-judgments",{});
+    const [opinions,setOpinions]=useKbPersist("kb-opinions",{});
+    const [openBigs,setOpenBigs]=useState(["civil"]);
+    const [selSc,setSelSc]=useState(null);
+    const [tab,setTab]=useState("docs");
+    const [sbSearch,setSbSearch]=useState("");
+    const [itemSearch,setItemSearch]=useState("");
+    const [modal,setModal]=useState(null);
+    const [kbToastMsg,setKbToastMsg]=useState(null);
+
+    const showKbToast=msg=>{ setKbToastMsg(msg); setTimeout(()=>setKbToastMsg(null),2200); };
+    const selScObj=subcats.find(s=>s.id===selSc);
+    const selBig=selScObj?KB_BIG_CATS.find(b=>b.id===selScObj.bigId):null;
+    const filtSc=subcats.filter(s=>s.name.includes(sbSearch));
+    const curDocs=(docs[selSc]||[]).filter(d=>!itemSearch||(d.title+d.content).includes(itemSearch));
+    const curJud=(judgments[selSc]||[]).filter(j=>!itemSearch||(j.title+j.caseNo).includes(itemSearch));
+    const curOp=(opinions[selSc]||[]).filter(o=>!itemSearch||(o.title+o.content).includes(itemSearch));
+    const scCount=id=>({ d:(docs[id]||[]).length, j:(judgments[id]||[]).length, o:(opinions[id]||[]).length });
+    const tabCount=t=>t==="docs"?(docs[selSc]||[]).length:t==="jud"?(judgments[selSc]||[]).length:(opinions[selSc]||[]).length;
+    const bigTotal=bId=>{ const ss=subcats.filter(s=>s.bigId===bId); return ss.reduce((a,s)=>a+(docs[s.id]||[]).length+(judgments[s.id]||[]).length+(opinions[s.id]||[]).length,0); };
+    const toggleBig=id=>setOpenBigs(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+    const selScFn=id=>{ setSelSc(id); setItemSearch(""); setTab("docs"); };
+    const saveDoc=f=>{ if(!f.title||!f.content)return; setDocs(p=>{ const l=p[selSc]||[]; return {...p,[selSc]:modal.editing?l.map(d=>d.id===modal.editing.id?{...d,...f}:d):[...l,{id:kbUid(),...f}]}; }); setModal(null); showKbToast("✅ 書狀已儲存"); };
+    const delDoc=id=>{ setDocs(p=>({...p,[selSc]:(p[selSc]||[]).filter(d=>d.id!==id)})); showKbToast("🗑 已刪除"); };
+    const saveJud=f=>{ if(!f.title)return; setJudgments(p=>{ const l=p[selSc]||[]; return {...p,[selSc]:modal.editing?l.map(j=>j.id===modal.editing.id?{...j,...f}:j):[...l,{id:kbUid(),...f}]}; }); setModal(null); showKbToast("✅ 判決已儲存"); };
+    const delJud=id=>{ setJudgments(p=>({...p,[selSc]:(p[selSc]||[]).filter(j=>j.id!==id)})); showKbToast("🗑 已刪除"); };
+    const saveOp=f=>{ if(!f.title)return; setOpinions(p=>{ const l=p[selSc]||[]; return {...p,[selSc]:modal.editing?l.map(o=>o.id===modal.editing.id?{...o,...f}:o):[...l,{id:kbUid(),...f}]}; }); setModal(null); showKbToast("✅ 見解已儲存"); };
+    const delOp=id=>{ setOpinions(p=>({...p,[selSc]:(p[selSc]||[]).filter(o=>o.id!==id)})); showKbToast("🗑 已刪除"); };
+    const addSc=f=>{ if(!f.name||!f.bigId)return; const n={id:kbUid(),...f}; setSubcats(p=>[...p,n]); selScFn(n.id); setModal(null); setOpenBigs(p=>p.includes(f.bigId)?p:[...p,f.bigId]); showKbToast("✅ 小類已新增"); };
+    const delSc=id=>{ if(!window.confirm("確定刪除此案由及所有資料？"))return; setSubcats(p=>p.filter(s=>s.id!==id)); if(selSc===id)setSelSc(null); setDocs(p=>{const n={...p};delete n[id];return n;}); setJudgments(p=>{const n={...p};delete n[id];return n;}); setOpinions(p=>{const n={...p};delete n[id];return n;}); showKbToast("🗑 案由已刪除"); };
+    const copyText=t=>{ navigator.clipboard.writeText(t).then(()=>showKbToast("📋 已複製至剪貼簿")); };
+
+    return(
+        <div className="kb-app">
+            <div className="kb-sb">
+                <div className="kb-sb-logo"><div className="kb-sb-title">法律知識庫</div><div className="kb-sb-sub">Legal Knowledge Base</div></div>
+                <div className="kb-sb-search"><input placeholder="搜尋案由…" value={sbSearch} onChange={e=>setSbSearch(e.target.value)}/></div>
+                <div className="kb-tree">
+                    {KB_BIG_CATS.map(bc=>{
+                        const scs=filtSc.filter(s=>s.bigId===bc.id);
+                        if(sbSearch&&scs.length===0)return null;
+                        const isOpen=openBigs.includes(bc.id);
+                        return(
+                            <div key={bc.id}>
+                                <div className="kb-bc-row" onClick={()=>toggleBig(bc.id)}>
+                                    <div className="kb-bc-left">
+                                        <div className="kb-bc-dot" style={{background:bc.color}}/>
+                                        <span className="kb-bc-name" style={{color:bc.color}}>{bc.name}</span>
+                                        <span className="kb-bc-count">{scs.length}</span>
+                                    </div>
+                                    <span className={"kb-bc-arrow"+(isOpen?" open":"")}>▶</span>
+                                </div>
+                                {isOpen&&scs.map(sc=>{
+                                    const cnt=scCount(sc.id);
+                                    return(
+                                        <div key={sc.id} className={"kb-sc-row"+(selSc===sc.id?" active":"")} onClick={()=>selScFn(sc.id)}>
+                                            <span className="kb-sc-name">{sc.name}</span>
+                                            <div className="kb-sc-nums">
+                                                {cnt.d>0&&<span className="kb-sc-num">書{cnt.d}</span>}
+                                                {cnt.j>0&&<span className="kb-sc-num">判{cnt.j}</span>}
+                                                {cnt.o>0&&<span className="kb-sc-num">見{cnt.o}</span>}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {isOpen&&scs.length===0&&!sbSearch&&<div style={{padding:"5px 12px 5px 28px",fontSize:10,color:"var(--text4)"}}>尚無案由</div>}
+                            </div>
+                        );
+                    })}
+                </div>
+                <div className="kb-sb-foot"><button className="kb-btn-new" onClick={()=>setModal({type:"subcat"})}>＋ 新增案由小類</button></div>
+            </div>
+            <div className="kb-main">
+                {!selSc?(
+                    <div className="kb-home">
+                        <div className="kb-home-title">法律知識庫</div>
+                        <div className="kb-home-sub">選擇左側案由，開始管理書狀、判決與實務見解</div>
+                        <div className="kb-bc-grid">
+                            {KB_BIG_CATS.map(bc=>{
+                                const scs=subcats.filter(s=>s.bigId===bc.id);
+                                return(
+                                    <div key={bc.id} className="kb-bc-card" style={{borderTopColor:bc.color}} onClick={()=>{setOpenBigs(p=>p.includes(bc.id)?p:[...p,bc.id]);if(scs[0])selScFn(scs[0].id);}}>
+                                        <div className="kb-bc-card-icon">{bc.icon}</div>
+                                        <div className="kb-bc-card-name" style={{color:bc.color}}>{bc.name}</div>
+                                        <div className="kb-bc-card-stats"><span>{scs.length} 案由</span><span>{bigTotal(bc.id)} 筆</span></div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="card" style={{maxWidth:540}}>
+                            <div className="card-title">📖 使用說明</div>
+                            <div style={{fontSize:12,color:"var(--text2)",lineHeight:2}}>
+                                1. 從左側選擇案由，或點「新增案由小類」建立分類<br/>
+                                2. 每個案由下可分別管理：<br/>
+                                &nbsp;&nbsp;• <span style={{color:"var(--gold)"}}>書狀庫</span>——上傳過去辦案書狀<br/>
+                                &nbsp;&nbsp;• <span style={{color:"var(--gold)"}}>判決庫</span>——存放相關裁判<br/>
+                                &nbsp;&nbsp;• <span style={{color:"var(--gold)"}}>實務見解</span>——歸納心得與法院見解<br/>
+                                3. 所有資料儲存於本機（localStorage），跨 session 保留
+                            </div>
+                        </div>
+                    </div>
+                ):(
+                    <>
+                        <div className="kb-topbar">
+                            <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                <span className="kb-bc-badge" style={{background:selBig&&selBig.light,color:selBig&&selBig.color}}>{selBig&&selBig.icon} {selBig&&selBig.name}</span>
+                                <span className="kb-page-title">{selScObj&&selScObj.name}</span>
+                            </div>
+                            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                                <button className="btn btn-outline btn-sm" style={{fontSize:11}} onClick={()=>delSc(selSc)}>🗑 刪除案由</button>
+                                {tab==="docs"&&<button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"doc"})}>＋ 新增書狀</button>}
+                                {tab==="jud"&&<button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"jud"})}>＋ 新增判決</button>}
+                                {tab==="opinion"&&<button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"opinion"})}>＋ 新增見解</button>}
+                            </div>
+                        </div>
+                        <div className="kb-tabs">
+                            {[["docs","📝 書狀庫"],["jud","⚖️ 判決庫"],["opinion","💡 實務見解"]].map(([id,label])=>(
+                                <div key={id} className={"kb-tab"+(tab===id?" active":"")} onClick={()=>{setTab(id);setItemSearch("");}}>
+                                    {label}<span className="kb-tab-count">{tabCount(id)}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="kb-content">
+                            <div className="kb-items-hdr">
+                                <div className="kb-isearch"><input placeholder="搜尋…" value={itemSearch} onChange={e=>setItemSearch(e.target.value)}/></div>
+                            </div>
+                            {tab==="docs"&&(curDocs.length===0
+                                ?<div className="kb-empty"><div className="kb-empty-icon">📝</div><div className="kb-empty-title">尚無書狀</div><div className="kb-empty-sub">點右上角「新增書狀」上傳書狀全文</div></div>
+                                :curDocs.map(d=><KbItemCard key={d.id} icon="📄" title={d.title} meta={<><span>{"📅 "+d.date}</span><span>{"🏷 "+d.type}</span></>} content={d.content} accentColor={selBig&&selBig.color} actions={<><button className="btn btn-outline btn-sm" style={{fontSize:10}} onClick={()=>copyText(d.content)}>複製</button><button className="btn btn-outline btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"doc",editing:d})}>編輯</button><button className="btn btn-danger btn-sm" style={{fontSize:10}} onClick={()=>delDoc(d.id)}>刪除</button></>}/>)
+                            )}
+                            {tab==="jud"&&(curJud.length===0
+                                ?<div className="kb-empty"><div className="kb-empty-icon">⚖️</div><div className="kb-empty-title">尚無判決</div><div className="kb-empty-sub">點右上角「新增判決」建立判決資料</div></div>
+                                :curJud.map(j=><KbItemCard key={j.id} icon="📜" title={j.title} meta={<><span>{"📋 "+j.caseNo}</span><span>{"🏛 "+j.court}</span><span>{"📅 "+j.date}</span><span><KbResultBadge result={j.result}/></span></>} content={j.content} accentColor={selBig&&selBig.color} actions={<><button className="btn btn-outline btn-sm" style={{fontSize:10}} onClick={()=>copyText(j.content)}>複製</button><button className="btn btn-outline btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"jud",editing:j})}>編輯</button><button className="btn btn-danger btn-sm" style={{fontSize:10}} onClick={()=>delJud(j.id)}>刪除</button></>}/>)
+                            )}
+                            {tab==="opinion"&&(curOp.length===0
+                                ?<div className="kb-empty"><div className="kb-empty-icon">💡</div><div className="kb-empty-title">尚無實務見解</div><div className="kb-empty-sub">點右上角「新增見解」記錄實務心得</div></div>
+                                :curOp.map(o=><KbItemCard key={o.id} icon="💡" title={o.title} meta={o.source?<><span>{"📚 "+o.source}</span></>:null} content={o.content} tags={o.tags} accentColor="var(--gold)" actions={<><button className="btn btn-outline btn-sm" style={{fontSize:10}} onClick={()=>copyText(o.content)}>複製</button><button className="btn btn-outline btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"opinion",editing:o})}>編輯</button><button className="btn btn-danger btn-sm" style={{fontSize:10}} onClick={()=>delOp(o.id)}>刪除</button></>}/>)
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
+            {modal&&modal.type==="doc"&&<KbDocModal initial={modal.editing} onClose={()=>setModal(null)} onSave={saveDoc}/>}
+            {modal&&modal.type==="jud"&&<KbJudgmentModal initial={modal.editing} onClose={()=>setModal(null)} onSave={saveJud}/>}
+            {modal&&modal.type==="opinion"&&<KbOpinionModal initial={modal.editing} onClose={()=>setModal(null)} onSave={saveOp}/>}
+            {modal&&modal.type==="subcat"&&<KbSubCatModal onClose={()=>setModal(null)} onSave={addSc}/>}
+            {kbToastMsg&&<div id="toast" className="show" style={{bottom:20}}>{kbToastMsg}</div>}
+        </div>
+    );
+}
 
 // ── Constants ──
 const CASE_TYPES = ["刑事","民事","行政","家事","勞動","智財","非訟"];
@@ -302,6 +730,40 @@ function App(){
     const openAdd=()=>{ setFormData({...emptyCase,id:""}); setEditId(null); setView("form"); };
     const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
 
+    // ── Google Calendar ──
+    const openGoogleCalendar=(h, c)=>{
+        // 日期格式轉換：2025-04-22 → 20250422
+        const dateStr = (h.date||"").replace(/-/g,"");
+        // 時間格式：09:30 → 093000，無時間則用全天
+        const hasTime = !!(h.time);
+        let start, end;
+        if(hasTime){
+            const timeStr = (h.time||"0900").replace(":","")+"00";
+            start = `${dateStr}T${timeStr}`;
+            // 預設結束時間 = 開始 + 1小時
+            const [hh, mm] = (h.time||"09:00").split(":").map(Number);
+            const endHH = String(hh+1).padStart(2,"0");
+            end = `${dateStr}T${endHH}${String(mm).padStart(2,"0")}00`;
+        } else {
+            // 全天事件
+            const nextDay = new Date(h.date);
+            nextDay.setDate(nextDay.getDate()+1);
+            start = dateStr;
+            end = nextDay.toISOString().split("T")[0].replace(/-/g,"");
+        }
+        const title = encodeURIComponent(`【開庭】${c.clientName} ${h.note||""}`);
+        const location = encodeURIComponent(`${h.agency||""} ${h.courtroom||""}`.trim());
+        const detail = encodeURIComponent([
+            `案件編號：${c.firmCaseNo||""}`,
+            `案號：${(c.courtCaseNos||[]).filter(Boolean).join("、")}`,
+            `對造：${c.opposingParty||""}`,
+            `股別：${c.division||""}`,
+            h.note ? `庭期性質：${h.note}` : "",
+        ].filter(Boolean).join("\n"));
+        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&location=${location}&details=${detail}`;
+        window.open(url,"_blank");
+    };
+
     // ── LOADING ──
     if(loading) return(
         <div className="loading">
@@ -310,12 +772,16 @@ function App(){
         </div>
     );
 
+    // ══ KB VIEW ══
+    if(view==="kb") return <KnowledgeBase/>;
+
     // ══ LIST VIEW ══
     if(view==="list") return(
         <div className="app">
             <div className="header">
                 <div className="header-title">⚖ 案件管理系統</div>
                 <div style={{display:"flex",gap:8}}>
+                    <button className="btn btn-outline btn-sm" onClick={()=>setView("kb")}>📚 知識庫</button>
                     <button className="btn btn-outline btn-sm" onClick={()=>setView("stats")}>📊 統計</button>
                     <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
                 </div>
@@ -445,11 +911,8 @@ function App(){
                 <button className="bnav-btn active"><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
-            </div>
-        </div>
-    );
-
-    // ══ DETAIL VIEW ══
+                <button className="bnav-btn" onClick={()=>setView("kb")}><span className="bnav-icon">📚</span>知識庫</button>
+            </div>    // ══ DETAIL VIEW ══
     if(view==="detail"&&selected) return(
         <div className="app">
             <div className="header">
@@ -548,11 +1011,48 @@ function App(){
                         {(selected.hearings||[]).length===0 && <div style={{color:"var(--text3)",padding:"12px 0"}}>尚無開庭記錄</div>}
                         {(selected.hearings||[]).sort((a,b)=>a.date.localeCompare(b.date)).map((h,i)=>{
                             const d=daysUntil(h.date);
+                            const isPast = d < 0;
                             return(
-                                <div key={i} className="hearing-item" style={{borderLeftColor:d>=0&&d<=7?"var(--yellow)":d<0?"var(--border)":"var(--border)"}}>
-                                    <div style={{color:"var(--gold)",fontWeight:700}}>{h.date} {h.time&&`${h.time}`}</div>
-                                    <div style={{color:"var(--text)",fontSize:13}}>{h.agency} {h.note&&`· ${h.note}`}</div>
-                                    <div style={{color:"var(--text3)",fontSize:11}}>{h.courtroom} {d>=0?`（${d===0?"今天":d===1?"明天":d+"天後"}）`:"（已過）"}</div>
+                                <div key={i} className="hearing-item" style={{borderLeftColor:d>=0&&d<=3?"var(--red)":d>=0&&d<=7?"var(--yellow)":"var(--border)",marginBottom:14}}>
+                                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                                        <div style={{flex:1}}>
+                                            <div style={{color:"var(--gold)",fontWeight:700}}>{h.date} {h.time&&h.time}</div>
+                                            <div style={{color:"var(--text)",fontSize:13,marginTop:2}}>{h.agency} {h.note&&`· ${h.note}`}</div>
+                                            <div style={{color:"var(--text3)",fontSize:11,marginTop:2}}>
+                                                {h.courtroom}
+                                                {" "}
+                                                {isPast
+                                                    ? <span style={{color:"var(--text4)"}}>（已過）</span>
+                                                    : <span style={{color:d<=3?"var(--red)":d<=7?"var(--yellow)":"var(--text3)"}}>
+                                                        （{d===0?"今天！":d===1?"明天":`${d}天後`}）
+                                                      </span>
+                                                }
+                                            </div>
+                                        </div>
+                                        {!isPast && (
+                                            <button
+                                                onClick={()=>openGoogleCalendar(h, selected)}
+                                                title="加入 Google 日曆"
+                                                style={{
+                                                    background:"rgba(66,133,244,.15)",
+                                                    border:"1px solid rgba(66,133,244,.4)",
+                                                    borderRadius:8,
+                                                    color:"#4285f4",
+                                                    padding:"6px 10px",
+                                                    fontSize:11,
+                                                    fontWeight:700,
+                                                    cursor:"pointer",
+                                                    display:"flex",
+                                                    alignItems:"center",
+                                                    gap:4,
+                                                    whiteSpace:"nowrap",
+                                                    flexShrink:0,
+                                                    fontFamily:"inherit",
+                                                }}>
+                                                📅 加入日曆
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}
@@ -581,6 +1081,7 @@ function App(){
                 <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
+                <button className="bnav-btn" onClick={()=>setView("kb")}><span className="bnav-icon">📚</span>知識庫</button>
             </div>
         </div>
     );
@@ -667,6 +1168,7 @@ function App(){
                     <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                     <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
                     <button className="bnav-btn active"><span className="bnav-icon">📊</span>統計</button>
+                    <button className="bnav-btn" onClick={()=>setView("kb")}><span className="bnav-icon">📚</span>知識庫</button>
                 </div>
             </div>
         );
@@ -792,6 +1294,7 @@ function App(){
                 <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn active"><span className="bnav-icon">➕</span>新增</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
+                <button className="bnav-btn" onClick={()=>setView("kb")}><span className="bnav-icon">📚</span>知識庫</button>
             </div>
         </div>
     );

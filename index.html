@@ -131,6 +131,15 @@ textarea.fi{resize:vertical;min-height:80px;}
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--gold);color:var(--gold);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 #toast.show{opacity:1;}
 
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px #000a;}
+.login-logo{font-size:52px;text-align:center;margin-bottom:8px;filter:drop-shadow(0 0 20px #c8a96e66);}
+.login-title{font-family:'Noto Serif TC',serif;font-size:1.3rem;color:var(--gold);text-align:center;margin-bottom:4px;}
+.login-sub{font-size:12px;color:var(--text4);text-align:center;letter-spacing:.06em;margin-bottom:32px;}
+.login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;text-align:center;}
+
 /* ── MISC ── */
 .divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
 .empty{text-align:center;padding:50px 20px;color:var(--text3);}
@@ -150,6 +159,7 @@ a{color:var(--blue);}
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     const firebaseConfig = {
         apiKey: "AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",
         authDomain: "legalcasemanageer.firebaseapp.com",
@@ -160,8 +170,11 @@ a{color:var(--blue);}
     };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
     window.db = db;
+    window.auth = auth;
     window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc };
+    window.fbAuth = { signInWithEmailAndPassword, signOut, onAuthStateChanged };
     window.firebaseReady = true;
 </script>
 
@@ -203,9 +216,106 @@ function Badge({label,color}){
 }
 
 // ══════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════
+function Login({onLogin}){
+    const [email, setEmail] = React.useState("");
+    const [password, setPassword] = React.useState("");
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState("");
+    const [showPw, setShowPw] = React.useState(false);
+
+    const handleLogin = async(e)=>{
+        e && e.preventDefault();
+        if(!email.trim()||!password){ setError("請輸入帳號和密碼"); return; }
+        setLoading(true); setError("");
+        try{
+            await window.fbAuth.signInWithEmailAndPassword(window.auth, email.trim(), password);
+            // onAuthStateChanged 會自動觸發 onLogin
+        }catch(err){
+            console.error(err);
+            const msg = {
+                "auth/invalid-email":"Email 格式錯誤",
+                "auth/user-not-found":"帳號不存在",
+                "auth/wrong-password":"密碼錯誤，請重新輸入",
+                "auth/invalid-credential":"帳號或密碼錯誤，請重新輸入",
+                "auth/too-many-requests":"嘗試次數過多，請稍後再試",
+            }[err.code] || ("登入失敗："+err.message);
+            setError(msg);
+            setLoading(false);
+        }
+    };
+
+    return(
+        <div className="login-wrap">
+            <div className="login-box">
+                <div className="login-logo">⚖</div>
+                <div className="login-title">律師案件管理系統</div>
+                <div className="login-sub">LEGAL CASE MANAGER</div>
+                {error && <div className="login-err">⚠️ {error}</div>}
+                <div className="fg" style={{marginBottom:14}}>
+                    <label className="fl">帳號（Email）</label>
+                    <input className="fi" type="email" autoComplete="username"
+                        placeholder="office@yourfirm.com"
+                        value={email} onChange={e=>setEmail(e.target.value)}
+                        onKeyDown={e=>e.key==="Enter"&&handleLogin()}
+                        disabled={loading}/>
+                </div>
+                <div className="fg" style={{marginBottom:24}}>
+                    <label className="fl">密碼</label>
+                    <div style={{position:"relative"}}>
+                        <input className="fi" type={showPw?"text":"password"} autoComplete="current-password"
+                            placeholder="••••••••"
+                            value={password} onChange={e=>setPassword(e.target.value)}
+                            onKeyDown={e=>e.key==="Enter"&&handleLogin()}
+                            disabled={loading}
+                            style={{paddingRight:44}}/>
+                        <button onClick={()=>setShowPw(s=>!s)}
+                            style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"var(--text3)",cursor:"pointer",fontSize:16,padding:4}}>
+                            {showPw?"🙈":"👁"}
+                        </button>
+                    </div>
+                </div>
+                <button className="btn btn-gold" onClick={handleLogin} disabled={loading}
+                    style={{width:"100%",justifyContent:"center",fontSize:15,padding:"12px"}}>
+                    {loading ? "登入中…" : "🔐 登入"}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ══════════════════════════════════════════
+//  ROOT (auth gate)
+// ══════════════════════════════════════════
+function Root(){
+    const [user, setUser] = React.useState(undefined); // undefined=checking, null=no user
+
+    React.useEffect(()=>{
+        const wait = setInterval(()=>{
+            if(!window.auth) return;
+            clearInterval(wait);
+            window.fbAuth.onAuthStateChanged(window.auth, u=>setUser(u||null));
+        },100);
+        return ()=>clearInterval(wait);
+    },[]);
+
+    if(user===undefined) return(
+        <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg)"}}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,color:"var(--text3)"}}>
+                <div className="spinner"/>
+                <div>載入中…</div>
+            </div>
+        </div>
+    );
+    if(!user) return <Login/>;
+    return <App user={user}/>;
+}
+
+// ══════════════════════════════════════════
 //  APP
 // ══════════════════════════════════════════
-function App(){
+function App({user}){
     const [cases, setCases] = useState([]);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState("list"); // list | detail | form | stats
@@ -384,6 +494,10 @@ function App(){
                 <div style={{display:"flex",gap:8}}>
                     <button className="btn btn-outline btn-sm" onClick={()=>setView("stats")}>📊 統計</button>
                     <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
+                    <button className="btn btn-outline btn-sm" title="登出"
+                        onClick={()=>{ if(confirm("確認登出？")) window.fbAuth.signOut(window.auth); }}>
+                        🚪
+                    </button>
                 </div>
             </div>
 
@@ -901,7 +1015,7 @@ function App(){
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App/>);
+root.render(<Root/>);
 </script>
 </body>
 </html>

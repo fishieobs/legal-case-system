@@ -173,8 +173,8 @@ textarea.fi{resize:vertical;min-height:80px;}
 .tool-emoji{font-size:36px;line-height:1;}
 .tool-name{font-weight:700;font-size:13px;color:var(--text);text-align:center;word-break:break-all;}
 .tool-desc{font-size:11px;color:var(--text3);text-align:center;line-height:1.4;}
-.tool-del{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text4);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;opacity:0;transition:opacity .2s;}
-.tool-card:hover .tool-del{opacity:1;}
+.tool-del{position:absolute;top:7px;right:7px;background:var(--bg4);border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:6px;font-family:inherit;transition:background .15s;}
+.tool-del:hover{background:var(--gold);color:#000;}
 .tool-add-card{background:transparent;border:2px dashed var(--border);border-radius:14px;padding:18px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .2s;color:var(--text4);}
 .tool-add-card:hover{border-color:var(--gold);color:var(--gold);}
 .tool-modal-overlay{position:fixed;inset:0;background:#00000099;display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
@@ -1227,12 +1227,12 @@ function App({user}){
                     {tools.map(t=>(
                         <div key={t.id} style={{position:"relative"}}>
                             <a className="tool-card" href={t.url} target="_blank" rel="noreferrer"
-                                style={{borderTop:`3px solid ${t.color||"var(--gold)"}`}}>
+                                style={{borderTop:`3px solid ${t.color||"var(--gold)"}`,paddingTop:28}}>
                                 <div className="tool-emoji">{t.emoji||"🔗"}</div>
                                 <div className="tool-name">{t.name}</div>
                                 {t.desc && <div className="tool-desc">{t.desc}</div>}
                             </a>
-                            <button className="tool-del" onClick={e=>{e.preventDefault();openEditTool(t);}}>✏️</button>
+                            <button className="tool-del" onClick={e=>{e.preventDefault();e.stopPropagation();openEditTool(t);}}>✏️ 編輯</button>
                         </div>
                     ))}
                     <div className="tool-add-card" onClick={openAddTool}>

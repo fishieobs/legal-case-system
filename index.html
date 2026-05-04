@@ -222,17 +222,41 @@ function App(){
 
     // ── Firebase listener ──
     useEffect(()=>{
+        // 先從 localStorage 快取立即顯示，避免白畫面
+        try{
+            const cached = localStorage.getItem("cases_cache");
+            if(cached){ setCases(JSON.parse(cached)); setLoading(false); }
+        }catch(e){}
+
         const wait = setInterval(()=>{
             if(!window.db) return;
             clearInterval(wait);
             const {collection,onSnapshot} = window.fbMethods;
-            const unsub = onSnapshot(collection(window.db,"cases"), snap=>{
-                setCases(snap.docs.map(d=>({...d.data(),id:d.id})));
-                setLoading(false);
-            }, err=>{ console.error(err); setLoading(false); });
-            return ()=>unsub();
+            onSnapshot(
+                collection(window.db,"cases"),
+                snap=>{
+                    const data = snap.docs.map(d=>({...d.data(),id:d.id}));
+                    setCases(data);
+                    setLoading(false);
+                    try{ localStorage.setItem("cases_cache", JSON.stringify(data)); }catch(e){}
+                },
+                err=>{
+                    console.error("Firestore 錯誤：", err.code, err.message);
+                    setLoading(false);
+                    if(err.code==="permission-denied"){
+                        toast("❌ 權限不足：請至 Firebase Console 修改 Firestore 安全規則");
+                    } else {
+                        toast("⚠️ 雲端連線失敗，顯示本機快取");
+                    }
+                }
+            );
         },200);
-        return ()=>clearInterval(wait);
+
+        const timeout = setTimeout(()=>{
+            setLoading(f=>{ if(f) toast("⚠️ 連線逾時，請確認 Firestore 規則"); return false; });
+        },6000);
+
+        return ()=>{ clearInterval(wait); clearTimeout(timeout); };
     },[]);
 
     const selected = cases.find(c=>c.id===selectedId);
@@ -261,11 +285,19 @@ function App(){
         try{
             const id = editId || uid();
             const data = {...formData, id};
+            toast("⏳ 儲存中…");
             await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"cases",id), data);
-            toast("✅ 案件已儲存至雲端");
+            toast("✅ 已儲存至雲端");
             setSelectedId(id);
             setView(editId?"detail":"list");
-        }catch(e){ toast("❌ 儲存失敗："+e.message); }
+        }catch(e){
+            console.error("儲存失敗：", e.code, e.message);
+            if(e.code==="permission-denied"){
+                toast("❌ 儲存失敗：請至 Firebase 修改 Firestore 安全規則為允許讀寫");
+            } else {
+                toast("❌ 儲存失敗："+e.message);
+            }
+        }
     };
 
     const deleteCase = async()=>{

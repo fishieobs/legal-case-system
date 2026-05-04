@@ -338,6 +338,7 @@ function App({user}){
     // inline add forms
     const [newH, setNewH] = useState({date:"",time:"",agency:"",courtroom:"",note:""});
     const [newT, setNewT] = useState({text:"",due:""});
+    const [newDoc, setNewDoc] = useState({label:"",url:"",type:"筆錄"});
 
     // ── Firebase listener ──
     useEffect(()=>{

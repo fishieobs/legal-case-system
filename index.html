@@ -164,6 +164,24 @@ textarea.fi{resize:vertical;min-height:80px;}
 .tl-body.past{opacity:.7;}
 .tl-tag{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;}
 
+
+/* ── TOOLS ── */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+.tool-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:18px 14px;cursor:pointer;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .2s;box-shadow:var(--shadow);position:relative;}
+.tool-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.2);border-color:var(--gold)44;}
+.tool-card:active{transform:translateY(0);}
+.tool-emoji{font-size:36px;line-height:1;}
+.tool-name{font-weight:700;font-size:13px;color:var(--text);text-align:center;word-break:break-all;}
+.tool-desc{font-size:11px;color:var(--text3);text-align:center;line-height:1.4;}
+.tool-del{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text4);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;opacity:0;transition:opacity .2s;}
+.tool-card:hover .tool-del{opacity:1;}
+.tool-add-card{background:transparent;border:2px dashed var(--border);border-radius:14px;padding:18px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .2s;color:var(--text4);}
+.tool-add-card:hover{border-color:var(--gold);color:var(--gold);}
+.tool-modal-overlay{position:fixed;inset:0;background:#00000099;display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.tool-modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:420px;}
+.color-dot{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s;flex-shrink:0;}
+.color-dot.selected{border-color:var(--text);transform:scale(1.2);}
+
 /* ── CONTACTS ── */
 .contact-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow);}
 .contact-name{font-size:17px;font-weight:700;color:var(--text);}
@@ -429,6 +447,12 @@ function App({user}){
     const [newH, setNewH] = useState({date:"",time:"",agency:"",courtroom:"",note:""});
     const [newT, setNewT] = useState({text:"",due:""});
     const [newDoc, setNewDoc] = useState({label:"",url:"",type:"筆錄"});
+    const [tools, setTools] = useState(()=>{
+        try{ return JSON.parse(localStorage.getItem("quickTools")||"[]"); }catch(e){ return []; }
+    });
+    const [toolModal, setToolModal] = useState(false);
+    const [toolForm, setToolForm] = useState({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"});
+    const [editingToolId, setEditingToolId] = useState(null);
     const { mode, effective, cycleMode } = useTheme();
 
     // ── Firebase listener ──
@@ -552,6 +576,30 @@ function App({user}){
     const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
     const openDetail=(id)=>{ setSelectedId(id); setDetailTab("info"); setView("detail"); };
 
+    // ── Tools helpers ──
+    const saveTool=()=>{
+        if(!toolForm.name.trim()){ toast("請填工具名稱"); return; }
+        if(!toolForm.url.trim()){ toast("請填連結網址"); return; }
+        let url = toolForm.url.trim();
+        if(!/^https?:\/\//.test(url)) url = "https://"+url;
+        const updated = editingToolId
+            ? tools.map(t=>t.id===editingToolId?{...toolForm,url,id:editingToolId}:t)
+            : [...tools, {...toolForm,url,id:uid()}];
+        setTools(updated);
+        localStorage.setItem("quickTools", JSON.stringify(updated));
+        setToolModal(false); setEditingToolId(null);
+        setToolForm({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"});
+        toast("✅ 工具已儲存");
+    };
+    const deleteTool=(id)=>{
+        const updated = tools.filter(t=>t.id!==id);
+        setTools(updated);
+        localStorage.setItem("quickTools", JSON.stringify(updated));
+        toast("🗑 已移除");
+    };
+    const openAddTool=()=>{ setToolForm({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"}); setEditingToolId(null); setToolModal(true); };
+    const openEditTool=(t)=>{ setToolForm({emoji:t.emoji,name:t.name,url:t.url,desc:t.desc||"",color:t.color||"#c8a96e"}); setEditingToolId(t.id); setToolModal(true); };
+
     // ── Google Calendar ──
     const openGoogleCalendar=(h, c)=>{
         // 日期格式轉換：2025-04-22 → 20250422
@@ -603,6 +651,7 @@ function App({user}){
                     <button className="theme-btn" onClick={cycleMode} title="切換主題">
                         {mode==="auto" ? "🕐 自動" : mode==="light" ? "☀️ 白天" : "🌙 夜間"}
                     </button>
+                    <button className="btn btn-outline btn-sm" onClick={()=>setView("tools")}>🔧 工具箱</button>
                     <button className="btn btn-outline btn-sm" onClick={()=>setView("stats")}>📊 統計</button>
                     <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
                     <button className="btn btn-outline btn-sm" title="登出"
@@ -735,6 +784,7 @@ function App({user}){
             <div className="bnav">
                 <button className="bnav-btn active"><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("tools")}><span className="bnav-icon">🔧</span>工具</button>
                 <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
             </div>
@@ -998,6 +1048,7 @@ function App({user}){
             <div className="bnav">
                 <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("tools")}><span className="bnav-icon">🔧</span>工具</button>
                 <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
             </div>
@@ -1085,12 +1136,150 @@ function App({user}){
                 <div className="bnav">
                     <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                     <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                    <button className="bnav-btn" onClick={()=>setView("tools")}><span className="bnav-icon">🔧</span>工具</button>
                     <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                     <button className="bnav-btn active"><span className="bnav-icon">📊</span>統計</button>
                 </div>
             </div>
         );
     }
+
+    // ══ TOOLS VIEW ══
+    if(view==="tools") return(
+        <div className="app">
+            <div className="header">
+                <div className="header-title">🔧 常用工具</div>
+                <button className="btn btn-gold" onClick={openAddTool}>＋ 新增工具</button>
+            </div>
+
+            {/* Tool add/edit modal */}
+            {toolModal && (
+                <div className="tool-modal-overlay" onClick={e=>e.target===e.currentTarget&&setToolModal(false)}>
+                    <div className="tool-modal">
+                        <div style={{fontWeight:700,fontSize:16,color:"var(--text)",marginBottom:18}}>
+                            {editingToolId?"✏️ 編輯工具":"➕ 新增工具"}
+                        </div>
+
+                        {/* Emoji picker */}
+                        <div className="fg" style={{marginBottom:14}}>
+                            <label className="fl">圖示（Emoji）</label>
+                            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                                <span style={{fontSize:36}}>{toolForm.emoji}</span>
+                                <input className="fi" style={{flex:1}} value={toolForm.emoji}
+                                    onChange={e=>setToolForm(f=>({...f,emoji:e.target.value}))}
+                                    placeholder="輸入任何 emoji，例如 🤖 ⚖ 📋"/>
+                            </div>
+                        </div>
+
+                        {/* Name */}
+                        <div className="fg" style={{marginBottom:14}}>
+                            <label className="fl">工具名稱</label>
+                            <input className="fi" value={toolForm.name}
+                                onChange={e=>setToolForm(f=>({...f,name:e.target.value}))}
+                                placeholder="例如：ChatGPT、司法院查詢、我的試算表"/>
+                        </div>
+
+                        {/* URL */}
+                        <div className="fg" style={{marginBottom:14}}>
+                            <label className="fl">網址連結</label>
+                            <input className="fi" type="url" value={toolForm.url}
+                                onChange={e=>setToolForm(f=>({...f,url:e.target.value}))}
+                                placeholder="https://..."/>
+                        </div>
+
+                        {/* Desc */}
+                        <div className="fg" style={{marginBottom:14}}>
+                            <label className="fl">說明（選填）</label>
+                            <input className="fi" value={toolForm.desc}
+                                onChange={e=>setToolForm(f=>({...f,desc:e.target.value}))}
+                                placeholder="簡短描述用途"/>
+                        </div>
+
+                        {/* Color */}
+                        <div className="fg" style={{marginBottom:22}}>
+                            <label className="fl">主題色</label>
+                            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:4}}>
+                                {['#c8a96e', '#3b82f6', '#22c55e', '#ef4444', '#8b5cf6', '#f97316', '#14b8a6', '#ec4899', '#64748b', '#f59e0b'].map(c=>(
+                                    <div key={c} className={"color-dot"+(toolForm.color===c?" selected":"")}
+                                        style={{background:c}} onClick={()=>setToolForm(f=>({...f,color:c}))}/>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+                            <button className="btn btn-outline btn-sm" onClick={()=>setToolModal(false)}>取消</button>
+                            {editingToolId && <button className="btn btn-danger btn-sm" onClick={()=>{deleteTool(editingToolId);setToolModal(false);}}>刪除</button>}
+                            <button className="btn btn-gold" onClick={saveTool}>💾 儲存</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="content">
+                {tools.length===0 && (
+                    <div className="empty" style={{marginBottom:20}}>
+                        <div className="ico">🔧</div>
+                        <div>尚未新增任何工具</div>
+                        <div style={{fontSize:12,color:"var(--text4)",marginTop:6}}>點右上角「＋ 新增工具」開始建立您的工具箱</div>
+                    </div>
+                )}
+                <div className="tool-grid">
+                    {tools.map(t=>(
+                        <div key={t.id} style={{position:"relative"}}>
+                            <a className="tool-card" href={t.url} target="_blank" rel="noreferrer"
+                                style={{borderTop:`3px solid ${t.color||"var(--gold)"}`}}>
+                                <div className="tool-emoji">{t.emoji||"🔗"}</div>
+                                <div className="tool-name">{t.name}</div>
+                                {t.desc && <div className="tool-desc">{t.desc}</div>}
+                            </a>
+                            <button className="tool-del" onClick={e=>{e.preventDefault();openEditTool(t);}}>✏️</button>
+                        </div>
+                    ))}
+                    <div className="tool-add-card" onClick={openAddTool}>
+                        <div style={{fontSize:32}}>＋</div>
+                        <div style={{fontSize:12,fontWeight:600}}>新增工具</div>
+                    </div>
+                </div>
+
+                {/* Suggested tools */}
+                {tools.length===0 && (
+                    <div>
+                        <div style={{fontSize:11,color:"var(--text3)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:12}}>推薦常用法律工具</div>
+                        <div className="tool-grid">
+                            {[
+                                {emoji:"⚖",name:"司法院裁判書",url:"https://judgment.judicial.gov.tw",desc:"查詢判決書",color:"#c8a96e"},
+                                {emoji:"📋",name:"法院開庭查詢",url:"https://www.judicial.gov.tw/tw/cp-1363-78984-5a3fd-1.html",desc:"查詢開庭進度",color:"#3b82f6"},
+                                {emoji:"🔍",name:"法源法律網",url:"https://www.lawbank.com.tw",desc:"法規與判決查詢",color:"#8b5cf6"},
+                                {emoji:"🤖",name:"Claude AI",url:"https://claude.ai",desc:"AI法律助理",color:"#f97316"},
+                                {emoji:"📊",name:"Google 試算表",url:"https://sheets.google.com",desc:"帳務計算",color:"#22c55e"},
+                                {emoji:"📁",name:"Google Drive",url:"https://drive.google.com",desc:"雲端卷證",color:"#f59e0b"},
+                            ].map((t,i)=>(
+                                <div key={i} style={{position:"relative"}}>
+                                    <a className="tool-card" href={t.url} target="_blank" rel="noreferrer"
+                                        style={{borderTop:`3px solid ${t.color}`,opacity:.7}}>
+                                        <div className="tool-emoji">{t.emoji}</div>
+                                        <div className="tool-name">{t.name}</div>
+                                        <div className="tool-desc">{t.desc}</div>
+                                    </a>
+                                    <button style={{position:"absolute",bottom:8,right:8,background:"var(--bg4)",border:"none",borderRadius:6,padding:"3px 8px",fontSize:10,color:"var(--text3)",cursor:"pointer",fontFamily:"inherit"}}
+                                        onClick={()=>{setToolForm({emoji:t.emoji,name:t.name,url:t.url,desc:t.desc,color:t.color});setEditingToolId(null);setToolModal(true);}}>
+                                        ＋ 加入
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+            <div className="bnav">
+                <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
+                <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn active"><span className="bnav-icon">🔧</span>工具</button>
+                <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
+                <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
+            </div>
+        </div>
+    );
 
     // ══ CONTACTS VIEW ══
     if(view==="contacts") return(
@@ -1164,6 +1353,7 @@ function App({user}){
             <div className="bnav">
                 <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("tools")}><span className="bnav-icon">🔧</span>工具</button>
                 <button className="bnav-btn active"><span className="bnav-icon">👥</span>通訊錄</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
             </div>
@@ -1333,6 +1523,7 @@ function App({user}){
             <div className="bnav">
                 <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn active"><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("tools")}><span className="bnav-icon">🔧</span>工具</button>
                 <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
             </div>

@@ -145,6 +145,34 @@ textarea.fi{resize:vertical;min-height:80px;}
 
 
 
+
+/* ── TIMELINE ── */
+.tl-wrap{position:relative;padding-left:28px;}
+.tl-wrap::before{content:"";position:absolute;left:9px;top:0;bottom:0;width:2px;background:var(--border);}
+.tl-item{position:relative;margin-bottom:20px;}
+.tl-dot{position:absolute;left:-24px;top:3px;width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:var(--bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;}
+.tl-dot.past{background:var(--bg4);border-color:var(--text4);}
+.tl-dot.future{background:var(--gold);border-color:var(--gold);box-shadow:0 0 6px var(--gold)44;}
+.tl-dot.today{background:var(--red);border-color:var(--red);box-shadow:0 0 8px var(--red)66;}
+.tl-dot.todo{background:var(--bg3);border-color:var(--purple);}
+.tl-dot.todo.done{background:var(--green);border-color:var(--green);}
+.tl-dot.milestone{background:var(--bg3);border-color:var(--gold);border-width:2px;}
+.tl-date{font-size:11px;color:var(--text4);margin-bottom:3px;font-family:monospace;}
+.tl-body{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.tl-body.future{border-color:var(--gold)33;}
+.tl-body.today{border-color:var(--red)55;background:rgba(239,68,68,.05);}
+.tl-body.past{opacity:.7;}
+.tl-tag{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;}
+
+/* ── CONTACTS ── */
+.contact-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow);}
+.contact-name{font-size:17px;font-weight:700;color:var(--text);}
+.contact-phone{color:var(--blue);font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;margin-top:4px;}
+.contact-phone:hover{text-decoration:underline;}
+.contact-cases{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.contact-case-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;cursor:pointer;border:1px solid var(--border);transition:border-color .2s;}
+.contact-case-row:hover{border-color:var(--gold);}
+
 /* ── THEME TOGGLE ── */
 .theme-btn{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;color:var(--text2);font-family:inherit;transition:all .2s;white-space:nowrap;}
 .theme-btn:hover{border-color:var(--gold);color:var(--gold);}
@@ -396,6 +424,7 @@ function App({user}){
     const [filterStatus, setFilterStatus] = useState("全部");
     const [filterType, setFilterType] = useState("全部");
     const [deleteConfirm, setDeleteConfirm] = useState(false);
+    const [detailTab, setDetailTab] = useState("info"); // info | timeline
     // inline add forms
     const [newH, setNewH] = useState({date:"",time:"",agency:"",courtroom:"",note:""});
     const [newT, setNewT] = useState({text:"",due:""});
@@ -521,6 +550,7 @@ function App({user}){
 
     const openAdd=()=>{ setFormData({...emptyCase,id:""}); setEditId(null); setView("form"); };
     const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
+    const openDetail=(id)=>{ setSelectedId(id); setDetailTab("info"); setView("detail"); };
 
     // ── Google Calendar ──
     const openGoogleCalendar=(h, c)=>{
@@ -608,7 +638,7 @@ function App({user}){
                             const d=daysUntil(h.date);
                             return(
                                 <div key={i} className="chip" style={{borderColor:d<=3?"var(--red)":d<=7?"var(--yellow)":"var(--border)"}}
-                                    onClick={()=>{setSelectedId(h.caseId);setView("detail");}}>
+                                    onClick={()=>openDetail(h.caseId)}>
                                     <div style={{color:d<=3?"var(--red)":"var(--gold)",fontWeight:700,fontSize:12}}>{h.date} {h.time}</div>
                                     <div style={{color:"var(--text)",fontSize:12,marginTop:2}}>{h.clientName} · {h.note||h.agency||"開庭"}</div>
                                     <div style={{color:"var(--text3)",fontSize:11,marginTop:2}}>{d===0?"今天！":d===1?"明天":`${d}天後`}</div>
@@ -639,7 +669,7 @@ function App({user}){
                         const nh=(c.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
                         const pt=(c.todos||[]).filter(t=>!t.done).length;
                         return(
-                            <div key={c.id} className="case-card" onClick={()=>{setSelectedId(c.id);setView("detail");}}>
+                            <div key={c.id} className="case-card" onClick={()=>openDetail(c.id)}>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                                     <div>
                                         <div style={{color:"var(--gold)",fontWeight:700,fontFamily:"monospace",fontSize:12}}>{c.firmCaseNo}</div>
@@ -679,7 +709,7 @@ function App({user}){
                                 const nh=(c.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
                                 const pt=(c.todos||[]).filter(t=>!t.done).length;
                                 return(
-                                    <tr key={c.id} className="trow" onClick={()=>{setSelectedId(c.id);setView("detail");}}>
+                                    <tr key={c.id} className="trow" onClick={()=>openDetail(c.id)}>
                                         <td><span style={{color:"var(--gold)",fontWeight:700,fontFamily:"monospace",fontSize:11}}>{c.firmCaseNo}</span></td>
                                         <td><span style={{fontWeight:700,color:"var(--text)"}}>{c.clientName}</span></td>
                                         <td style={{color:"var(--text3)",fontSize:11}}>{c.opposingParty||"—"}</td>
@@ -705,6 +735,7 @@ function App({user}){
             <div className="bnav">
                 <button className="bnav-btn active"><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
             </div>
         </div>
@@ -720,6 +751,18 @@ function App({user}){
                     <button className="btn btn-outline btn-sm" onClick={()=>openEdit(selected)}>✏️ 編輯</button>
                     <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm(true)}>🗑</button>
                 </div>
+            </div>
+            {/* Tab switcher */}
+            <div style={{display:"flex",gap:0,padding:"0 16px",background:"var(--bg2)",borderBottom:"1px solid var(--border)"}}>
+                {[["info","📋 案件資訊"],["timeline","🕐 時間軸"]].map(([t,l])=>(
+                    <button key={t} onClick={()=>setDetailTab(t)} style={{
+                        padding:"10px 18px",border:"none",background:"transparent",
+                        color:detailTab===t?"var(--gold)":"var(--text3)",
+                        fontWeight:detailTab===t?700:400,fontSize:13,cursor:"pointer",
+                        borderBottom:detailTab===t?"2px solid var(--gold)":"2px solid transparent",
+                        fontFamily:"inherit",transition:"all .2s",
+                    }}>{l}</button>
+                ))}
             </div>
 
             {deleteConfirm && (
@@ -737,13 +780,52 @@ function App({user}){
 
             <div className="content">
                 {/* Badge row */}
-                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}> 
                     <Badge label={selected.caseType} color={TYPE_COLOR[selected.caseType]||"#64748b"}/>
                     <Badge label={selected.status} color={STATUS_COLOR[selected.status]||"#64748b"}/>
                     <Badge label={selected.instance} color="#64748b"/>
                 </div>
 
-                <div className="detail-grid">
+                {/* ── TIMELINE TAB ── */}
+                {detailTab==="timeline" && (()=>{
+                    // Build timeline events
+                    const events = [];
+                    if(selected.retainerDate) events.push({date:selected.retainerDate,type:"milestone",icon:"⚖",label:"案件委任",detail:`委任律師 ${selected.attorney||""}`,color:"var(--gold)"});
+                    (selected.hearings||[]).forEach(h=>{
+                        const d=daysUntil(h.date);
+                        events.push({date:h.date,time:h.time,type:d<0?"past":d===0?"today":"future",icon:"🏛",label:`${h.agency||"開庭"} ${h.note?`· ${h.note}`:""}`,detail:`${h.courtroom||""} ${h.time||""}`.trim(),color:d<0?"var(--text4)":d===0?"var(--red)":d<=7?"var(--yellow)":"var(--gold)"});
+                    });
+                    (selected.todos||[]).forEach(t=>{
+                        if(t.due) events.push({date:t.due,type:"todo",done:t.done,icon:t.done?"✓":"○",label:t.text,detail:t.done?"已完成":"待辦",color:t.done?"var(--green)":"var(--purple)"});
+                    });
+                    events.sort((a,b)=>a.date.localeCompare(b.date));
+                    return(
+                        <div className="tl-wrap">
+                            {events.length===0 && <div className="empty"><div className="ico">🕐</div>尚無時間軸事件</div>}
+                            {events.map((ev,i)=>{
+                                const dotClass = ev.type==="todo"?(ev.done?"tl-dot todo done":"tl-dot todo"):ev.type==="milestone"?"tl-dot milestone":`tl-dot ${ev.type}`;
+                                const bodyClass = `tl-body ${ev.type==="todo"?"":ev.type}`;
+                                const d = daysUntil(ev.date);
+                                return(
+                                    <div key={i} className="tl-item">
+                                        <div className={dotClass}/>
+                                        <div className="tl-date">{ev.date}{ev.time&&` ${ev.time}`}</div>
+                                        <div className={bodyClass}>
+                                            <div className="tl-tag" style={{color:ev.color}}>{ev.icon} {ev.type==="hearing"||ev.type==="past"||ev.type==="future"||ev.type==="today"?"開庭":ev.type==="todo"?"待辦":ev.type==="milestone"?"里程碑":""}</div>
+                                            <div style={{color:"var(--text)",fontWeight:600,fontSize:14}}>{ev.label}</div>
+                                            {ev.detail && <div style={{color:"var(--text3)",fontSize:12,marginTop:3}}>{ev.detail}</div>}
+                                            {ev.type==="future"&&<div style={{color:"var(--gold)",fontSize:11,marginTop:4}}>📅 {d===0?"今天":d===1?"明天":`${d}天後`}</div>}
+                                            {ev.type==="today"&&<div style={{color:"var(--red)",fontSize:11,fontWeight:700,marginTop:4}}>🔴 今天開庭！</div>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
+
+                {/* ── INFO TAB ── */}
+                {detailTab==="info" && <div className="detail-grid">
                     {/* 基本資料 */}
                     <div className="card">
                         <div className="card-title">📋 案件基本資料</div>
@@ -910,12 +992,13 @@ function App({user}){
                         )}
                     </div>
 
-                </div>
+                </div>}
             </div>
 
             <div className="bnav">
                 <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
             </div>
         </div>
@@ -1002,11 +1085,90 @@ function App({user}){
                 <div className="bnav">
                     <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                     <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                    <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                     <button className="bnav-btn active"><span className="bnav-icon">📊</span>統計</button>
                 </div>
             </div>
         );
     }
+
+    // ══ CONTACTS VIEW ══
+    if(view==="contacts") return(
+        <div className="app">
+            <div className="header">
+                <button className="btn btn-outline btn-sm" onClick={()=>setView("list")}>← 返回</button>
+                <div className="header-title">👥 當事人通訊錄</div>
+                <div/>
+            </div>
+            <div className="content">
+                {/* Search */}
+                <div className="filter-row" style={{marginBottom:16}}>
+                    <input className="search-inp" placeholder="🔍 搜尋姓名、電話…" value={search} onChange={e=>setSearch(e.target.value)}/>
+                </div>
+                {(()=>{
+                    // Group cases by clientName + phone
+                    const map = {};
+                    cases.forEach(c=>{
+                        const key = c.clientName + "|" + (c.phone||"");
+                        if(!map[key]) map[key]={name:c.clientName, phone:c.phone||"", cases:[]};
+                        map[key].cases.push(c);
+                    });
+                    const contacts = Object.values(map)
+                        .filter(ct=>{
+                            const q=search.toLowerCase();
+                            return !q || ct.name.toLowerCase().includes(q) || ct.phone.includes(q);
+                        })
+                        .sort((a,b)=>a.name.localeCompare(b.name,"zh-TW"));
+                    if(contacts.length===0) return <div className="empty"><div className="ico">👤</div>查無當事人</div>;
+                    return contacts.map((ct,i)=>(
+                        <div key={i} className="contact-card">
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+                                <div>
+                                    <div className="contact-name">{ct.name}</div>
+                                    {ct.phone
+                                        ? <a className="contact-phone" href={`tel:${ct.phone}`}>📞 {ct.phone}</a>
+                                        : <div style={{color:"var(--text4)",fontSize:13,marginTop:4}}>未填連絡電話</div>
+                                    }
+                                </div>
+                                <div style={{textAlign:"right"}}>
+                                    <div style={{fontSize:11,color:"var(--text4)"}}>案件數</div>
+                                    <div style={{fontSize:22,fontWeight:800,color:"var(--gold)"}}>{ct.cases.length}</div>
+                                </div>
+                            </div>
+                            <div className="contact-cases">
+                                {ct.cases.map(c=>(
+                                    <div key={c.id} className="contact-case-row"
+                                        onClick={()=>{setSelectedId(c.id);setDetailTab("info");setView("detail");}}>
+                                        <span style={{color:"var(--gold)",fontFamily:"monospace",fontSize:12,flexShrink:0}}>{c.firmCaseNo}</span>
+                                        <span style={{flex:1,color:"var(--text2)",fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.courtCaseNo||(c.courtCaseNos||[])[0]||""}</span>
+                                        <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/>
+                                        <Badge label={c.status} color={STATUS_COLOR[c.status]||"#64748b"}/>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Fee summary across all cases */}
+                            {ct.cases.length > 1 && (()=>{
+                                const totalRecv = ct.cases.reduce((s,c)=>s+Number(c.feeReceived||0),0);
+                                const totalUnpaid = ct.cases.reduce((s,c)=>s+Number(c.feeUnpaid||0),0);
+                                return(
+                                    <div style={{display:"flex",gap:16,marginTop:10,paddingTop:10,borderTop:"1px solid var(--border)",fontSize:12}}>
+                                        <div><span style={{color:"var(--text4)"}}>已收合計 </span><span style={{color:"var(--green)",fontWeight:700}}>{totalRecv.toLocaleString()} 元</span></div>
+                                        {totalUnpaid>0 && <div><span style={{color:"var(--text4)"}}>未收合計 </span><span style={{color:"var(--red)",fontWeight:700}}>{totalUnpaid.toLocaleString()} 元</span></div>}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    ));
+                })()}
+            </div>
+            <div className="bnav">
+                <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
+                <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn active"><span className="bnav-icon">👥</span>通訊錄</button>
+                <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
+            </div>
+        </div>
+    );
 
     // ══ FORM VIEW ══
     const isEdit=!!editId;
@@ -1171,6 +1333,7 @@ function App({user}){
             <div className="bnav">
                 <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn active"><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
             </div>
         </div>

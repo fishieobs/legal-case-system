@@ -132,6 +132,15 @@ textarea.fi{resize:vertical;min-height:80px;}
 #toast.show{opacity:1;}
 
 
+
+/* ── DRIVE ── */
+.drive-btn{display:flex;align-items:center;gap:10px;background:rgba(66,133,244,.1);border:1px solid rgba(66,133,244,.35);border-radius:10px;padding:13px 16px;cursor:pointer;text-decoration:none;transition:background .2s;width:100%;}
+.drive-btn:hover{background:rgba(66,133,244,.2);}
+.drive-icon{font-size:26px;flex-shrink:0;}
+.drive-doc-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);gap:8px;}
+.drive-doc-row a{color:var(--blue);text-decoration:none;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.drive-doc-row a:hover{text-decoration:underline;}
+
 /* ── LOGIN ── */
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;}
 .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px #000a;}
@@ -195,7 +204,7 @@ const emptyCase = {
     clientName:"", phone:"", feeReceived:0, feeUnpaid:0, disbursements:0,
     caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
     attorney:"", retainerDate:"", opposingParty:"", judgementLink:"", notes:"",
-    hearings:[], todos:[]
+    hearings:[], todos:[], driveFolderUrl:"", docs:[]
 };
 
 // ── Helpers ──
@@ -437,6 +446,12 @@ function App({user}){
         setNewT({text:"",due:""});
     };
     const removeTodo=i=>sf("todos",formData.todos.filter((_,idx)=>idx!==i));
+    const addDoc=()=>{
+        if(!newDoc.url.trim()){ toast("請填文件連結"); return; }
+        sf("docs",[...(formData.docs||[]),{...newDoc,id:uid()}]);
+        setNewDoc({label:"",url:"",type:"筆錄"});
+    };
+    const removeDoc=i=>sf("docs",(formData.docs||[]).filter((_,idx)=>idx!==i));
     const addCaseNo=()=>sf("courtCaseNos",[...(formData.courtCaseNos||[]),""]); 
     const updateCaseNo=(i,v)=>{const a=[...(formData.courtCaseNos||[])];a[i]=v;sf("courtCaseNos",a);};
     const removeCaseNo=i=>sf("courtCaseNos",formData.courtCaseNos.filter((_,idx)=>idx!==i));
@@ -791,6 +806,44 @@ function App({user}){
                             </div>
                         ))}
                     </div>
+                    {/* 電子卷證 */}
+                    <div className="card">
+                        <div className="card-title">📁 開庭筆錄 & 電子卷證</div>
+
+                        {/* Drive 資料夾 */}
+                        {selected.driveFolderUrl ? (
+                            <a className="drive-btn" href={selected.driveFolderUrl} target="_blank" rel="noreferrer" style={{marginBottom:16,display:"flex"}}>
+                                <span className="drive-icon">📂</span>
+                                <div>
+                                    <div style={{color:"#4285f4",fontWeight:700,fontSize:14}}>開啟 Google Drive 卷證資料夾</div>
+                                    <div style={{color:"var(--text3)",fontSize:11,marginTop:2}}>點擊開啟雲端資料夾</div>
+                                </div>
+                                <span style={{marginLeft:"auto",fontSize:18,color:"#4285f4"}}>→</span>
+                            </a>
+                        ) : (
+                            <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0",borderBottom:"1px solid var(--border)",marginBottom:12}}>
+                                尚未設定 Drive 資料夾，請編輯案件填入連結
+                            </div>
+                        )}
+
+                        {/* 個別文件連結 */}
+                        {(selected.docs||[]).length > 0 && <>
+                            <div style={{fontSize:11,color:"var(--text3)",fontWeight:700,letterSpacing:".06em",marginBottom:8,textTransform:"uppercase"}}>個別文件連結</div>
+                            {(selected.docs||[]).map((d,i)=>(
+                                <div key={i} className="drive-doc-row">
+                                    <span style={{fontSize:16,flexShrink:0}}>{d.type==="筆錄"?"📝":d.type==="書狀"?"📄":d.type==="證物"?"🗂":"🔗"}</span>
+                                    <a href={d.url} target="_blank" rel="noreferrer">{d.label||d.url}</a>
+                                    <span style={{color:"var(--text4)",fontSize:11,flexShrink:0}}>{d.type||""}</span>
+                                </div>
+                            ))}
+                        </>}
+
+                        {(selected.docs||[]).length === 0 && !selected.driveFolderUrl && null}
+                        {(selected.docs||[]).length === 0 && selected.driveFolderUrl && (
+                            <div style={{color:"var(--text4)",fontSize:12,marginTop:8}}>可在編輯頁面新增個別文件連結</div>
+                        )}
+                    </div>
+
                 </div>
             </div>
 
@@ -991,8 +1044,52 @@ function App({user}){
                     <button className="btn btn-gold btn-sm" onClick={addTodo}>＋ 新增</button>
                 </div>
 
+                {/* 電子卷證 */}
+                <div className="section-hdr">📁 開庭筆錄 & 電子卷證</div>
+                <div className="fg" style={{marginBottom:16}}>
+                    <label className="fl">Google Drive 卷證資料夾連結</label>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <input className="fi" type="url" style={{flex:1}} value={F.driveFolderUrl||""} onChange={e=>sf("driveFolderUrl",e.target.value)} placeholder="貼上 Google Drive 資料夾的分享連結…"/>
+                        {F.driveFolderUrl && <a href={F.driveFolderUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{flexShrink:0,textDecoration:"none"}}>開啟 →</a>}
+                    </div>
+                    <div style={{color:"var(--text4)",fontSize:11,marginTop:5}}>
+                        💡 在 Google Drive 資料夾按右鍵 →「共用」→「複製連結」貼上即可
+                    </div>
+                </div>
+
+                {/* 個別文件連結 */}
+                <div style={{marginBottom:8,fontSize:11,color:"var(--text3)",fontWeight:700,letterSpacing:".06em",textTransform:"uppercase"}}>個別文件連結（筆錄、書狀、證物…）</div>
+                {(F.docs||[]).map((d,i)=>(
+                    <div key={i} className="item-row">
+                        <span style={{fontSize:15,flexShrink:0}}>{d.type==="筆錄"?"📝":d.type==="書狀"?"📄":d.type==="證物"?"🗂":"🔗"}</span>
+                        <div style={{flex:1,minWidth:0}}>
+                            <div style={{color:"var(--text)",fontSize:13}}>{d.label||"（未命名）"}</div>
+                            <div style={{color:"var(--text3)",fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.url}</div>
+                        </div>
+                        <span style={{color:"var(--text4)",fontSize:11,flexShrink:0}}>{d.type}</span>
+                        <button className="btn btn-danger btn-icon" onClick={()=>removeDoc(i)}>✕</button>
+                    </div>
+                ))}
+                <div className="add-row" style={{alignItems:"flex-end"}}>
+                    <div className="fg" style={{flex:"1 1 150px"}}>
+                        <label className="fl">文件名稱</label>
+                        <input className="fi" value={newDoc.label} onChange={e=>setNewDoc(d=>({...d,label:e.target.value}))} placeholder="113年4月22日準備程序筆錄"/>
+                    </div>
+                    <div className="fg" style={{flex:"2 1 200px"}}>
+                        <label className="fl">文件連結（Drive/雲端連結）</label>
+                        <input className="fi" type="url" value={newDoc.url} onChange={e=>setNewDoc(d=>({...d,url:e.target.value}))} placeholder="https://drive.google.com/..."/>
+                    </div>
+                    <div className="fg" style={{flex:"0 0 100px"}}>
+                        <label className="fl">類型</label>
+                        <select className="fi" value={newDoc.type} onChange={e=>setNewDoc(d=>({...d,type:e.target.value}))}>
+                            {["筆錄","書狀","證物","判決","其他"].map(t=><option key={t}>{t}</option>)}
+                        </select>
+                    </div>
+                    <button className="btn btn-gold btn-sm" onClick={addDoc} style={{flexShrink:0}}>＋ 新增</button>
+                </div>
+
                 {/* 判決連結 & 備註 */}
-                <div className="section-hdr">📝 其他資訊</div>
+                <div className="section-hdr" style={{marginTop:24}}>📝 其他資訊</div>
                 <div className="fg" style={{marginBottom:12}}>
                     <label className="fl">判決書連結（可貼司法院裁判書網址）</label>
                     <input className="fi" type="url" value={F.judgementLink||""} onChange={e=>sf("judgementLink",e.target.value)} placeholder="https://..."/>

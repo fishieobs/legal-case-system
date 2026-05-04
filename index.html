@@ -1148,7 +1148,10 @@ function App({user}){
     if(view==="tools") return(
         <div className="app">
             <div className="header">
-                <div className="header-title">🔧 常用工具</div>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <button className="btn btn-outline btn-sm" onClick={()=>setView("list")}>← 返回</button>
+                    <div className="header-title">🔧 常用工具</div>
+                </div>
                 <button className="btn btn-gold" onClick={openAddTool}>＋ 新增工具</button>
             </div>
 

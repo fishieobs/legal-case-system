@@ -1859,11 +1859,12 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<Root/>);
 </script>
 <script>
+// Register Service Worker for offline support
 if("serviceWorker" in navigator){
     window.addEventListener("load",()=>{
-        navigator.serviceWorker.register("sw.js")
-            .then(r=>console.log("SW registered"))
-            .catch(e=>console.log("SW error",e));
+        navigator.serviceWorker.register("sw.js", {scope: "./"})
+            .then(r=>{ console.log("SW registered, scope:", r.scope); })
+            .catch(e=>{ console.warn("SW registration failed (offline support disabled):", e); });
     });
 }
 </script>

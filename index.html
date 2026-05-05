@@ -706,13 +706,12 @@ function App({user}){
             (c.courtCaseNos||[]).filter(Boolean).join("、"), c.division||"", c.court||"", c.instance||"",
             c.caseType||"", c.status||"", c.attorney||"", c.retainerDate||"",
             Number(c.feeReceived||0), Number(c.feeUnpaid||0), Number(c.disbursements||0),
-            (c.tags||[]).join("、"), (c.notes||"").replace(/
-/g," "),
+            (c.tags||[]).join("、"), (c.notes||"").replace(/\n/g," "),
         ]);
         // Build CSV with BOM for Excel UTF-8
         const bom="﻿";
-        const csv=bom+[headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("
-");
+        const esc=v=>'"'+String(v).replace(/"/g,'""')+'"';
+        const csv=bom+[headers,...rows].map(r=>r.map(esc).join(",")).join("\n");
         const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
         const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
         a.download=`案件清單_${today()}.csv`; a.click();

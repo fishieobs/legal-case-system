@@ -149,6 +149,36 @@ textarea.fi{resize:vertical;min-height:80px;}
 
 
 
+
+/* ── AI CHAT ── */
+.ai-wrap{display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:400px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.ai-topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.ai-apikey-row{display:flex;gap:8px;padding:10px 14px;background:rgba(200,169,110,.06);border-bottom:1px solid var(--border);align-items:center;flex-shrink:0;}
+.ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.ai-msg{display:flex;gap:10px;align-items:flex-start;}
+.ai-msg.user{flex-direction:row-reverse;}
+.ai-bubble{max-width:82%;padding:11px 15px;border-radius:14px;font-size:13px;line-height:1.65;white-space:pre-wrap;word-break:break-word;}
+.ai-msg.user .ai-bubble{background:var(--gold);color:#0a0a0a;border-bottom-right-radius:4px;}
+.ai-msg.ai .ai-bubble{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:4px;}
+.ai-msg.system .ai-bubble{background:transparent;border:1px dashed var(--border);color:var(--text3);font-size:11px;width:100%;max-width:100%;text-align:center;}
+.ai-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px;}
+.ai-avatar.user{background:var(--gold);color:#000;}
+.ai-avatar.ai{background:var(--bg4);border:1px solid var(--border);}
+.ai-input-row{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2);}
+.ai-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;outline:none;font-family:inherit;resize:none;max-height:120px;line-height:1.5;}
+.ai-input:focus{border-color:var(--gold);}
+.ai-send{background:var(--gold);border:none;border-radius:10px;width:42px;height:42px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:opacity .15s;}
+.ai-send:disabled{opacity:.4;cursor:not-allowed;}
+.ai-thinking{display:flex;gap:4px;padding:4px 2px;align-items:center;}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);animation:aiDot 1.2s infinite ease-in-out;}
+.ai-dot:nth-child(2){animation-delay:.2s;}
+.ai-dot:nth-child(3){animation-delay:.4s;}
+@keyframes aiDot{0%,80%,100%{transform:scale(.6);opacity:.4;}40%{transform:scale(1);opacity:1;}}
+.ai-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text4);gap:10px;}
+.ai-empty-icon{font-size:40px;opacity:.5;}
+.ai-suggestion{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;color:var(--text3);cursor:pointer;white-space:nowrap;font-family:inherit;transition:border-color .2s;}
+.ai-suggestion:hover{border-color:var(--gold);color:var(--gold);}
+
 /* ── PRINT ── */
 @media print {
     .header,.bnav,.btn,.theme-btn,.filter-row,.stats-row,.upcoming,.tab-bar,.no-print{display:none!important;}
@@ -487,7 +517,14 @@ function App({user}){
     const [filterStatus, setFilterStatus] = useState("全部");
     const [filterType, setFilterType] = useState("全部");
     const [deleteConfirm, setDeleteConfirm] = useState(false);
-    const [detailTab, setDetailTab] = useState("info"); // info | timeline
+    const [detailTab, setDetailTab] = useState("info"); // info | timeline | ai
+    const [aiMessages, setAiMessages] = useState({}); // {caseId: [{role,content}]}
+    const [aiInput, setAiInput] = useState("");
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiApiKey, setAiApiKey] = useState(()=>localStorage.getItem("aiApiKey")||"");
+    const [aiKeyInput, setAiKeyInput] = useState("");
+    const [aiKeyVisible, setAiKeyVisible] = useState(false);
+    const [aiKeyEditing, setAiKeyEditing] = useState(false);
     const [listTab, setListTab] = useState("list"); // list | calendar
     const [calDate, setCalDate] = useState(new Date());
     const [filterTag, setFilterTag] = useState("全部");
@@ -507,6 +544,14 @@ function App({user}){
     const [toolForm, setToolForm] = useState({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"});
     const [editingToolId, setEditingToolId] = useState(null);
     const { mode, effective, cycleMode } = useTheme();
+
+    // ── Auto scroll AI messages ──
+    useEffect(()=>{
+        if(detailTab==="ai"){
+            const el=document.getElementById("ai-msgs");
+            if(el) el.scrollTop=el.scrollHeight;
+        }
+    },[aiMessages, aiLoading, detailTab]);
 
     // ── Firebase listener ──
     useEffect(()=>{
@@ -679,6 +724,90 @@ function App({user}){
 
     // ── Print ──
     const printCase=()=>window.print();
+
+    // ── AI Chat ──
+    const saveApiKey=()=>{
+        const k=aiKeyInput.trim();
+        if(!k){ toast("請輸入 API Key"); return; }
+        setAiApiKey(k);
+        localStorage.setItem("aiApiKey",k);
+        setAiKeyEditing(false);
+        setAiKeyInput("");
+        toast("✅ API Key 已儲存");
+    };
+    const clearApiKey=()=>{
+        setAiApiKey("");
+        localStorage.removeItem("aiApiKey");
+        setAiKeyEditing(false);
+        toast("已清除 API Key");
+    };
+    const getCaseMsgs=(caseId)=>aiMessages[caseId]||[];
+    const addMsg=(caseId,msg)=>setAiMessages(prev=>({...prev,[caseId]:[...(prev[caseId]||[]),msg]}));
+    const clearChat=(caseId)=>setAiMessages(prev=>({...prev,[caseId]:[]}));
+
+    const sendAiMessage=async(c)=>{
+        const text=aiInput.trim();
+        if(!text||aiLoading) return;
+        if(!aiApiKey){ toast("請先設定 API Key"); setAiKeyEditing(true); return; }
+        const userMsg={role:"user",content:text};
+        addMsg(c.id, userMsg);
+        setAiInput("");
+        setAiLoading(true);
+        // Build system prompt with case context
+        const systemPrompt=`你是一位專業的台灣法律助理，正在協助律師處理以下案件：
+
+【案件資訊】
+事務所案件編號：${c.firmCaseNo||""}
+當事人：${c.clientName||""}
+對造：${c.opposingParty||""}
+法院案號：${(c.courtCaseNos||[]).filter(Boolean).join("、")||""}
+股別：${c.division||""}
+法院：${c.court||""} ${c.instance||""}
+案件類型：${c.caseType||""}
+案件狀態：${c.status||""}
+承辦律師：${c.attorney||""}
+備註：${c.notes||""}
+
+請根據上述案件背景，以繁體中文回答律師的問題。回答要專業、精準、具有實務參考價值。`;
+
+        const history=getCaseMsgs(c.id);
+        const messages=[
+            ...history.filter(m=>m.role==="user"||m.role==="assistant"),
+            userMsg
+        ].map(m=>({role:m.role==="ai"?"assistant":m.role, content:m.content}));
+
+        try{
+            const res=await fetch("https://api.anthropic.com/v1/messages",{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json",
+                    "x-api-key": aiApiKey,
+                    "anthropic-version":"2023-06-01",
+                    "anthropic-dangerous-direct-browser-access":"true",
+                },
+                body:JSON.stringify({
+                    model:"claude-sonnet-4-20250514",
+                    max_tokens:1500,
+                    system:systemPrompt,
+                    messages,
+                })
+            });
+            if(!res.ok){
+                const err=await res.json().catch(()=>({}));
+                if(res.status===401) throw new Error("API Key 無效，請重新設定");
+                if(res.status===429) throw new Error("請求次數過多，請稍後再試");
+                throw new Error(err.error?.message||`HTTP ${res.status}`);
+            }
+            const data=await res.json();
+            const reply=data.content?.find(b=>b.type==="text")?.text||"（無回應）";
+            addMsg(c.id,{role:"ai",content:reply});
+        }catch(e){
+            addMsg(c.id,{role:"ai",content:"⚠️ 錯誤："+e.message});
+            if(e.message.includes("API Key")) setAiKeyEditing(true);
+        }finally{
+            setAiLoading(false);
+        }
+    };
 
     // ── Tag helpers ──
     const TAG_COLORS=["#ef4444","#f97316","#f59e0b","#22c55e","#3b82f6","#8b5cf6","#ec4899","#64748b"];
@@ -1080,7 +1209,7 @@ function App({user}){
             </div>
             {/* Tab switcher */}
             <div style={{display:"flex",gap:0,padding:"0 16px",background:"var(--bg2)",borderBottom:"1px solid var(--border)"}}>
-                {[["info","📋 案件資訊"],["timeline","🕐 時間軸"]].map(([t,l])=>(
+                {[["info","📋 案件資訊"],["timeline","🕐 時間軸"],["ai","🤖 AI 對話"]].map(([t,l])=>(
                     <button key={t} onClick={()=>setDetailTab(t)} style={{
                         padding:"10px 18px",border:"none",background:"transparent",
                         color:detailTab===t?"var(--gold)":"var(--text3)",
@@ -1173,6 +1302,106 @@ function App({user}){
                 })()}
 
                 {/* ── INFO TAB ── */}
+                {/* ── AI TAB ── */}
+                {detailTab==="ai" && (()=>{
+                    const msgs=getCaseMsgs(selected.id);
+                    const SUGGESTIONS=[
+                        "本案有什麼值得注意的法律風險？",
+                        "針對本案請草擬準備程序的注意事項",
+                        "本案當事人可能面臨的法律後果為何？",
+                        "本案有哪些可能的抗辯策略？",
+                        "請列出本案相關的重要法條",
+                    ];
+                    return(
+                        <div className="ai-wrap">
+                            {/* API Key bar */}
+                            <div className="ai-topbar">
+                                <div style={{fontSize:12,color:"var(--text3)",display:"flex",alignItems:"center",gap:6}}>
+                                    <span style={{fontSize:16}}>🤖</span>
+                                    <span>Claude AI · 案件專屬對話</span>
+                                </div>
+                                <div style={{display:"flex",gap:6}}>
+                                    {msgs.length>0 && <button className="btn btn-outline btn-sm" style={{fontSize:11}} onClick={()=>clearChat(selected.id)}>清除對話</button>}
+                                    <button className="btn btn-outline btn-sm" style={{fontSize:11,color:aiApiKey?"var(--green)":"var(--red)"}}
+                                        onClick={()=>{ setAiKeyInput(aiApiKey); setAiKeyEditing(e=>!e); }}>
+                                        {aiApiKey?"🔑 已設定":"🔑 設定 Key"}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* API Key input */}
+                            {aiKeyEditing && (
+                                <div className="ai-apikey-row">
+                                    <span style={{fontSize:12,color:"var(--gold)",flexShrink:0}}>API Key：</span>
+                                    <input className="fi" type={aiKeyVisible?"text":"password"}
+                                        style={{flex:1,padding:"6px 10px",fontSize:12}}
+                                        placeholder="sk-ant-api03-..."
+                                        value={aiKeyInput}
+                                        onChange={e=>setAiKeyInput(e.target.value)}
+                                        onKeyDown={e=>e.key==="Enter"&&saveApiKey()}/>
+                                    <button className="btn btn-outline btn-sm" style={{fontSize:11,padding:"5px 8px"}} onClick={()=>setAiKeyVisible(v=>!v)}>{aiKeyVisible?"🙈":"👁"}</button>
+                                    <button className="btn btn-gold btn-sm" onClick={saveApiKey}>儲存</button>
+                                    {aiApiKey && <button className="btn btn-danger btn-sm" style={{fontSize:11}} onClick={clearApiKey}>清除</button>}
+                                </div>
+                            )}
+
+                            {/* Messages */}
+                            <div className="ai-messages" id="ai-msgs">
+                                {msgs.length===0?(
+                                    <div className="ai-empty">
+                                        <div className="ai-empty-icon">⚖</div>
+                                        <div style={{fontWeight:700,color:"var(--text3)"}}>案件 AI 助理</div>
+                                        <div style={{fontSize:12,textAlign:"center",maxWidth:260}}>我已了解本案基本資訊，可直接詢問法律問題</div>
+                                        <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center",marginTop:6}}>
+                                            {SUGGESTIONS.map((s,i)=>(
+                                                <button key={i} className="ai-suggestion" onClick={()=>{ setAiInput(s); }}>
+                                                    {s}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ):(
+                                    msgs.map((m,i)=>(
+                                        m.role==="system"
+                                        ?<div key={i} className="ai-msg system"><div className="ai-bubble">{m.content}</div></div>
+                                        :<div key={i} className={`ai-msg ${m.role}`}>
+                                            <div className={`ai-avatar ${m.role}`}>{m.role==="user"?"👤":"⚖"}</div>
+                                            <div className="ai-bubble">
+                                                {m.content}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                                {aiLoading && (
+                                    <div className="ai-msg ai">
+                                        <div className="ai-avatar ai">⚖</div>
+                                        <div className="ai-bubble">
+                                            <div className="ai-thinking">
+                                                <div className="ai-dot"/><div className="ai-dot"/><div className="ai-dot"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Input row */}
+                            <div className="ai-input-row">
+                                <textarea className="ai-input" rows={1}
+                                    placeholder={aiApiKey?"輸入問題，按 Enter 送出（Shift+Enter 換行）…":"請先設定 API Key"}
+                                    value={aiInput}
+                                    onChange={e=>setAiInput(e.target.value)}
+                                    onKeyDown={e=>{
+                                        if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); sendAiMessage(selected); }
+                                    }}
+                                    disabled={aiLoading}/>
+                                <button className="ai-send" disabled={aiLoading||!aiInput.trim()} onClick={()=>sendAiMessage(selected)}>
+                                    {aiLoading?"⏳":"➤"}
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 {detailTab==="info" && <div className="detail-grid">
                     {/* 基本資料 */}
                     <div className="card">

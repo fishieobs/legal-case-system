@@ -810,29 +810,43 @@ function App({user}){
         try{
             const model="gemini-2.0-flash";
             const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${aiApiKey}`;
-            const res=await fetch(url,{
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({
-                    contents,
-                    generationConfig:{
-                        maxOutputTokens:1500,
-                        temperature:0.7,
-                    }
-                })
-            });
+            let res;
+            try{
+                res=await fetch(url,{
+                    method:"POST",
+                    headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify({
+                        contents,
+                        generationConfig:{maxOutputTokens:1500,temperature:0.7}
+                    })
+                });
+            }catch(networkErr){
+                // fetch 本身失敗：通常是 CORS 或網路問題
+                throw new Error("網路連線失敗，請確認網路狀態（"+networkErr.message+"）");
+            }
             if(!res.ok){
-                const err=await res.json().catch(()=>({}));
-                if(res.status===400) throw new Error("API Key 無效或請求格式錯誤，請重新設定");
-                if(res.status===403) throw new Error("API Key 無效，請至 Google AI Studio 確認");
-                if(res.status===429) throw new Error("請求次數過多，請稍後再試");
-                throw new Error(err.error?.message||`HTTP ${res.status}`);
+                let errBody={};
+                try{ errBody=await res.json(); }catch(_){}
+                const msg=errBody?.error?.message||"";
+                if(res.status===400) throw new Error("請求格式錯誤："+(msg||"請確認 API Key 是否正確"));
+                if(res.status===401||res.status===403) throw new Error("API Key 無效，請至 Google AI Studio 確認");
+                if(res.status===429){
+                    const retry=res.headers.get("Retry-After");
+                    throw new Error("Gemini 免費額度達上限，請稍後再試"+(retry?`（${retry}秒後）`:""));
+                }
+                if(res.status===500||res.status===503) throw new Error("Gemini 伺服器暫時無法回應，請稍後再試");
+                throw new Error(msg||`HTTP ${res.status}`);
             }
             const data=await res.json();
-            const reply=data.candidates?.[0]?.content?.parts?.[0]?.text||"（無回應）";
+            // Check for safety block
+            const candidate=data.candidates?.[0];
+            if(!candidate) throw new Error("Gemini 未回傳結果，可能觸發安全過濾");
+            if(candidate.finishReason==="SAFETY") throw new Error("此問題觸發 Gemini 安全過濾，請換個方式提問");
+            const reply=candidate.content?.parts?.[0]?.text||"（無回應）";
             addMsg(c.id,{role:"ai",content:reply});
         }catch(e){
-            addMsg(c.id,{role:"ai",content:"⚠️ 錯誤："+e.message});
+            console.error("Gemini error:",e);
+            addMsg(c.id,{role:"ai",content:"⚠️ "+e.message});
             if(e.message.includes("API Key")||e.message.includes("無效")) setAiKeyEditing(true);
         }finally{
             setAiLoading(false);

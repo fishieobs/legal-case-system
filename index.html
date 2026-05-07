@@ -150,6 +150,19 @@ textarea.fi{resize:vertical;min-height:80px;}
 
 
 
+
+/* ── FEE PAYMENTS ── */
+.fee-summary{background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px;}
+.fee-summary-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;gap:8px;}
+.fee-progress{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;margin:10px 0 4px;}
+.fee-progress-bar{height:100%;background:linear-gradient(90deg,var(--green),#16a34a);border-radius:4px;transition:width .5s ease;}
+.pay-record{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;}
+.pay-badge{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+.pay-method-cash{background:rgba(34,197,94,.15);color:var(--green);}
+.pay-method-transfer{background:rgba(59,130,246,.15);color:var(--blue);}
+.pay-method-check{background:rgba(245,158,11,.15);color:var(--yellow);}
+.pay-method-other{background:rgba(100,116,139,.15);color:var(--text3);}
+
 /* ── AI CHAT ── */
 .ai-wrap{display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:400px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
 .ai-topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
@@ -339,7 +352,7 @@ const STATUS_COLOR={"進行中":"#22c55e","已結案":"#94a3b8","上訴中":"#f5
 
 const emptyCase = {
     id:"", firmCaseNo:"", courtCaseNos:[""], division:"",
-    clientName:"", phone:"", feeReceived:0, feeUnpaid:0, disbursements:0,
+    clientName:"", phone:"", totalFee:0, payments:[], disbursements:0,
     caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
     attorney:"", retainerDate:"", opposingParty:"", judgementLink:"", notes:"",
     hearings:[], todos:[], driveFolderUrl:"", docs:[]
@@ -537,6 +550,7 @@ function App({user}){
     const [newH, setNewH] = useState({date:"",time:"",agency:"",courtroom:"",note:""});
     const [newT, setNewT] = useState({text:"",due:""});
     const [newDoc, setNewDoc] = useState({label:"",url:"",type:"筆錄"});
+    const [newPay, setNewPay] = useState({amount:"",date:today(),method:"現金",note:""});
     const [tools, setTools] = useState(()=>{
         try{ return JSON.parse(localStorage.getItem("quickTools")||"[]"); }catch(e){ return []; }
     });
@@ -616,8 +630,8 @@ function App({user}){
     const sortedFiltered = [...filtered].sort((a,b)=>{
         let va, vb;
         if(sortBy==="retainerDate"){ va=a.retainerDate||""; vb=b.retainerDate||""; }
-        else if(sortBy==="feeReceived"){ va=Number(a.feeReceived||0); vb=Number(b.feeReceived||0); }
-        else if(sortBy==="feeUnpaid"){ va=Number(a.feeUnpaid||0); vb=Number(b.feeUnpaid||0); }
+        else if(sortBy==="feeReceived"){ va=getReceived(a); vb=getReceived(b); }
+        else if(sortBy==="feeUnpaid"){ va=getUnpaid(a); vb=getUnpaid(b); }
         else if(sortBy==="nextHearing"){
             va=(a.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((x,y)=>x.date.localeCompare(y.date))[0]?.date||"9999";
             vb=(b.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((x,y)=>x.date.localeCompare(y.date))[0]?.date||"9999";
@@ -698,6 +712,15 @@ function App({user}){
     const openAdd=()=>{ setFormData({...emptyCase,id:""}); setEditId(null); setView("form"); };
     const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
     const openDetail=(id)=>{ setSelectedId(id); setDetailTab("info"); setView("detail"); };
+
+    // ── Fee helpers ──
+    const PAYMENT_METHODS=["現金","匯款","票據","信用卡","其他"];
+    const METHOD_CLASS={"現金":"pay-method-cash","匯款":"pay-method-transfer","票據":"pay-method-check","信用卡":"pay-method-transfer","其他":"pay-method-other"};
+    const calcReceived=(c)=>(c.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+    const calcUnpaid=(c)=>Math.max(0,Number(c.totalFee||0)-calcReceived(c));
+    // backward compat: if old feeReceived exists, treat as received
+    const getReceived=(c)=>c.payments?calcReceived(c):Number(c.feeReceived||0);
+    const getUnpaid=(c)=>c.payments?calcUnpaid(c):Number(c.feeUnpaid||0);
 
     // ── Copy case ──
     const copyCase=(c)=>{
@@ -829,12 +852,12 @@ function App({user}){
 
     // ── Excel export ──
     const exportExcel=()=>{
-        const headers=["事務所案件編號","當事人姓名","連絡電話","對造","法院案號","股別","法院","審級","案件類型","狀態","承辦律師","委任日期","律師費已收","律師費未收","代墊款項","標籤","備註"];
+        const headers=["事務所案件編號","當事人姓名","連絡電話","對造","法院案號","股別","法院","審級","案件類型","狀態","承辦律師","委任日期","本件律師費","已收款合計","未收款","代墊款項","標籤","備註"];
         const rows=cases.map(c=>[
             c.firmCaseNo||"", c.clientName||"", c.phone||"", c.opposingParty||"",
             (c.courtCaseNos||[]).filter(Boolean).join("、"), c.division||"", c.court||"", c.instance||"",
             c.caseType||"", c.status||"", c.attorney||"", c.retainerDate||"",
-            Number(c.feeReceived||0), Number(c.feeUnpaid||0), Number(c.disbursements||0),
+            Number(c.totalFee||0), getReceived(c), getUnpaid(c), Number(c.disbursements||0),
             (c.tags||[]).join("、"), (c.notes||"").replace(/\n/g," "),
         ]);
         // Build CSV with BOM for Excel UTF-8
@@ -938,8 +961,8 @@ function App({user}){
                     ["案件總數", cases.length, "件", "var(--gold)"],
                     ["進行中", cases.filter(c=>c.status==="進行中").length, "件", "var(--green)"],
                     ["近期開庭", upcoming.length, "場", "var(--yellow)"],
-                    ["已收款", fmtK(cases.reduce((s,c)=>s+Number(c.feeReceived||0),0)), "萬", "var(--gold)"],
-                    ["未收款", fmtK(cases.reduce((s,c)=>s+Number(c.feeUnpaid||0),0)), "萬", cases.some(c=>Number(c.feeUnpaid)>0)?"var(--red)":"var(--text3)"],
+                    ["已收款", fmtK(cases.reduce((s,c)=>s+getReceived(c),0)), "萬", "var(--gold)"],
+                    ["未收款", fmtK(cases.reduce((s,c)=>s+getUnpaid(c),0)), "萬", cases.some(c=>getUnpaid(c)>0)?"var(--red)":"var(--text3)"],
                     ["代墊款", fmtK(cases.reduce((s,c)=>s+Number(c.disbursements||0),0)), "萬", "var(--purple)"],
                 ].map(([l,v,u,c])=>(
                     <div key={l} className="stat-card">
@@ -1138,8 +1161,9 @@ function App({user}){
                                     {pt>0 && <span style={{background:"#ef444422",color:"var(--red)",borderRadius:10,padding:"1px 8px",fontWeight:700}}>✅ {pt}項</span>}
                                 </div>
                                 <div style={{display:"flex",gap:14,marginTop:8,fontSize:12}}>
-                                    <div><div style={{color:"var(--text4)",fontSize:10}}>已收</div><div style={{color:"var(--green)",fontWeight:700}}>{c.feeReceived?Number(c.feeReceived).toLocaleString():"—"}</div></div>
-                                    <div><div style={{color:"var(--text4)",fontSize:10}}>未收</div><div style={{color:c.feeUnpaid>0?"var(--red)":"var(--text3)",fontWeight:700}}>{c.feeUnpaid?Number(c.feeUnpaid).toLocaleString():"—"}</div></div>
+                                    <div><div style={{color:"var(--text4)",fontSize:10}}>應收</div><div style={{color:"var(--gold)",fontWeight:700}}>{c.totalFee?Number(c.totalFee).toLocaleString():"—"}</div></div>
+                                    <div><div style={{color:"var(--text4)",fontSize:10}}>已收</div><div style={{color:"var(--green)",fontWeight:700}}>{getReceived(c)?getReceived(c).toLocaleString():"—"}</div></div>
+                                    <div><div style={{color:"var(--text4)",fontSize:10}}>未收</div><div style={{color:getUnpaid(c)>0?"var(--red)":"var(--text3)",fontWeight:700}}>{getUnpaid(c)?getUnpaid(c).toLocaleString():"—"}</div></div>
                                     <div><div style={{color:"var(--text4)",fontSize:10}}>代墊</div><div style={{color:"var(--purple)",fontWeight:700}}>{c.disbursements?Number(c.disbursements).toLocaleString():"—"}</div></div>
                                 </div>
                             </div>
@@ -1168,8 +1192,8 @@ function App({user}){
                                         <td style={{color:"var(--text3)",fontSize:11}}>{c.currentAgency||"—"}</td>
                                         <td><Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/></td>
                                         <td><Badge label={c.status} color={STATUS_COLOR[c.status]||"#64748b"}/></td>
-                                        <td style={{textAlign:"right",color:"var(--green)"}}>{c.feeReceived?Number(c.feeReceived).toLocaleString():"—"}</td>
-                                        <td style={{textAlign:"right",color:c.feeUnpaid>0?"var(--red)":"var(--text3)"}}>{c.feeUnpaid?Number(c.feeUnpaid).toLocaleString():"—"}</td>
+                                        <td style={{textAlign:"right",color:"var(--green)"}}>{getReceived(c)?getReceived(c).toLocaleString():"—"}</td>
+                                        <td style={{textAlign:"right",color:getUnpaid(c)>0?"var(--red)":"var(--text3)"}}>{getUnpaid(c)?getUnpaid(c).toLocaleString():"—"}</td>
                                         <td style={{textAlign:"right",color:"var(--purple)"}}>{c.disbursements?Number(c.disbursements).toLocaleString():"—"}</td>
                                         <td style={{color:nh&&daysUntil(nh.date)<=7?"var(--yellow)":"var(--text3)",fontSize:11}}>{nh?nh.date:"—"}</td>
                                         <td>{pt>0?<span style={{background:"#ef444422",color:"var(--red)",borderRadius:10,padding:"1px 8px",fontSize:11,fontWeight:700}}>{pt}</span>:"—"}</td>
@@ -1437,14 +1461,42 @@ function App({user}){
                         </div>
                         <div className="info-row"><div className="info-lbl">對造當事人</div><div className="info-val">{selected.opposingParty||"—"}</div></div>
                         <hr className="divider"/>
-                        <div className="info-row">
-                            <div className="info-lbl">律師費已收</div>
-                            <div className="info-val" style={{color:"var(--green)",fontWeight:700}}>{fmt(selected.feeReceived)}</div>
+                        {/* Fee summary */}
+                        <div className="fee-summary">
+                            <div className="fee-summary-row">
+                                <span style={{fontSize:12,color:"var(--text3)"}}>本件律師費</span>
+                                <span style={{fontWeight:800,fontSize:15,color:"var(--gold)"}}>{fmt(selected.totalFee)}</span>
+                            </div>
+                            <div className="fee-summary-row">
+                                <span style={{fontSize:12,color:"var(--text3)"}}>已收款合計</span>
+                                <span style={{fontWeight:700,color:"var(--green)"}}>{fmt(getReceived(selected))}</span>
+                            </div>
+                            <div className="fee-summary-row">
+                                <span style={{fontSize:12,color:"var(--text3)"}}>尚未收款</span>
+                                <span style={{fontWeight:700,color:getUnpaid(selected)>0?"var(--red)":"var(--text3)"}}>{fmt(getUnpaid(selected))}</span>
+                            </div>
+                            {Number(selected.totalFee)>0 && <>
+                                <div className="fee-progress">
+                                    <div className="fee-progress-bar" style={{width:`${Math.min(100,(getReceived(selected)/Number(selected.totalFee)*100)).toFixed(1)}%`}}/>
+                                </div>
+                                <div style={{fontSize:10,color:"var(--text4)",textAlign:"right"}}>{(getReceived(selected)/Number(selected.totalFee)*100).toFixed(1)}% 已收</div>
+                            </>}
                         </div>
-                        <div className="info-row">
-                            <div className="info-lbl">律師費未收</div>
-                            <div className="info-val" style={{color:selected.feeUnpaid>0?"var(--red)":"var(--text3)",fontWeight:700}}>{fmt(selected.feeUnpaid)}</div>
-                        </div>
+                        {/* Payment records */}
+                        {(selected.payments||[]).length>0 && <>
+                            <div style={{fontSize:10,color:"var(--text3)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>收款記錄</div>
+                            {(selected.payments||[]).map((p,i)=>(
+                                <div key={i} className="pay-record">
+                                    <div style={{flex:1}}>
+                                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                                            <span style={{fontWeight:800,fontSize:15,color:"var(--green)"}}>{Number(p.amount).toLocaleString()} 元</span>
+                                            <span className={`pay-badge ${METHOD_CLASS[p.method]||"pay-method-other"}`}>{p.method}</span>
+                                        </div>
+                                        <div style={{fontSize:12,color:"var(--text3)"}}>{p.date}{p.note&&` · ${p.note}`}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </>}
                         <div className="info-row">
                             <div className="info-lbl">代墊款項</div>
                             <div className="info-val" style={{color:"var(--purple)",fontWeight:700}}>{fmt(selected.disbursements)}</div>
@@ -1587,9 +1639,9 @@ function App({user}){
         const byType={}, byStatus={};
         CASE_TYPES.forEach(t=>byType[t]=0); CASE_STATUS.forEach(s=>byStatus[s]=0);
         cases.forEach(c=>{byType[c.caseType]=(byType[c.caseType]||0)+1; byStatus[c.status]=(byStatus[c.status]||0)+1;});
-        const totalFee=cases.reduce((s,c)=>s+Number(c.feeReceived||0)+Number(c.feeUnpaid||0),0);
-        const recv=cases.reduce((s,c)=>s+Number(c.feeReceived||0),0);
-        const unpaid=cases.reduce((s,c)=>s+Number(c.feeUnpaid||0),0);
+        const totalFee=cases.reduce((s,c)=>s+Number(c.totalFee||0),0);
+        const recv=cases.reduce((s,c)=>s+getReceived(c),0);
+        const unpaid=cases.reduce((s,c)=>s+getUnpaid(c),0);
         const disb=cases.reduce((s,c)=>s+Number(c.disbursements||0),0);
         const pct=totalFee>0?(recv/totalFee*100).toFixed(1):0;
         return(
@@ -1650,7 +1702,7 @@ function App({user}){
                                 ["未完成待辦", cases.reduce((s,c)=>s+(c.todos||[]).filter(t=>!t.done).length,0)+" 項", "var(--red)"],
                                 ["本週開庭", upcoming.filter(h=>daysUntil(h.date)<=7).length+" 場", "var(--yellow)"],
                                 ["本月開庭", upcoming.length+" 場", "var(--gold)"],
-                                ["未收款案件數", cases.filter(c=>Number(c.feeUnpaid)>0).length+" 件", "var(--red)"],
+                                ["未收款案件數", cases.filter(c=>getUnpaid(c)>0).length+" 件", "var(--red)"],
                             ].map(([l,v,c])=>(
                                 <div key={l} className="info-row">
                                     <div className="info-lbl">{l}</div>
@@ -1946,13 +1998,81 @@ function App({user}){
 
                 {/* 費用 */}
                 <div className="section-hdr">💰 費用管理</div>
-                <div className="form-grid">
-                    {[["feeReceived","律師費已收款（元）"],["feeUnpaid","律師費未收款（元）"],["disbursements","代墊款項（元）"]].map(([k,l])=>(
-                        <div key={k} className="fg">
-                            <label className="fl">{l}</label>
-                            <input className="fi" type="number" min="0" value={F[k]||""} onChange={e=>sf(k,e.target.value)}/>
+                <div className="form-grid" style={{marginBottom:16}}>
+                    <div className="fg">
+                        <label className="fl">本件律師費（元）</label>
+                        <input className="fi" type="number" min="0" value={F.totalFee||""} onChange={e=>sf("totalFee",e.target.value)} placeholder="應收律師費總額"/>
+                    </div>
+                    <div className="fg">
+                        <label className="fl">代墊款項（元）</label>
+                        <input className="fi" type="number" min="0" value={F.disbursements||""} onChange={e=>sf("disbursements",e.target.value)}/>
+                    </div>
+                </div>
+                {/* Auto-calculated summary */}
+                {Number(F.totalFee)>0 && (
+                    <div className="fee-summary" style={{marginBottom:16}}>
+                        <div className="fee-summary-row">
+                            <span style={{fontSize:12,color:"var(--text3)"}}>本件律師費</span>
+                            <span style={{fontWeight:700,color:"var(--gold)"}}>{Number(F.totalFee).toLocaleString()} 元</span>
                         </div>
-                    ))}
+                        <div className="fee-summary-row">
+                            <span style={{fontSize:12,color:"var(--text3)"}}>已收款合計</span>
+                            <span style={{fontWeight:700,color:"var(--green)"}}>{(F.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0).toLocaleString()} 元</span>
+                        </div>
+                        <div className="fee-summary-row">
+                            <span style={{fontSize:12,color:"var(--text3)"}}>自動計算未收款</span>
+                            <span style={{fontWeight:800,color:Math.max(0,Number(F.totalFee)-(F.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0))>0?"var(--red)":"var(--green)"}}>
+                                {Math.max(0,Number(F.totalFee)-(F.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0)).toLocaleString()} 元
+                            </span>
+                        </div>
+                        {Number(F.totalFee)>0 && (()=>{
+                            const pct=Math.min(100,((F.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0)/Number(F.totalFee)*100)).toFixed(1);
+                            return <>
+                                <div className="fee-progress"><div className="fee-progress-bar" style={{width:`${pct}%`}}/></div>
+                                <div style={{fontSize:10,color:"var(--text4)",textAlign:"right"}}>{pct}% 已收</div>
+                            </>;
+                        })()}
+                    </div>
+                )}
+                {/* Payment records */}
+                <div style={{fontSize:10,color:"var(--text3)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>收款記錄</div>
+                {(F.payments||[]).map((p,i)=>(
+                    <div key={i} className="item-row">
+                        <div style={{flex:1}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                                <span style={{fontWeight:800,color:"var(--green)"}}>{Number(p.amount).toLocaleString()} 元</span>
+                                <span className={`pay-badge ${METHOD_CLASS[p.method]||"pay-method-other"}`}>{p.method}</span>
+                            </div>
+                            <div style={{fontSize:11,color:"var(--text3)"}}>{p.date}{p.note&&` · ${p.note}`}</div>
+                        </div>
+                        <button className="btn btn-danger btn-icon" onClick={()=>sf("payments",(F.payments||[]).filter((_,idx)=>idx!==i))}>✕</button>
+                    </div>
+                ))}
+                {/* Add payment */}
+                <div className="add-row" style={{marginTop:10,alignItems:"flex-end"}}>
+                    <div className="fg" style={{flex:"1 1 130px"}}>
+                        <label className="fl">金額（元）</label>
+                        <input className="fi" type="number" min="0" value={newPay.amount} onChange={e=>setNewPay(p=>({...p,amount:e.target.value}))} placeholder="0"/>
+                    </div>
+                    <div className="fg" style={{flex:"1 1 130px"}}>
+                        <label className="fl">收款日期</label>
+                        <input className="fi" type="date" value={newPay.date} onChange={e=>setNewPay(p=>({...p,date:e.target.value}))}/>
+                    </div>
+                    <div className="fg" style={{flex:"0 0 100px"}}>
+                        <label className="fl">付款方式</label>
+                        <select className="fi" value={newPay.method} onChange={e=>setNewPay(p=>({...p,method:e.target.value}))}>
+                            {PAYMENT_METHODS.map(m=><option key={m}>{m}</option>)}
+                        </select>
+                    </div>
+                    <div className="fg" style={{flex:"1 1 120px"}}>
+                        <label className="fl">備註（選填）</label>
+                        <input className="fi" value={newPay.note} onChange={e=>setNewPay(p=>({...p,note:e.target.value}))} placeholder="例：第一期款"/>
+                    </div>
+                    <button className="btn btn-gold btn-sm" onClick={()=>{
+                        if(!newPay.amount){ toast("請填收款金額"); return; }
+                        sf("payments",[...(F.payments||[]),{...newPay,id:uid()}]);
+                        setNewPay({amount:"",date:today(),method:"現金",note:""});
+                    }} style={{flexShrink:0}}>＋ 新增</button>
                 </div>
 
                 {/* 開庭 */}

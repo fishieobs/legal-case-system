@@ -151,6 +151,28 @@ textarea.fi{resize:vertical;min-height:80px;}
 
 
 
+
+/* ── CASE NOTES ── */
+.notes-wrap{display:flex;flex-direction:column;gap:14px;}
+.note-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;box-shadow:var(--shadow);}
+.note-card.pinned{border-color:var(--gold)44;background:rgba(200,169,110,.04);}
+.note-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.note-meta{font-size:11px;color:var(--text4);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.note-tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.note-body{font-size:13px;color:var(--text);line-height:1.75;white-space:pre-wrap;word-break:break-word;}
+.note-body.collapsed{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+.note-actions{display:flex;gap:6px;flex-shrink:0;}
+.note-action-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:3px 6px;border-radius:5px;font-size:13px;font-family:inherit;transition:background .15s;}
+.note-action-btn:hover{background:var(--bg4);color:var(--text2);}
+.note-editor{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+.note-editor textarea{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;line-height:1.75;resize:none;min-height:120px;}
+.note-toolbar{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);gap:8px;flex-wrap:wrap;}
+.note-tag-sel{display:flex;gap:6px;flex-wrap:wrap;}
+.note-tag-opt{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s;}
+.note-tag-opt:not(.sel){opacity:.5;}
+.notes-empty{text-align:center;padding:40px 20px;color:var(--text4);}
+.notes-empty .ico{font-size:40px;margin-bottom:10px;opacity:.5;}
+
 /* ── FEE PAYMENTS ── */
 .fee-summary{background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px;}
 .fee-summary-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;gap:8px;}
@@ -501,7 +523,11 @@ function App({user}){
     const [filterStatus, setFilterStatus] = useState("全部");
     const [filterType, setFilterType] = useState("全部");
     const [deleteConfirm, setDeleteConfirm] = useState(false);
-    const [detailTab, setDetailTab] = useState("info"); // info | timeline
+    const [detailTab, setDetailTab] = useState("info"); // info | timeline | notes
+    const [noteInput, setNoteInput] = useState("");
+    const [noteTag, setNoteTag] = useState("一般");
+    const [editingNote, setEditingNote] = useState(null); // {id, text, tag}
+    const [expandedNotes, setExpandedNotes] = useState({});
     const [listTab, setListTab] = useState("list"); // list | calendar
     const [calDate, setCalDate] = useState(new Date());
     const [filterTag, setFilterTag] = useState("全部");
@@ -668,6 +694,46 @@ function App({user}){
     const openAdd=()=>{ setFormData({...emptyCase,id:""}); setEditId(null); setView("form"); };
     const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
     const openDetail=(id)=>{ setSelectedId(id); setDetailTab("info"); setView("detail"); };
+
+    // ── Note helpers ──
+    const NOTE_TAGS=[
+        {name:"一般",color:"#64748b"},
+        {name:"重要",color:"#ef4444"},
+        {name:"法律意見",color:"#8b5cf6"},
+        {name:"當事人指示",color:"#3b82f6"},
+        {name:"庭後記錄",color:"#f59e0b"},
+        {name:"待確認",color:"#f97316"},
+    ];
+    const addNote=async(c)=>{
+        if(!noteInput.trim()){ toast("請輸入筆記內容"); return; }
+        const note={id:uid(),text:noteInput.trim(),tag:noteTag,pinned:false,
+            createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+        const notes=[note,...(c.notes_list||[])];
+        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+        setNoteInput(""); toast("✅ 筆記已儲存");
+    };
+    const saveEditNote=async(c)=>{
+        if(!editingNote||!editingNote.text.trim()){ toast("請輸入筆記內容"); return; }
+        const notes=(c.notes_list||[]).map(n=>n.id===editingNote.id
+            ?{...n,text:editingNote.text.trim(),tag:editingNote.tag,updatedAt:new Date().toISOString()}:n);
+        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+        setEditingNote(null); toast("✅ 筆記已更新");
+    };
+    const deleteNote=async(c,id)=>{
+        if(!confirm("確認刪除這則筆記？")) return;
+        const notes=(c.notes_list||[]).filter(n=>n.id!==id);
+        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+        toast("🗑 已刪除");
+    };
+    const togglePin=async(c,id)=>{
+        const notes=(c.notes_list||[]).map(n=>n.id===id?{...n,pinned:!n.pinned}:n);
+        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+    };
+    const fmtNoteDate=(iso)=>{
+        if(!iso) return "";
+        const d=new Date(iso);
+        return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    };
 
     // ── Fee helpers ──
     const PAYMENT_METHODS=["現金","匯款","票據","信用卡","其他"];
@@ -1210,7 +1276,7 @@ function App({user}){
             </div>
             {/* Tab switcher */}
             <div style={{display:"flex",gap:0,padding:"0 16px",background:"var(--bg2)",borderBottom:"1px solid var(--border)"}}>
-                {[["info","📋 案件資訊"],["timeline","🕐 時間軸"]].map(([t,l])=>(
+                {[["info","📋 案件資訊"],["timeline","🕐 時間軸"],["notes","📓 案件筆記"]].map(([t,l])=>(
                     <button key={t} onClick={()=>setDetailTab(t)} style={{
                         padding:"10px 18px",border:"none",background:"transparent",
                         color:detailTab===t?"var(--gold)":"var(--text3)",
@@ -1303,6 +1369,103 @@ function App({user}){
                 })()}
 
                 {/* ── INFO TAB ── */}
+
+                {/* ── NOTES TAB ── */}
+                {detailTab==="notes" && (()=>{
+                    const allNotes=(selected.notes_list||[]);
+                    const sorted=[...allNotes.filter(n=>n.pinned),...allNotes.filter(n=>!n.pinned)];
+                    const tagMap=Object.fromEntries(NOTE_TAGS.map(t=>[t.name,t.color]));
+                    return(
+                        <div className="notes-wrap">
+                            {/* New note editor */}
+                            <div className="note-editor">
+                                <textarea
+                                    placeholder="記錄案件相關事項、法律意見、當事人指示、庭後心得…&#10;&#10;按 Ctrl+Enter 快速儲存"
+                                    value={noteInput}
+                                    onChange={e=>setNoteInput(e.target.value)}
+                                    onKeyDown={e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); addNote(selected); } }}
+                                    autoFocus={false}
+                                />
+                                <div className="note-toolbar">
+                                    <div className="note-tag-sel">
+                                        {NOTE_TAGS.map(t=>(
+                                            <button key={t.name} className={"note-tag-opt"+(noteTag===t.name?" sel":"")}
+                                                style={{background:t.color+"22",color:t.color,border:`1px solid ${t.color}44`}}
+                                                onClick={()=>setNoteTag(t.name)}>{t.name}</button>
+                                        ))}
+                                    </div>
+                                    <button className="btn btn-gold btn-sm" onClick={()=>addNote(selected)}
+                                        disabled={!noteInput.trim()} style={{flexShrink:0}}>
+                                        💾 儲存筆記
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Notes list */}
+                            {sorted.length===0 && (
+                                <div className="notes-empty">
+                                    <div className="ico">📓</div>
+                                    <div>尚無筆記</div>
+                                    <div style={{fontSize:12,marginTop:6}}>在上方輸入框記錄案件相關事項</div>
+                                </div>
+                            )}
+                            {sorted.map(n=>{
+                                const isEditing=editingNote?.id===n.id;
+                                const isExpanded=expandedNotes[n.id];
+                                const isLong=n.text.length>200||n.text.split("\n").length>4;
+                                const tagColor=tagMap[n.tag]||"#64748b";
+                                return(
+                                    <div key={n.id} className={"note-card"+(n.pinned?" pinned":"")}>
+                                        <div className="note-header">
+                                            <div className="note-meta">
+                                                {n.pinned && <span style={{color:"var(--gold)",fontSize:13}}>📌</span>}
+                                                <span className="note-tag" style={{background:tagColor+"22",color:tagColor,border:`1px solid ${tagColor}44`}}>{n.tag}</span>
+                                                <span>{fmtNoteDate(n.createdAt)}</span>
+                                                {n.updatedAt!==n.createdAt && <span style={{color:"var(--text4)"}}>（已編輯）</span>}
+                                            </div>
+                                            <div className="note-actions">
+                                                <button className="note-action-btn" title={n.pinned?"取消置頂":"置頂"} onClick={()=>togglePin(selected,n.id)}>{n.pinned?"📌":"📍"}</button>
+                                                <button className="note-action-btn" title="編輯" onClick={()=>setEditingNote({id:n.id,text:n.text,tag:n.tag})}>✏️</button>
+                                                <button className="note-action-btn" title="刪除" onClick={()=>deleteNote(selected,n.id)}>🗑</button>
+                                            </div>
+                                        </div>
+                                        {isEditing?(
+                                            <div>
+                                                <textarea
+                                                    style={{width:"100%",background:"var(--bg)",border:"1px solid var(--gold)44",borderRadius:8,padding:"10px 12px",color:"var(--text)",fontSize:13,fontFamily:"inherit",lineHeight:1.75,resize:"vertical",minHeight:100,outline:"none"}}
+                                                    value={editingNote.text}
+                                                    onChange={e=>setEditingNote(v=>({...v,text:e.target.value}))}
+                                                    autoFocus
+                                                />
+                                                <div style={{display:"flex",gap:6,flexWrap:"wrap",margin:"10px 0 8px"}}>
+                                                    {NOTE_TAGS.map(t=>(
+                                                        <button key={t.name} className={"note-tag-opt"+(editingNote.tag===t.name?" sel":"")}
+                                                            style={{background:t.color+"22",color:t.color,border:`1px solid ${t.color}44`}}
+                                                            onClick={()=>setEditingNote(v=>({...v,tag:t.name}))}>{t.name}</button>
+                                                    ))}
+                                                </div>
+                                                <div style={{display:"flex",gap:8}}>
+                                                    <button className="btn btn-outline btn-sm" onClick={()=>setEditingNote(null)}>取消</button>
+                                                    <button className="btn btn-gold btn-sm" onClick={()=>saveEditNote(selected)}>儲存</button>
+                                                </div>
+                                            </div>
+                                        ):(
+                                            <>
+                                                <div className={"note-body"+(isLong&&!isExpanded?" collapsed":"")}>{n.text}</div>
+                                                {isLong && (
+                                                    <button onClick={()=>setExpandedNotes(v=>({...v,[n.id]:!v[n.id]}))}
+                                                        style={{background:"none",border:"none",color:"var(--gold)",fontSize:12,cursor:"pointer",marginTop:6,padding:0,fontFamily:"inherit"}}>
+                                                        {isExpanded?"▲ 收起":"▼ 展開全文"}
+                                                    </button>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
 
                 {detailTab==="info" && <div className="detail-grid">
                     {/* 基本資料 */}

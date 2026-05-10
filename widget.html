@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="今日庭期">
+<meta name="theme-color" content="#0a1628">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<title>⚖ 今日庭期</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+    --bg:#020817;--bg2:#0a1628;--bg3:#0f172a;--bg4:#1e293b;
+    --gold:#c8a96e;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--text4:#475569;
+    --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--border:#1e293b;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',system-ui,sans-serif;}
+
+/* ── HEADER ── */
+.header{background:var(--bg2);padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.header-left{display:flex;align-items:center;gap:10px;}
+.logo{font-size:22px;color:var(--gold);text-shadow:0 0 14px #c8a96e55;}
+.header-title{font-size:15px;font-weight:700;color:var(--text);}
+.header-date{font-size:11px;color:var(--text3);margin-top:2px;}
+.btn-link{background:transparent;border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-family:inherit;}
+.btn-link:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ── CONTENT ── */
+.content{padding:16px;max-width:600px;margin:0 auto;}
+
+/* ── DAY SECTION ── */
+.day-section{margin-bottom:20px;}
+.day-label{font-size:11px;font-weight:700;color:var(--text4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.day-label::after{content:"";flex:1;height:1px;background:var(--border);}
+
+/* ── HEARING CARD ── */
+.hearing-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;display:flex;gap:14px;align-items:stretch;transition:border-color .2s;cursor:pointer;text-decoration:none;}
+.hearing-card:hover{border-color:var(--gold)44;}
+.hearing-card:active{opacity:.85;}
+.hearing-card.today{border-left:4px solid var(--gold);}
+.hearing-card.urgent{border-left:4px solid var(--red);}
+.time-col{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;flex-shrink:0;}
+.time-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;line-height:1.2;text-align:center;flex-direction:column;}
+.info-col{flex:1;min-width:0;}
+.client-name{font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.case-no{font-size:11px;color:var(--text4);font-family:monospace;margin-bottom:6px;}
+.meta-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:4px;}
+.badge{display:inline-block;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;}
+.detail-row{font-size:12px;color:var(--text3);margin-top:4px;display:flex;align-items:center;gap:5px;}
+.countdown{font-size:11px;font-weight:700;margin-top:6px;}
+
+/* ── EMPTY ── */
+.empty-day{background:var(--bg3);border:1px dashed var(--border);border-radius:12px;padding:24px;text-align:center;color:var(--text4);font-size:13px;}
+
+/* ── LOADING ── */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px;color:var(--text3);}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SUMMARY BAR ── */
+.summary-bar{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;gap:0;margin-bottom:20px;overflow:hidden;}
+.summary-item{flex:1;text-align:center;padding:4px 8px;}
+.summary-item+.summary-item{border-left:1px solid var(--border);}
+.summary-num{font-size:22px;font-weight:800;color:var(--gold);line-height:1;}
+.summary-lbl{font-size:10px;color:var(--text4);margin-top:3px;letter-spacing:.04em;}
+
+/* ── CLOCK ── */
+.clock{font-size:13px;color:var(--text3);font-variant-numeric:tabular-nums;font-family:monospace;}
+
+/* ── REFRESH ── */
+.refresh-btn{background:none;border:none;color:var(--text4);cursor:pointer;font-size:16px;padding:4px;border-radius:6px;transition:color .2s;}
+.refresh-btn:hover{color:var(--gold);}
+.refreshing{animation:spin .6s linear infinite;}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg);}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 20px 60px #000a;}
+.fi{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-size:13px;outline:none;font-family:inherit;width:100%;}
+.fi:focus{border-color:var(--gold);}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#a07840);color:#0a0a0a;border:none;border-radius:8px;padding:11px 20px;font-weight:700;font-size:14px;cursor:pointer;width:100%;font-family:inherit;}
+.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+@media(max-width:480px){.content{padding:12px;}.client-name{font-size:15px;}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",
+    authDomain: "legalcasemanageer.firebaseapp.com",
+    projectId: "legalcasemanageer",
+    storageBucket: "legalcasemanageer.firebasestorage.app",
+    messagingSenderId: "559838504556",
+    appId: "1:559838504556:web:ba10c071a12650bbd85a49"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const auth = getAuth(app);
+
+// ── Constants ──
+const TYPE_COLOR = {刑事:"#ef4444",民事:"#3b82f6",行政:"#8b5cf6",家事:"#ec4899",勞動:"#f97316",智財:"#14b8a6",非訟:"#06b6d4"};
+const DAYS_AHEAD = 7; // show hearings within next 7 days
+
+// ── Helpers ──
+function today(){ return new Date().toISOString().split("T")[0]; }
+function daysUntil(d){ return Math.ceil((new Date(d)-new Date(today()))/86400000); }
+function pad(n){ return String(n).padStart(2,"0"); }
+function fmtDate(iso){
+    const d=new Date(iso+"T00:00:00");
+    const wd=["日","一","二","三","四","五","六"][d.getDay()];
+    return `${d.getMonth()+1}/${d.getDate()}（${wd}）`;
+}
+function nowStr(){
+    const n=new Date();
+    return `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+}
+
+// ── State ──
+let state = { user:null, authChecked:false, cases:[], refreshing:false };
+let clockTimer=null, unsubCases=null;
+
+// ── Render engine ──
+const root = document.getElementById("root");
+function render(){ root.innerHTML = buildHTML(); bindEvents(); }
+
+// ── Auth ──
+onAuthStateChanged(auth, u=>{
+    state.user=u;
+    state.authChecked=true;
+    if(u && !unsubCases){
+        unsubCases = onSnapshot(collection(db,"cases"), snap=>{
+            state.cases = snap.docs.map(d=>({...d.data(),id:d.id}));
+            // cache locally
+            try{ localStorage.setItem("widget_cases_cache", JSON.stringify(state.cases)); }catch(_){}
+            render();
+        }, err=>{
+            // fallback to cache
+            try{
+                const c=localStorage.getItem("widget_cases_cache");
+                if(c) state.cases=JSON.parse(c);
+            }catch(_){}
+            render();
+        });
+    }
+    if(!u && unsubCases){ unsubCases(); unsubCases=null; }
+    render();
+});
+
+// ── Build hearings list ──
+function getHearings(){
+    const result=[];
+    state.cases.forEach(c=>{
+        (c.hearings||[]).forEach(h=>{
+            const d=daysUntil(h.date);
+            if(d>=0 && d<=DAYS_AHEAD){
+                result.push({
+                    date:h.date, time:h.time||"", agency:h.agency||"",
+                    courtroom:h.courtroom||"", note:h.note||"",
+                    clientName:c.clientName, firmCaseNo:c.firmCaseNo,
+                    courtCaseNos:c.courtCaseNos||[], caseType:c.caseType,
+                    status:c.status, opposingParty:c.opposingParty||"",
+                    caseId:c.id, daysUntil:d,
+                });
+            }
+        });
+    });
+    return result.sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+}
+
+// ── HTML builders ──
+function buildHTML(){
+    if(!state.authChecked) return buildLoading("載入中…");
+    if(!state.user) return buildLogin();
+    return buildWidget();
+}
+
+function buildLoading(msg){
+    return `<div class="loading"><div class="spinner"></div><div>${msg}</div></div>`;
+}
+
+function buildLogin(){
+    return `
+    <div class="login-wrap">
+        <div class="login-box">
+            <div style="font-size:42px;text-align:center;margin-bottom:8px;filter:drop-shadow(0 0 14px #c8a96e55)">⚖</div>
+            <div style="font-size:1.2rem;font-weight:700;color:var(--gold);text-align:center;margin-bottom:4px">今日庭期</div>
+            <div style="font-size:11px;color:var(--text4);text-align:center;letter-spacing:.06em;margin-bottom:28px">HEARING WIDGET</div>
+            <div id="login-err" style="display:none" class="err"></div>
+            <div style="margin-bottom:12px">
+                <label style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">帳號</label>
+                <input class="fi" id="email" type="email" placeholder="office@yourfirm.com" autocomplete="username">
+            </div>
+            <div style="margin-bottom:22px">
+                <label style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">密碼</label>
+                <input class="fi" id="password" type="password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="btn-gold" id="btn-login">🔐 登入</button>
+        </div>
+    </div>`;
+}
+
+function buildWidget(){
+    const hearings=getHearings();
+    const todayH=hearings.filter(h=>h.daysUntil===0);
+    const upcomingH=hearings.filter(h=>h.daysUntil>0);
+
+    // Group upcoming by date
+    const byDate={};
+    upcomingH.forEach(h=>{ if(!byDate[h.date]) byDate[h.date]=[]; byDate[h.date].push(h); });
+
+    const now=new Date();
+    const dateLabel=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${"日一二三四五六"[now.getDay()]}）`;
+
+    return `
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">⚖</div>
+            <div>
+                <div class="header-title">今日庭期提醒</div>
+                <div class="header-date">${dateLabel}</div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+            <span class="clock" id="clock">${nowStr()}</span>
+            <button class="refresh-btn ${state.refreshing?"refreshing":""}" id="btn-refresh" title="重新整理">↻</button>
+            <a href="index.html" class="btn-link">📋 案件系統</a>
+            <button class="btn-link" id="btn-logout">登出</button>
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- Summary bar -->
+        <div class="summary-bar">
+            <div class="summary-item">
+                <div class="summary-num" style="color:${todayH.length>0?"var(--red)":"var(--text3)"}">${todayH.length}</div>
+                <div class="summary-lbl">今日開庭</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-num">${upcomingH.length}</div>
+                <div class="summary-lbl">近7日</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-num">${hearings.length}</div>
+                <div class="summary-lbl">合計場次</div>
+            </div>
+        </div>
+
+        <!-- Today -->
+        <div class="day-section">
+            <div class="day-label" style="color:${todayH.length>0?"var(--red)":"var(--text4)"}">
+                ${todayH.length>0?"🔴":"⚪"} 今天
+            </div>
+            ${todayH.length===0
+                ? `<div class="empty-day">今日無庭期 ✨</div>`
+                : todayH.map(h=>buildCard(h)).join("")
+            }
+        </div>
+
+        <!-- Upcoming grouped by date -->
+        ${Object.entries(byDate).map(([date,hs])=>`
+        <div class="day-section">
+            <div class="day-label">
+                🗓 ${fmtDate(date)}
+                <span style="color:var(--text4);font-weight:400;font-size:10px">${hs[0].daysUntil===1?"明天":`${hs[0].daysUntil}天後`}</span>
+            </div>
+            ${hs.map(h=>buildCard(h)).join("")}
+        </div>`).join("")}
+
+        ${hearings.length===0?`
+        <div style="text-align:center;padding:40px 20px;color:var(--text4)">
+            <div style="font-size:40px;margin-bottom:12px">🎉</div>
+            <div style="font-weight:700;color:var(--text3)">近7日無庭期</div>
+            <div style="font-size:12px;margin-top:6px">好好休息！</div>
+        </div>`:""}
+    </div>`;
+}
+
+function buildCard(h){
+    const color = TYPE_COLOR[h.caseType]||"#64748b";
+    const isToday = h.daysUntil===0;
+    const isUrgent = isToday && h.time && h.time < nowHHMM();
+    const cardClass = `hearing-card ${isToday?"today":""} ${isUrgent?"urgent":""}`;
+
+    // Time circle
+    const timeBg = isToday
+        ? `background:${color}22;color:${color};border:2px solid ${color}55;`
+        : `background:var(--bg4);color:var(--text3);border:2px solid var(--border);`;
+    const timeDisplay = h.time||"—";
+    const timeCircle = `<div class="time-circle" style="${timeBg}">${h.time?h.time.replace(":","\n"):"—"}</div>`;
+
+    // Countdown badge
+    let countdown = "";
+    if(isToday && h.time){
+        const [hh,mm]=h.time.split(":").map(Number);
+        const nowMin=new Date().getHours()*60+new Date().getMinutes();
+        const tMin=hh*60+mm;
+        const diff=tMin-nowMin;
+        if(diff>0) countdown=`<div class="countdown" style="color:${diff<=30?"var(--red)":"var(--yellow)"}">還有 ${diff>=60?Math.floor(diff/60)+"小時":diff+"分鐘"}</div>`;
+        else if(diff>-60) countdown=`<div class="countdown" style="color:var(--text3)">已過 ${-diff}分鐘</div>`;
+    }
+
+    const caseNo=(h.courtCaseNos||[]).filter(Boolean)[0]||h.firmCaseNo||"";
+
+    return `
+    <div class="${cardClass}" onclick="openCase('${h.caseId}')">
+        <div class="time-col">${timeCircle}</div>
+        <div class="info-col">
+            <div class="client-name">${esc(h.clientName)}</div>
+            <div class="case-no">${esc(h.firmCaseNo)}${caseNo&&caseNo!==h.firmCaseNo?" · "+esc(caseNo):""}</div>
+            <div class="meta-row">
+                <span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${h.caseType}</span>
+                ${h.note?`<span class="badge" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)">${esc(h.note)}</span>`:""}
+            </div>
+            ${h.agency||h.courtroom?`<div class="detail-row">🏛 ${esc([h.agency,h.courtroom].filter(Boolean).join(" · "))}</div>`:""}
+            ${h.opposingParty?`<div class="detail-row">⚔ 對造：${esc(h.opposingParty)}</div>`:""}
+            ${countdown}
+        </div>
+    </div>`;
+}
+
+function nowHHMM(){
+    return pad(new Date().getHours())+":"+pad(new Date().getMinutes());
+}
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+// ── Event binding ──
+function bindEvents(){
+    // Login
+    const btnLogin=document.getElementById("btn-login");
+    if(btnLogin){
+        const doLogin=async()=>{
+            const email=document.getElementById("email")?.value.trim();
+            const pw=document.getElementById("password")?.value;
+            const errEl=document.getElementById("login-err");
+            if(!email||!pw){ showErr(errEl,"請輸入帳號和密碼"); return; }
+            btnLogin.textContent="登入中…"; btnLogin.disabled=true;
+            try{
+                await signInWithEmailAndPassword(auth,email,pw);
+            }catch(e){
+                const msg={"auth/invalid-credential":"帳號或密碼錯誤","auth/too-many-requests":"嘗試次數過多，請稍後"}[e.code]||"登入失敗："+e.message;
+                showErr(errEl,msg);
+                btnLogin.textContent="🔐 登入"; btnLogin.disabled=false;
+            }
+        };
+        btnLogin.addEventListener("click",doLogin);
+        document.getElementById("password")?.addEventListener("keydown",e=>e.key==="Enter"&&doLogin());
+        document.getElementById("email")?.addEventListener("keydown",e=>e.key==="Enter"&&document.getElementById("password")?.focus());
+    }
+
+    // Logout
+    document.getElementById("btn-logout")?.addEventListener("click",async()=>{
+        if(unsubCases){ unsubCases(); unsubCases=null; }
+        await signOut(auth);
+    });
+
+    // Refresh
+    document.getElementById("btn-refresh")?.addEventListener("click",()=>{
+        state.refreshing=true; render();
+        setTimeout(()=>{ state.refreshing=false; render(); },800);
+    });
+
+    // Clock
+    if(clockTimer) clearInterval(clockTimer);
+    if(state.user){
+        clockTimer=setInterval(()=>{
+            const el=document.getElementById("clock");
+            if(el) el.textContent=nowStr();
+        },1000);
+    }
+}
+
+function showErr(el,msg){ if(el){ el.textContent="⚠️ "+msg; el.style.display="block"; }}
+window.openCase=(id)=>{ window.location.href=`index.html`; };
+
+render();
+</script>
+</body>
+</html>

@@ -206,12 +206,21 @@ textarea.fi{resize:vertical;min-height:80px;}
 .cal-nav:hover{background:var(--bg4);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
 .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text4);padding:10px 4px;letter-spacing:.04em;text-transform:uppercase;}
+.cal-dow.sun{color:#ef4444;}
+.cal-dow.sat{color:#3b82f6;}
 .cal-day{min-height:70px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 5px;cursor:default;transition:background .15s;}
 .cal-day:nth-child(7n){border-right:none;}
 .cal-day.other-month{opacity:.35;}
 .cal-day.today-cell{background:rgba(200,169,110,.08);}
+.cal-day.is-sun{background:rgba(239,68,68,.03);}
+.cal-day.is-sat{background:rgba(59,130,246,.03);}
+.cal-day.is-holiday{background:rgba(239,68,68,.05);}
 .cal-day-num{font-size:12px;font-weight:600;color:var(--text3);margin-bottom:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
 .cal-day.today-cell .cal-day-num{background:var(--gold);color:#000;font-weight:800;}
+.cal-day.is-sun:not(.other-month) .cal-day-num{color:#ef4444;}
+.cal-day.is-sat:not(.other-month) .cal-day-num{color:#3b82f6;}
+.cal-day.is-holiday:not(.other-month) .cal-day-num{color:#ef4444;font-weight:800;}
+.cal-holiday-label{font-size:9px;color:#ef4444;font-weight:700;margin-bottom:2px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cal-event{font-size:10px;border-radius:4px;padding:2px 5px;margin-bottom:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;line-height:1.4;}
 .cal-event:hover{opacity:.8;}
 .cal-legend{display:flex;gap:12px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--border);}
@@ -336,9 +345,45 @@ const { useState, useEffect, useCallback } = React;
 
 // ── Constants ──
 const CASE_TYPES = ["刑事","民事","行政","家事","勞動","智財","非訟"];
+const CASE_REASONS = {
+    "刑事": ["毒品危害防制條例","殺人罪","傷害罪","竊盜罪","詐欺罪","妨害性自主罪","公共危險罪","偽造文書罪","侵占罪","背信罪","恐嚇罪","妨害自由罪","洗錢防制法","貪污治罪條例","組織犯罪防制條例","違反槍砲彈藥刀械管制條例","其他"],
+    "民事": ["損害賠償","返還借款","清償債務","侵權行為損害賠償","分割共有物","確認契約關係","給付買賣價金","給付租金","返還定金","撤銷詐害行為","確認所有權","拆屋還地","給付工程款","不當得利返還","假扣押","假處分","其他"],
+    "行政": ["訴願","撤銷行政處分","確認行政處分違法","課稅處分爭議","裁罰處分爭議","建照爭議","都市計畫爭議","國家賠償","其他"],
+    "家事": ["離婚","離婚後財產分配","子女監護權","子女親權","扶養費請求","繼承爭議","遺產分割","拋棄繼承","婚姻無效","撤銷婚姻","確認親子關係","收養","監護宣告","輔助宣告","其他"],
+    "勞動": ["給付資遣費","給付退休金","確認僱傭關係","終止勞動契約","給付薪資","職業災害補償","不當解僱","職場霸凌","競業禁止","其他"],
+    "智財": ["著作權侵害","商標侵害","專利侵害","營業秘密侵害","不正競爭","網域名稱爭議","其他"],
+    "非訟": ["本票裁定","支付命令","強制執行","假扣押裁定","假處分裁定","公示催告","宣告死亡","其他"],
+};
 const CASE_STATUS = ["進行中","已結案","上訴中","停止中","準備委任"];
 const INSTANCES = ["地院","高院","最高院","地檢署","高檢署","高行院","最高行政法院"];
 const COURTS = ["台北地院","士林地院","新北地院","桃園地院","新竹地院","苗栗地院","台中地院","南投地院","彰化地院","雲林地院","嘉義地院","台南地院","高雄地院","橋頭地院","屏東地院","花蓮地院","台東地院","基隆地院","宜蘭地院","澎湖地院","金門地院","台北地檢","士林地檢","新北地檢","桃園地檢","新竹地檢","台中地檢","台南地檢","高雄地檢","台北高院","台中高院","台南高院","高雄高院","最高法院","台北高行院","台中高行院","高雄高行院","最高行政法院"];
+
+
+// ── 台灣國定假日（2024-2027）──
+const TW_HOLIDAYS = {
+    // 2024
+    "2024-01-01":"元旦","2024-02-08":"除夕","2024-02-09":"春節","2024-02-10":"春節",
+    "2024-02-11":"春節","2024-02-12":"春節","2024-02-13":"春節","2024-02-14":"彈性放假",
+    "2024-02-28":"和平紀念日","2024-04-04":"兒童節","2024-04-05":"清明節",
+    "2024-06-10":"端午節","2024-09-17":"中秋節","2024-10-10":"國慶日",
+    // 2025
+    "2025-01-01":"元旦","2025-01-27":"除夕","2025-01-28":"春節","2025-01-29":"春節",
+    "2025-01-30":"春節","2025-01-31":"春節","2025-02-03":"彈性放假",
+    "2025-02-28":"和平紀念日","2025-04-03":"兒童節","2025-04-04":"清明節",
+    "2025-05-01":"勞動節","2025-05-30":"端午節","2025-06-02":"彈性放假",
+    "2025-10-06":"中秋節","2025-10-10":"國慶日",
+    // 2026
+    "2026-01-01":"元旦","2026-02-16":"除夕","2026-02-17":"春節","2026-02-18":"春節",
+    "2026-02-19":"春節","2026-02-20":"春節","2026-02-28":"和平紀念日",
+    "2026-04-03":"兒童節","2026-04-04":"清明節","2026-04-06":"彈性放假",
+    "2026-05-01":"勞動節","2026-06-19":"端午節","2026-09-25":"中秋節",
+    "2026-10-09":"彈性放假","2026-10-10":"國慶日",
+    // 2027
+    "2027-01-01":"元旦","2027-02-05":"除夕","2027-02-06":"春節","2027-02-07":"春節",
+    "2027-02-08":"春節","2027-02-09":"春節","2027-02-28":"和平紀念日",
+    "2027-04-04":"兒童節","2027-04-05":"清明節","2027-05-01":"勞動節",
+    "2027-06-09":"端午節","2027-10-01":"彈性放假","2027-10-10":"國慶日",
+};
 
 const TYPE_COLOR={刑事:"#ef4444",民事:"#3b82f6",行政:"#8b5cf6",家事:"#ec4899",勞動:"#f97316",智財:"#14b8a6",非訟:"#06b6d4"};
 const STATUS_COLOR={"進行中":"#22c55e","已結案":"#94a3b8","上訴中":"#f59e0b","停止中":"#ef4444","準備委任":"#3b82f6"};
@@ -347,7 +392,7 @@ const emptyCase = {
     id:"", firmCaseNo:"", courtCaseNos:[""], division:"",
     clientName:"", phone:"", totalFee:0, payments:[], disbursements:0,
     caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
-    attorney:"", retainerDate:"", opposingParty:"", judgementLink:"", notes:"",
+    attorney:"", retainerDate:"", opposingParty:"", caseReason:"", judgementLink:"", notes:"",
     hearings:[], todos:[], driveFolderUrl:"", docs:[]
 };
 
@@ -529,6 +574,8 @@ function App({user}){
     const [editingNote, setEditingNote] = useState(null); // {id, text, tag}
     const [expandedNotes, setExpandedNotes] = useState({});
     const [listTab, setListTab] = useState("list"); // list | calendar
+    const [statsYear, setStatsYear] = useState("全部");
+    const [statsMonth, setStatsMonth] = useState("全部");
     const [calDate, setCalDate] = useState(new Date());
     const [filterTag, setFilterTag] = useState("全部");
     const [sortBy, setSortBy] = useState("retainerDate"); // retainerDate | feeReceived | feeUnpaid | nextHearing
@@ -594,7 +641,7 @@ function App({user}){
         const q=search.toLowerCase();
         const searchFields=[
             c.clientName, c.firmCaseNo, c.opposingParty, c.attorney,
-            c.currentAgency, c.court, c.division, c.notes, c.judgementLink,
+            c.currentAgency, c.court, c.division, c.notes, c.judgementLink, c.caseReason||"",
             ...(c.courtCaseNos||[]),
             ...(c.hearings||[]).map(h=>[h.agency,h.note,h.courtroom].filter(Boolean).join(" ")),
             ...(c.todos||[]).map(t=>t.text),
@@ -895,12 +942,12 @@ function App({user}){
 
     // ── Excel export ──
     const exportExcel=()=>{
-        const headers=["事務所案件編號","當事人姓名","連絡電話","對造","法院案號","股別","法院","審級","案件類型","狀態","承辦律師","委任日期","本件律師費","已收款合計","未收款","代墊款項","標籤","備註"];
+        const headers=["事務所案件編號","當事人姓名","連絡電話","對造","法院案號","股別","法院","審級","案件類型","案由","狀態","承辦律師","委任日期","本件律師費","已收款合計","未收款","代墊款項","標籤","備註"];
         const rows=cases.map(c=>[
             c.firmCaseNo||"", c.clientName||"", c.phone||"", c.opposingParty||"",
             (c.courtCaseNos||[]).filter(Boolean).join("、"), c.division||"", c.court||"", c.instance||"",
             c.caseType||"", c.status||"", c.attorney||"", c.retainerDate||"",
-            Number(c.totalFee||0), getReceived(c), getUnpaid(c), Number(c.disbursements||0),
+            Number(c.totalFee||0), getReceived(c), getUnpaid(c), Number(c.disbursements||0), c.caseReason||"",
             (c.tags||[]).join("、"), (c.notes||"").replace(/\n/g," "),
         ]);
         // Build CSV with BOM for Excel UTF-8
@@ -1152,14 +1199,34 @@ function App({user}){
                                 <button className="cal-nav" onClick={()=>setCalDate(new Date(y,m+1,1))}>›</button>
                             </div>
                             <div className="cal-grid">
-                                {["日","一","二","三","四","五","六"].map(d=><div key={d} className="cal-dow">{d}</div>)}
+                                {[["日","sun"],["一",""],["二",""],["三",""],["四",""],["五",""],["六","sat"]].map(([d,cls])=>(
+                                    <div key={d} className={`cal-dow${cls?" "+cls:""}`}>{d}</div>
+                                ))}
                                 {cells.map((cell,i)=>{
+                                    const dow=i%7; // 0=日,6=六
                                     const dateStr=cell.cur?`${y}-${String(m+1).padStart(2,"0")}-${String(cell.day).padStart(2,"0")}`:"";
                                     const events=dateStr?hearingMap[dateStr]||[]:[];
                                     const isToday=dateStr===todayStr;
+                                    const isSun=dow===0;
+                                    const isSat=dow===6;
+                                    const holidayName=dateStr?TW_HOLIDAYS[dateStr]:"";
+                                    const isHoliday=!!holidayName&&!isSun&&!isSat; // non-weekend public holiday
+                                    const cls=[
+                                        "cal-day",
+                                        !cell.cur?"other-month":"",
+                                        isToday?"today-cell":"",
+                                        isSun?"is-sun":"",
+                                        isSat?"is-sat":"",
+                                        isHoliday?"is-holiday":"",
+                                    ].filter(Boolean).join(" ");
                                     return(
-                                        <div key={i} className={`cal-day${!cell.cur?" other-month":""}${isToday?" today-cell":""}`}>
+                                        <div key={i} className={cls}>
                                             <div className="cal-day-num">{cell.day}</div>
+                                            {holidayName && cell.cur && (
+                                                <div className="cal-holiday-label" title={holidayName}>
+                                                    {holidayName==="彈性放假"?"補假":holidayName}
+                                                </div>
+                                            )}
                                             {events.slice(0,3).map((ev,ei)=>(
                                                 <div key={ei} className="cal-event"
                                                     style={{background:(TYPE_COLOR[ev.caseType]||"#64748b")+"33",color:TYPE_COLOR[ev.caseType]||"#64748b"}}
@@ -1174,6 +1241,9 @@ function App({user}){
                                 })}
                             </div>
                             <div className="cal-legend">
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#ef4444"}}/><span style={{color:"#ef4444",fontWeight:700}}>日/假日</span></div>
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#3b82f6"}}/><span style={{color:"#3b82f6",fontWeight:700}}>六</span></div>
+                                <div style={{width:1,height:14,background:"var(--border)",margin:"0 4px"}}/>
                                 {CASE_TYPES.map(t=><div key={t} className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:TYPE_COLOR[t]||"#64748b"}}/>{t}</div>)}
                             </div>
                         </div>
@@ -1192,7 +1262,7 @@ function App({user}){
                                     <div>
                                         <div style={{color:"var(--gold)",fontWeight:700,fontFamily:"monospace",fontSize:12}}>{c.firmCaseNo}</div>
                                         <div style={{fontWeight:700,fontSize:16,color:"var(--text)",marginTop:2}}>{c.clientName}</div>
-                                        <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{c.currentAgency||c.court||""}</div>
+                                        <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{c.currentAgency||c.court||""}{c.caseReason&&<span style={{color:"var(--text4)",marginLeft:4}}>· {c.caseReason}</span>}</div>
                                     </div>
                                     <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
                                         <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/>
@@ -1677,14 +1747,59 @@ function App({user}){
 
     // ══ STATS VIEW ══
     if(view==="stats"){
+        // ── Build year/month options from retainerDate ──
+        const allYears=[...new Set(cases.map(c=>(c.retainerDate||"").slice(0,4)).filter(Boolean))].sort((a,b)=>b-a);
+        const months=["01","02","03","04","05","06","07","08","09","10","11","12"];
+
+        // ── Filter cases by year/month (based on retainerDate) ──
+        const filteredCases=cases.filter(c=>{
+            const d=c.retainerDate||"";
+            if(statsYear!=="全部" && !d.startsWith(statsYear)) return false;
+            if(statsMonth!=="全部" && d.slice(5,7)!==statsMonth) return false;
+            return true;
+        });
+
+        // ── Filter payments by year/month (based on payment date) ──
+        const allPayments=[];
+        cases.forEach(c=>{
+            (c.payments||[]).forEach(p=>{
+                const d=p.date||"";
+                const yOk=statsYear==="全部"||d.startsWith(statsYear);
+                const mOk=statsMonth==="全部"||d.slice(5,7)===statsMonth;
+                if(yOk&&mOk) allPayments.push({...p,caseId:c.id,clientName:c.clientName,firmCaseNo:c.firmCaseNo});
+            });
+        });
+
+        // ── Aggregates ──
         const byType={}, byStatus={};
         CASE_TYPES.forEach(t=>byType[t]=0); CASE_STATUS.forEach(s=>byStatus[s]=0);
-        cases.forEach(c=>{byType[c.caseType]=(byType[c.caseType]||0)+1; byStatus[c.status]=(byStatus[c.status]||0)+1;});
-        const totalFee=cases.reduce((s,c)=>s+Number(c.totalFee||0),0);
-        const recv=cases.reduce((s,c)=>s+getReceived(c),0);
-        const unpaid=cases.reduce((s,c)=>s+getUnpaid(c),0);
-        const disb=cases.reduce((s,c)=>s+Number(c.disbursements||0),0);
-        const pct=totalFee>0?(recv/totalFee*100).toFixed(1):0;
+        filteredCases.forEach(c=>{
+            byType[c.caseType]=(byType[c.caseType]||0)+1;
+            byStatus[c.status]=(byStatus[c.status]||0)+1;
+        });
+        const totalFee=filteredCases.reduce((s,c)=>s+Number(c.totalFee||0),0);
+        const unpaid=filteredCases.reduce((s,c)=>s+getUnpaid(c),0);
+        const disb=filteredCases.reduce((s,c)=>s+Number(c.disbursements||0),0);
+        // Received = sum of filtered payments
+        const recv=allPayments.reduce((s,p)=>s+Number(p.amount||0),0);
+        const pct=totalFee>0?Math.min(100,(recv/totalFee*100)).toFixed(1):0;
+
+        // ── Monthly breakdown (for year view) ──
+        const monthlyData=statsYear!=="全部"?months.map(m=>{
+            const mCases=cases.filter(c=>(c.retainerDate||"").startsWith(statsYear+"-"+m));
+            const mPayments=cases.flatMap(c=>(c.payments||[]).filter(p=>(p.date||"").startsWith(statsYear+"-"+m)));
+            return {
+                month:statsYear+"/"+m,
+                caseCount:mCases.length,
+                recv:mPayments.reduce((s,p)=>s+Number(p.amount||0),0),
+                totalFee:mCases.reduce((s,c)=>s+Number(c.totalFee||0),0),
+            };
+        }):[];
+        const maxRecv=monthlyData.length?Math.max(...monthlyData.map(d=>d.recv),1):1;
+
+        const periodLabel=statsYear==="全部"?"全部期間":statsMonth==="全部"?`${statsYear}年`:
+            `${statsYear}年${parseInt(statsMonth)}月`;
+
         return(
             <div className="app">
                 <div className="header">
@@ -1693,36 +1808,124 @@ function App({user}){
                     <div/>
                 </div>
                 <div className="content">
+                    {/* ── Period selector ── */}
+                    <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+                        <select className="fsel" value={statsYear} onChange={e=>{setStatsYear(e.target.value);setStatsMonth("全部");}}>
+                            <option value="全部">全部年份</option>
+                            {allYears.map(y=><option key={y} value={y}>{y}年</option>)}
+                        </select>
+                        {statsYear!=="全部" && (
+                            <select className="fsel" value={statsMonth} onChange={e=>setStatsMonth(e.target.value)}>
+                                <option value="全部">全年</option>
+                                {months.map(m=><option key={m} value={m}>{parseInt(m)}月</option>)}
+                            </select>
+                        )}
+                        <div style={{
+                            background:"rgba(200,169,110,.1)",border:"1px solid rgba(200,169,110,.3)",
+                            borderRadius:8,padding:"6px 14px",fontSize:13,color:"var(--gold)",fontWeight:700,
+                        }}>📅 {periodLabel}</div>
+                        {(statsYear!=="全部"||statsMonth!=="全部") && (
+                            <button className="btn btn-outline btn-sm" onClick={()=>{setStatsYear("全部");setStatsMonth("全部");}}>✕ 清除篩選</button>
+                        )}
+                    </div>
+
                     <div className="detail-grid">
+                        {/* ── Summary ── */}
                         <div className="card">
-                            <div className="card-title">💰 律師費總覽</div>
-                            {[["應收總計",totalFee,"var(--gold)"],["已收款",recv,"var(--green)"],["未收款",unpaid,"var(--red)"],["代墊款",disb,"var(--purple)"]].map(([l,v,c])=>(
-                                <div key={l} className="info-row">
-                                    <div className="info-lbl">{l}</div>
-                                    <div className="info-val" style={{color:c,fontWeight:700}}>{Number(v).toLocaleString()} 元</div>
-                                </div>
-                            ))}
+                            <div className="card-title">💰 {periodLabel} 律師費總覽</div>
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+                                {[
+                                    ["委任案件數",filteredCases.length+" 件","var(--gold)"],
+                                    ["實收款項",recv.toLocaleString()+" 元","var(--green)"],
+                                    ["應收律師費",totalFee.toLocaleString()+" 元","var(--text2)"],
+                                    ["未收款",unpaid.toLocaleString()+" 元","var(--red)"],
+                                    ["代墊款項",disb.toLocaleString()+" 元","var(--purple)"],
+                                    ["收款筆數",allPayments.length+" 筆","var(--blue)"],
+                                ].map(([l,v,c])=>(
+                                    <div key={l} style={{background:"var(--bg)",borderRadius:8,padding:"10px 12px",border:"1px solid var(--border)"}}>
+                                        <div style={{fontSize:10,color:"var(--text4)",marginBottom:4,letterSpacing:".04em"}}>{l}</div>
+                                        <div style={{fontSize:14,fontWeight:800,color:c}}>{v}</div>
+                                    </div>
+                                ))}
+                            </div>
                             {totalFee>0 && <>
-                                <div style={{margin:"14px 0 6px",fontSize:11,color:"var(--text3)"}}>收款進度 {pct}%</div>
+                                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"var(--text3)",marginBottom:4}}>
+                                    <span>收款進度</span><span>{pct}%</span>
+                                </div>
                                 <div style={{background:"var(--bg4)",borderRadius:6,height:10,overflow:"hidden"}}>
-                                    <div style={{background:"var(--green)",height:"100%",width:`${Math.min(100,pct)}%`,borderRadius:6,transition:"width .6s"}}/>
+                                    <div style={{background:"var(--green)",height:"100%",width:`${pct}%`,borderRadius:6,transition:"width .6s"}}/>
                                 </div>
                             </>}
                         </div>
+
+                        {/* ── Monthly bar chart (year view only) ── */}
+                        {statsYear!=="全部" && statsMonth==="全部" && (
+                            <div className="card" style={{gridColumn:"span 1"}}>
+                                <div className="card-title">📈 {statsYear}年 逐月收款</div>
+                                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                                    {monthlyData.filter(d=>d.recv>0||d.caseCount>0).map(d=>(
+                                        <div key={d.month} style={{display:"flex",alignItems:"center",gap:8}}>
+                                            <div style={{fontSize:11,color:"var(--text3)",width:32,flexShrink:0}}>{d.month.slice(5)}月</div>
+                                            <div style={{flex:1,background:"var(--bg4)",borderRadius:4,height:18,overflow:"hidden",position:"relative"}}>
+                                                <div style={{
+                                                    background:"linear-gradient(90deg,var(--green),#16a34a)",
+                                                    height:"100%",borderRadius:4,
+                                                    width:`${(d.recv/maxRecv*100).toFixed(1)}%`,
+                                                    transition:"width .5s",
+                                                    minWidth:d.recv>0?"4px":"0",
+                                                }}/>
+                                            </div>
+                                            <div style={{fontSize:11,color:"var(--green)",fontWeight:700,width:90,textAlign:"right",flexShrink:0}}>
+                                                {d.recv>0?d.recv.toLocaleString()+" 元":"—"}
+                                            </div>
+                                            {d.caseCount>0 && <div style={{fontSize:10,color:"var(--text4)",flexShrink:0}}>{d.caseCount}件</div>}
+                                        </div>
+                                    ))}
+                                    {monthlyData.every(d=>d.recv===0&&d.caseCount===0) && (
+                                        <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0"}}>本年度尚無資料</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Payment records in period ── */}
+                        {allPayments.length>0 && (
+                            <div className="card">
+                                <div className="card-title">💳 {periodLabel} 收款記錄（{allPayments.length}筆）</div>
+                                <div style={{maxHeight:280,overflowY:"auto"}}>
+                                    {allPayments.sort((a,b)=>b.date.localeCompare(a.date)).map((p,i)=>(
+                                        <div key={i} className="pay-record" style={{cursor:"pointer"}} onClick={()=>openDetail(p.caseId)}>
+                                            <div style={{flex:1}}>
+                                                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                                                    <span style={{fontWeight:800,color:"var(--green)"}}>{Number(p.amount).toLocaleString()} 元</span>
+                                                    <span className={`pay-badge ${METHOD_CLASS[p.method]||"pay-method-other"}`}>{p.method}</span>
+                                                </div>
+                                                <div style={{fontSize:11,color:"var(--text3)"}}>{p.date} · {p.clientName} {p.note&&`· ${p.note}`}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Case type distribution ── */}
                         <div className="card">
-                            <div className="card-title">📊 案件類型</div>
+                            <div className="card-title">📊 案件類型（委任）</div>
                             {CASE_TYPES.filter(t=>byType[t]>0).map(t=>(
                                 <div key={t} className="info-row">
                                     <div><Badge label={t} color={TYPE_COLOR[t]||"#64748b"}/></div>
                                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                                         <div style={{background:"var(--bg4)",borderRadius:4,height:6,width:80,overflow:"hidden"}}>
-                                            <div style={{background:TYPE_COLOR[t]||"#64748b",height:"100%",width:`${(byType[t]/cases.length*100).toFixed(0)}%`}}/>
+                                            <div style={{background:TYPE_COLOR[t]||"#64748b",height:"100%",width:`${filteredCases.length?((byType[t]/filteredCases.length)*100).toFixed(0):0}%`}}/>
                                         </div>
                                         <div style={{color:"var(--text)",fontWeight:700,minWidth:28,textAlign:"right"}}>{byType[t]}</div>
                                     </div>
                                 </div>
                             ))}
+                            {Object.values(byType).every(v=>v===0) && <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0"}}>此期間無案件</div>}
                         </div>
+
+                        {/* ── Case status ── */}
                         <div className="card">
                             <div className="card-title">📈 案件狀態</div>
                             {CASE_STATUS.filter(s=>byStatus[s]>0).map(s=>(
@@ -1730,20 +1933,23 @@ function App({user}){
                                     <div><Badge label={s} color={STATUS_COLOR[s]||"#64748b"}/></div>
                                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                                         <div style={{background:"var(--bg4)",borderRadius:4,height:6,width:80,overflow:"hidden"}}>
-                                            <div style={{background:STATUS_COLOR[s]||"#64748b",height:"100%",width:`${(byStatus[s]/cases.length*100).toFixed(0)}%`}}/>
+                                            <div style={{background:STATUS_COLOR[s]||"#64748b",height:"100%",width:`${filteredCases.length?((byStatus[s]/filteredCases.length)*100).toFixed(0):0}%`}}/>
                                         </div>
                                         <div style={{color:"var(--text)",fontWeight:700,minWidth:28,textAlign:"right"}}>{byStatus[s]}</div>
                                     </div>
                                 </div>
                             ))}
+                            {Object.values(byStatus).every(v=>v===0) && <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0"}}>此期間無案件</div>}
                         </div>
+
+                        {/* ── Reminders (always full scope) ── */}
                         <div className="card">
-                            <div className="card-title">⚠️ 提醒事項</div>
+                            <div className="card-title">⚠️ 全部案件提醒</div>
                             {[
-                                ["未完成待辦", cases.reduce((s,c)=>s+(c.todos||[]).filter(t=>!t.done).length,0)+" 項", "var(--red)"],
-                                ["本週開庭", upcoming.filter(h=>daysUntil(h.date)<=7).length+" 場", "var(--yellow)"],
-                                ["本月開庭", upcoming.length+" 場", "var(--gold)"],
-                                ["未收款案件數", cases.filter(c=>getUnpaid(c)>0).length+" 件", "var(--red)"],
+                                ["未完成待辦",cases.reduce((s,c)=>s+(c.todos||[]).filter(t=>!t.done).length,0)+" 項","var(--red)"],
+                                ["本週開庭",upcoming.filter(h=>daysUntil(h.date)<=7).length+" 場","var(--yellow)"],
+                                ["本月開庭",upcoming.length+" 場","var(--gold)"],
+                                ["未收款案件數",cases.filter(c=>getUnpaid(c)>0).length+" 件","var(--red)"],
                             ].map(([l,v,c])=>(
                                 <div key={l} className="info-row">
                                     <div className="info-lbl">{l}</div>
@@ -2007,11 +2213,41 @@ function App({user}){
                     {[["caseType","案件類型",CASE_TYPES],["status","案件狀態",CASE_STATUS],["instance","審級",INSTANCES],["court","法院",COURTS]].map(([k,l,opts])=>(
                         <div key={k} className="fg">
                             <label className="fl">{l}</label>
-                            <select className="fi" value={F[k]||""} onChange={e=>sf(k,e.target.value)}>
+                            <select className="fi" value={F[k]||""} onChange={e=>{
+                                sf(k,e.target.value);
+                                if(k==="caseType") sf("caseReason",""); // reset reason on type change
+                            }}>
                                 {opts.map(o=><option key={o}>{o}</option>)}
                             </select>
                         </div>
                     ))}
+                    {/* Case reason — datalist for flexible input + suggestions */}
+                    <div className="fg" style={{gridColumn:"span 2"}}>
+                        <label className="fl">案由</label>
+                        <div style={{display:"flex",gap:8,flexDirection:"column"}}>
+                            <input className="fi" list="reason-list" value={F.caseReason||""}
+                                onChange={e=>sf("caseReason",e.target.value)}
+                                placeholder="選擇常見案由或自由輸入…"/>
+                            <datalist id="reason-list">
+                                {(CASE_REASONS[F.caseType]||[]).map(r=><option key={r} value={r}/>)}
+                            </datalist>
+                            {/* Quick pick chips */}
+                            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                                {(CASE_REASONS[F.caseType]||[]).slice(0,-1).map(r=>(
+                                    <button key={r} type="button"
+                                        onClick={()=>sf("caseReason",r)}
+                                        style={{
+                                            background:F.caseReason===r?"var(--gold)":"var(--bg4)",
+                                            color:F.caseReason===r?"#000":"var(--text3)",
+                                            border:`1px solid ${F.caseReason===r?"var(--gold)":"var(--border)"}`,
+                                            borderRadius:20,padding:"3px 10px",fontSize:11,
+                                            cursor:"pointer",fontFamily:"inherit",fontWeight:F.caseReason===r?700:400,
+                                            transition:"all .15s",
+                                        }}>{r}</button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* 法院案號（多筆） */}

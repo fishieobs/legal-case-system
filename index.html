@@ -634,15 +634,14 @@ function App({user}){
             if(!window.db) return;
             clearInterval(wait);
             const {collection,onSnapshot,doc,getDoc} = window.fbMethods;
-            // Load calTodos from Firebase
-            window.fbMethods.doc(window.db,"settings","calTodos");
-            onSnapshot(window.fbMethods.doc(window.db,"settings","calTodos"), snap=>{
+            // Load calTodos from Firebase (realtime)
+            onSnapshot(window.fbMethods.doc(window.db,"calTodos","shared"), snap=>{
                 if(snap.exists()){
                     const items=snap.data().items||[];
                     setCalTodos(items);
                     try{ localStorage.setItem("calTodos",JSON.stringify(items)); }catch(_){}
                 }
-            });
+            }, e=>console.warn("calTodos listen failed:",e));
             onSnapshot(
                 collection(window.db,"cases"),
                 snap=>{
@@ -783,9 +782,9 @@ function App({user}){
         try{ localStorage.setItem("calTodos",JSON.stringify(updated)); }catch(_){}
         // Also sync to Firebase as a single doc
         window.fbMethods.setDoc(
-            window.fbMethods.doc(window.db,"settings","calTodos"),
+            window.fbMethods.doc(window.db,"calTodos","shared"),
             {items:updated, updatedAt:new Date().toISOString()}
-        ).catch(()=>{});
+        ).catch(e=>console.warn("calTodos save failed:",e));
     };
     const addCalTodo=(dateStr)=>{
         if(!calTodoInput.trim()) return;

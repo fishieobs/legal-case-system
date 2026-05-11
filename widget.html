@@ -167,7 +167,9 @@ function cycleTheme(){
     themeMode = themeMode==="auto"?"light":themeMode==="light"?"dark":"auto";
     localStorage.setItem("widget_theme",themeMode);
     applyTheme(themeMode);
-    render();
+    // Just update button text, no full re-render needed
+    const btn=document.getElementById("btn-theme");
+    if(btn) btn.textContent=themeMode==="auto"?"🕐 自動":themeMode==="light"?"☀️":"🌙";
 }
 setInterval(()=>{ if(themeMode==="auto") applyTheme("auto"); }, 60000);
 let clockTimer=null, unsubCases=null;
@@ -181,13 +183,14 @@ onAuthStateChanged(auth, u=>{
     state.user=u;
     state.authChecked=true;
     if(u && !unsubCases){
-        // Listen to calTodos
-        onSnapshot(doc(db,"settings","calTodos"), snap=>{
-            if(snap.exists()) state.calTodos=(snap.data().items||[]);
-            else state.calTodos=[];
+        // Listen to calTodos (realtime sync)
+        onSnapshot(doc(db,"calTodos","shared"), snap=>{
+            state.calTodos = snap.exists() ? (snap.data().items||[]) : [];
+            try{ localStorage.setItem("calTodos",JSON.stringify(state.calTodos)); }catch(_){}
             render();
         }, ()=>{
             try{ state.calTodos=JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(_){}
+            render();
         });
         unsubCases = onSnapshot(collection(db,"cases"), snap=>{
             state.cases = snap.docs.map(d=>({...d.data(),id:d.id}));

@@ -805,7 +805,6 @@ function App({user}){
             const data = {...formData, id};
             toast("⏳ 儲存中…");
             await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"cases",id), data);
-            await syncCaseTodosToCalendar(data);
             toast("✅ 已儲存至雲端");
             setSelectedId(id);
             setView(editId?"detail":"list");
@@ -821,7 +820,6 @@ function App({user}){
 
     const deleteCase = async()=>{
         try{
-            if(selected) await syncCaseTodosToCalendar({...selected,todos:[]});
             await window.fbMethods.deleteDoc(window.fbMethods.doc(window.db,"cases",selectedId));
             toast("🗑 案件已刪除");
             setDeleteConfirm(false); setView("list");
@@ -831,7 +829,6 @@ function App({user}){
     const toggleTodo = async(c, todoId)=>{
         const todos = (c.todos||[]).map(t=>t.id===todoId?{...t,done:!t.done}:t);
         await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{todos});
-        await syncCaseTodosToCalendar({...c,todos});
     };
 
     // ── Form helpers ──
@@ -1367,10 +1364,8 @@ function App({user}){
                                         isSat?"is-sat":"",
                                         isHoliday?"is-holiday":"",
                                     ].filter(Boolean).join(" ");
-                                    const dateTodos=dateStr?calTodos.filter(t=>t.date===dateStr):[];
                                     return(
-                                        <div key={i} className={cls} style={{cursor:cell.cur?"pointer":"default"}}
-                                            onClick={()=>cell.cur&&setCalTodoModal(dateStr)}>
+                                        <div key={i} className={cls} style={{cursor:"default"}}>
                                             <div className="cal-day-num">{cell.day}</div>
                                             {holidayName && cell.cur && (
                                                 <div className="cal-holiday-label" title={holidayName}>
@@ -1386,13 +1381,6 @@ function App({user}){
                                                 </div>
                                             ))}
                                             {events.length>2 && <div style={{fontSize:9,color:"var(--text4)",paddingLeft:3}}>+{events.length-2}庭</div>}
-                                            {dateTodos.slice(0,2).map((t,ti)=>(
-                                                <div key={ti} className={`cal-todo-dot${t.done?" done":""}`}
-                                                    onClick={e=>{e.stopPropagation();toggleCalTodo(t.id);}}>
-                                                    {t.done?"✓":""} {t.text}
-                                                </div>
-                                            ))}
-                                            {dateTodos.length>2 && <div style={{fontSize:9,color:"#8b5cf6",paddingLeft:3}}>+{dateTodos.length-2}項</div>}
                                         </div>
                                     );
                                 })}
@@ -1400,17 +1388,14 @@ function App({user}){
                             <div className="cal-legend">
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#ef4444"}}/><span style={{color:"#ef4444",fontWeight:700}}>日/假日</span></div>
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#3b82f6"}}/><span style={{color:"#3b82f6",fontWeight:700}}>六</span></div>
-                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:4,background:"rgba(139,92,246,.4)"}}/><span style={{color:"#8b5cf6",fontWeight:700}}>待辦</span></div>
-                                <div style={{width:1,height:14,background:"var(--border)",margin:"0 4px"}}/>
                                 {CASE_TYPES.map(t=><div key={t} className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:TYPE_COLOR[t]||"#64748b"}}/>{t}</div>)}
                             </div>
-                            <div style={{fontSize:10,color:"var(--text4)",padding:"6px 18px 0",textAlign:"right"}}>點選日期可新增待辦事項</div>
                         </div>
                     );
                 })()}
 
                 {/* Calendar Todo Modal */}
-                {calTodoModal && (()=>{
+                {false && calTodoModal && (()=>{
                     const ds=calTodoModal;
                     const d=new Date(ds+"T00:00:00+08:00");
                     const wd=["日","一","二","三","四","五","六"][d.getDay()];

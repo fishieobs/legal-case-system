@@ -152,7 +152,7 @@ function nowStr(){
 }
 
 // ── State ──
-let state = { user:null, authChecked:false, cases:[], calTodos:[], refreshing:false };
+let state = { user:null, authChecked:false, cases:[], refreshing:false };
 
 // ── Theme ──
 function getAutoTheme(){ const h=new Date().getHours(); return (h>=6&&h<20)?"light":"dark"; }
@@ -182,7 +182,7 @@ setInterval(()=>{
     const after = document.documentElement.classList.contains("light") ? "light" : "dark";
     if(before!==after) render();
 }, 60000);
-let clockTimer=null, unsubCases=null, unsubCalTodos=null;
+let clockTimer=null, unsubCases=null;
 
 function applyCalTodos(items){
     state.calTodos = Array.isArray(items) ? items : [];
@@ -217,12 +217,6 @@ function wakeSyncCalTodos(){
 }
 
 // ── Render engine ──
-window.addEventListener("storage", syncCalTodosFromCache);
-window.addEventListener("focus", wakeSyncCalTodos);
-window.addEventListener("online", wakeSyncCalTodos);
-window.addEventListener("pageshow", wakeSyncCalTodos);
-document.addEventListener("visibilitychange", wakeSyncCalTodos);
-
 const root = document.getElementById("root");
 function render(){ applyTheme(themeMode); root.innerHTML = buildHTML(); bindEvents(); }
 
@@ -231,14 +225,6 @@ onAuthStateChanged(auth, u=>{
     state.user=u;
     state.authChecked=true;
     if(u && !unsubCases){
-        // Listen to calTodos (realtime sync)
-        unsubCalTodos = onSnapshot(doc(db,"calTodos","shared"), snap=>{
-            applyCalTodos(snap.exists() ? (snap.data().items||[]) : []);
-        }, ()=>{
-            try{ state.calTodos=JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(_){}
-            render();
-        });
-        refreshCalTodos();
         unsubCases = onSnapshot(collection(db,"cases"), snap=>{
             state.cases = snap.docs.map(d=>({...d.data(),id:d.id}));
             // cache locally
@@ -253,7 +239,6 @@ onAuthStateChanged(auth, u=>{
             render();
         });
     }
-    if(!u && unsubCalTodos){ unsubCalTodos(); unsubCalTodos=null; }
     if(!u && unsubCases){ unsubCases(); unsubCases=null; }
     render();
 });
@@ -388,9 +373,7 @@ function buildWidget(){
 
         <!-- Calendar Todos section -->
         ${(()=>{
-            const upcoming7=state.calTodos.filter(t=>{
-                const d=daysUntil(t.date); return d>=0&&d<=7;
-            }).sort((a,b)=>a.date.localeCompare(b.date));
+            const upcoming7=[];
             if(upcoming7.length===0) return "";
             // Group by date
             const byDate={};

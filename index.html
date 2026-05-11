@@ -11,21 +11,33 @@
     <link rel="icon" type="image/png" href="icon.png">
     <meta name="mobile-web-app-capable" content="yes">
     <title>⚖ 律師案件管理系統</title>
+    <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
 <style>
+/* ── DARK THEME (default) ── */
 :root {
     --bg:#020817; --bg2:#0a1628; --bg3:#0f172a; --bg4:#1e293b;
     --gold:#c8a96e; --gold2:#a07840;
     --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b; --text4:#475569;
     --green:#22c55e; --red:#ef4444; --yellow:#f59e0b; --purple:#8b5cf6; --blue:#3b82f6;
     --border:#1e293b;
+    --shadow:0 2px 8px rgba(0,0,0,.4);
+}
+/* ── LIGHT THEME ── */
+:root.light {
+    --bg:#f0f4f8; --bg2:#ffffff; --bg3:#ffffff; --bg4:#e2e8f0;
+    --gold:#9a6f2e; --gold2:#7a5520;
+    --text:#1a2744; --text2:#374151; --text3:#6b7280; --text4:#9ca3af;
+    --green:#16a34a; --red:#dc2626; --yellow:#d97706; --purple:#7c3aed; --blue:#2563eb;
+    --border:#e2e8f0;
+    --shadow:0 2px 8px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.5;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.5;transition:background .3s,color .3s;}
 
 /* ── LAYOUT ── */
 .app{min-height:100vh;padding-bottom:80px;}
@@ -66,7 +78,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto S
 
 /* ── CASE CARDS (mobile) ── */
 .case-cards{display:flex;flex-direction:column;gap:10px;}
-.case-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .2s;}
+.case-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow);}
 .case-card:active{border-color:var(--gold);}
 
 /* ── DESKTOP TABLE ── */
@@ -76,7 +88,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto S
 table{width:100%;border-collapse:collapse;font-size:12px;}
 th{text-align:left;padding:10px 12px;color:var(--text4);font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg2);white-space:nowrap;}
 .trow{border-bottom:1px solid var(--bg);cursor:pointer;}
-.trow:hover{background:var(--bg2);}
+.trow:hover{background:var(--bg4);}
 .trow:active{background:var(--bg4);}
 td{padding:11px 12px;color:var(--text2);vertical-align:middle;white-space:nowrap;}
 
@@ -85,7 +97,7 @@ td{padding:11px 12px;color:var(--text2);vertical-align:middle;white-space:nowrap
 
 /* ── DETAIL ── */
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
-.card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
 .card-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:10px;}
 .info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;gap:10px;border-bottom:1px solid #0a0f1e;}
 .info-lbl{font-size:11px;color:var(--text4);white-space:nowrap;min-width:80px;padding-top:1px;}
@@ -131,6 +143,179 @@ textarea.fi{resize:vertical;min-height:80px;}
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--gold);color:var(--gold);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 #toast.show{opacity:1;}
 
+
+
+
+
+
+
+
+
+
+
+/* ── CAL TODO ── */
+.cal-todo-dot{display:flex;align-items:center;gap:3px;padding:2px 5px;border-radius:4px;font-size:9px;font-weight:700;margin-bottom:2px;cursor:pointer;background:rgba(139,92,246,.15);color:#8b5cf6;border:1px solid rgba(139,92,246,.3);}
+.cal-todo-dot.done{opacity:.45;text-decoration:line-through;}
+.cal-todo-modal{position:fixed;inset:0;background:#00000099;display:flex;align-items:flex-end;justify-content:center;z-index:600;padding:0;}
+@media(min-width:600px){.cal-todo-modal{align-items:center;padding:20px;}}
+.cal-todo-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:24px 20px 32px;max-height:80vh;overflow-y:auto;}
+@media(min-width:600px){.cal-todo-sheet{border-radius:16px;}}
+.cal-todo-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.cal-todo-check{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .2s;}
+.cal-todo-check.done{background:var(--green);border-color:var(--green);}
+.cal-todo-del{background:none;border:none;color:var(--text4);cursor:pointer;padding:2px 6px;font-size:13px;border-radius:4px;margin-left:auto;flex-shrink:0;}
+.cal-todo-del:hover{color:var(--red);}
+
+/* ── CASE NOTES ── */
+.notes-wrap{display:flex;flex-direction:column;gap:14px;}
+.note-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;box-shadow:var(--shadow);}
+.note-card.pinned{border-color:var(--gold)44;background:rgba(200,169,110,.04);}
+.note-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.note-meta{font-size:11px;color:var(--text4);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.note-tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.note-body{font-size:13px;color:var(--text);line-height:1.75;white-space:pre-wrap;word-break:break-word;}
+.note-body.collapsed{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+.note-actions{display:flex;gap:6px;flex-shrink:0;}
+.note-action-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:3px 6px;border-radius:5px;font-size:13px;font-family:inherit;transition:background .15s;}
+.note-action-btn:hover{background:var(--bg4);color:var(--text2);}
+.note-editor{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+.note-editor textarea{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;line-height:1.75;resize:none;min-height:120px;}
+.note-toolbar{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);gap:8px;flex-wrap:wrap;}
+.note-tag-sel{display:flex;gap:6px;flex-wrap:wrap;}
+.note-tag-opt{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s;}
+.note-tag-opt:not(.sel){opacity:.5;}
+.notes-empty{text-align:center;padding:40px 20px;color:var(--text4);}
+.notes-empty .ico{font-size:40px;margin-bottom:10px;opacity:.5;}
+
+/* ── FEE PAYMENTS ── */
+.fee-summary{background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px;}
+.fee-summary-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;gap:8px;}
+.fee-progress{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;margin:10px 0 4px;}
+.fee-progress-bar{height:100%;background:linear-gradient(90deg,var(--green),#16a34a);border-radius:4px;transition:width .5s ease;}
+.pay-record{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;}
+.pay-badge{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+.pay-method-cash{background:rgba(34,197,94,.15);color:var(--green);}
+.pay-method-transfer{background:rgba(59,130,246,.15);color:var(--blue);}
+.pay-method-check{background:rgba(245,158,11,.15);color:var(--yellow);}
+.pay-method-other{background:rgba(100,116,139,.15);color:var(--text3);}
+
+/* ── PRINT ── */
+@media print {
+    .header,.bnav,.btn,.theme-btn,.filter-row,.stats-row,.upcoming,.tab-bar,.no-print{display:none!important;}
+    .app{padding:0;}
+    .content{padding:0;}
+    body{background:#fff;color:#000;}
+    :root{--bg:#fff;--bg2:#f8f8f8;--bg3:#fff;--bg4:#eee;--text:#000;--text2:#333;--text3:#555;--text4:#777;--border:#ddd;--gold:#a07840;}
+    .card{border:1px solid #ddd;break-inside:avoid;margin-bottom:12px;}
+    .detail-grid{grid-template-columns:1fr 1fr;}
+    .badge{border:1px solid #ccc!important;}
+    .print-title{display:block!important;}
+}
+.print-title{display:none;font-size:18px;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #a07840;}
+
+/* ── CALENDAR ── */
+.cal-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg2);}
+.cal-nav{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;padding:6px 14px;font-size:15px;font-family:inherit;}
+.cal-nav:hover{background:var(--bg4);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
+.cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text4);padding:10px 4px;letter-spacing:.04em;text-transform:uppercase;}
+.cal-dow.sun{color:#ef4444;}
+.cal-dow.sat{color:#3b82f6;}
+.cal-day{min-height:70px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 5px;cursor:default;transition:background .15s;}
+.cal-day:nth-child(7n){border-right:none;}
+.cal-day.other-month{opacity:.35;}
+.cal-day.today-cell{background:rgba(200,169,110,.08);}
+.cal-day.is-sun{background:rgba(239,68,68,.03);}
+.cal-day.is-sat{background:rgba(59,130,246,.03);}
+.cal-day.is-holiday{background:rgba(239,68,68,.05);}
+.cal-day-num{font-size:12px;font-weight:600;color:var(--text3);margin-bottom:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+.cal-day.today-cell .cal-day-num{background:var(--gold);color:#000;font-weight:800;}
+.cal-day.is-sun:not(.other-month) .cal-day-num{color:#ef4444;}
+.cal-day.is-sat:not(.other-month) .cal-day-num{color:#3b82f6;}
+.cal-day.is-holiday:not(.other-month) .cal-day-num{color:#ef4444;font-weight:800;}
+.cal-holiday-label{font-size:9px;color:#ef4444;font-weight:700;margin-bottom:2px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cal-event{font-size:10px;border-radius:4px;padding:2px 5px;margin-bottom:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;line-height:1.4;}
+.cal-event:hover{opacity:.8;}
+.cal-legend{display:flex;gap:12px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--border);}
+.cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);}
+
+/* ── TAGS ── */
+.tag-pill{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;border:none;font-family:inherit;}
+.tag-input-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;}
+.tag-color-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.tag-color-swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s;}
+.tag-color-swatch.sel{border-color:var(--text);transform:scale(1.25);}
+
+/* ── EXCEL EXPORT ── */
+.export-section{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:var(--shadow);}
+
+/* ── TIMELINE ── */
+.tl-wrap{position:relative;padding-left:28px;}
+.tl-wrap::before{content:"";position:absolute;left:9px;top:0;bottom:0;width:2px;background:var(--border);}
+.tl-item{position:relative;margin-bottom:20px;}
+.tl-dot{position:absolute;left:-24px;top:3px;width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:var(--bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;}
+.tl-dot.past{background:var(--bg4);border-color:var(--text4);}
+.tl-dot.future{background:var(--gold);border-color:var(--gold);box-shadow:0 0 6px var(--gold)44;}
+.tl-dot.today{background:var(--red);border-color:var(--red);box-shadow:0 0 8px var(--red)66;}
+.tl-dot.todo{background:var(--bg3);border-color:var(--purple);}
+.tl-dot.todo.done{background:var(--green);border-color:var(--green);}
+.tl-dot.milestone{background:var(--bg3);border-color:var(--gold);border-width:2px;}
+.tl-date{font-size:11px;color:var(--text4);margin-bottom:3px;font-family:monospace;}
+.tl-body{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.tl-body.future{border-color:var(--gold)33;}
+.tl-body.today{border-color:var(--red)55;background:rgba(239,68,68,.05);}
+.tl-body.past{opacity:.7;}
+.tl-tag{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;}
+
+
+/* ── TOOLS ── */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+.tool-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:18px 14px;cursor:pointer;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .2s;box-shadow:var(--shadow);position:relative;}
+.tool-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.2);border-color:var(--gold)44;}
+.tool-card:active{transform:translateY(0);}
+.tool-emoji{font-size:36px;line-height:1;}
+.tool-name{font-weight:700;font-size:13px;color:var(--text);text-align:center;word-break:break-all;}
+.tool-desc{font-size:11px;color:var(--text3);text-align:center;line-height:1.4;}
+.tool-del{position:absolute;top:7px;right:7px;background:var(--bg4);border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:6px;font-family:inherit;transition:background .15s;}
+.tool-del:hover{background:var(--gold);color:#000;}
+.tool-add-card{background:transparent;border:2px dashed var(--border);border-radius:14px;padding:18px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .2s;color:var(--text4);}
+.tool-add-card:hover{border-color:var(--gold);color:var(--gold);}
+.tool-modal-overlay{position:fixed;inset:0;background:#00000099;display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.tool-modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:420px;}
+.color-dot{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s;flex-shrink:0;}
+.color-dot.selected{border-color:var(--text);transform:scale(1.2);}
+
+/* ── CONTACTS ── */
+.contact-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow);}
+.contact-name{font-size:17px;font-weight:700;color:var(--text);}
+.contact-phone{color:var(--blue);font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;margin-top:4px;}
+.contact-phone:hover{text-decoration:underline;}
+.contact-cases{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.contact-case-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;cursor:pointer;border:1px solid var(--border);transition:border-color .2s;}
+.contact-case-row:hover{border-color:var(--gold);}
+
+/* ── THEME TOGGLE ── */
+.theme-btn{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;color:var(--text2);font-family:inherit;transition:all .2s;white-space:nowrap;}
+.theme-btn:hover{border-color:var(--gold);color:var(--gold);}
+.theme-mode-badge{font-size:10px;color:var(--text4);padding:2px 6px;background:var(--bg4);border-radius:10px;}
+
+/* ── DRIVE ── */
+.drive-btn{display:flex;align-items:center;gap:10px;background:rgba(66,133,244,.1);border:1px solid rgba(66,133,244,.35);border-radius:10px;padding:13px 16px;cursor:pointer;text-decoration:none;transition:background .2s;width:100%;}
+.drive-btn:hover{background:rgba(66,133,244,.2);}
+.drive-icon{font-size:26px;flex-shrink:0;}
+.drive-doc-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);gap:8px;}
+.drive-doc-row a{color:var(--blue);text-decoration:none;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.drive-doc-row a:hover{text-decoration:underline;}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px #000a;}
+.login-logo{font-size:52px;text-align:center;margin-bottom:8px;filter:drop-shadow(0 0 20px #c8a96e66);}
+.login-title{font-family:'Noto Serif TC',serif;font-size:1.3rem;color:var(--gold);text-align:center;margin-bottom:4px;}
+.login-sub{font-size:12px;color:var(--text4);text-align:center;letter-spacing:.06em;margin-bottom:32px;}
+.login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;text-align:center;}
+
 /* ── MISC ── */
 .divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
 .empty{text-align:center;padding:50px 20px;color:var(--text3);}
@@ -150,6 +335,7 @@ a{color:var(--blue);}
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     const firebaseConfig = {
         apiKey: "AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",
         authDomain: "legalcasemanageer.firebaseapp.com",
@@ -160,8 +346,11 @@ a{color:var(--blue);}
     };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
     window.db = db;
+    window.auth = auth;
     window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc };
+    window.fbAuth = { signInWithEmailAndPassword, signOut, onAuthStateChanged };
     window.firebaseReady = true;
 </script>
 
@@ -170,24 +359,69 @@ const { useState, useEffect, useCallback } = React;
 
 // ── Constants ──
 const CASE_TYPES = ["刑事","民事","行政","家事","勞動","智財","非訟"];
+const CASE_REASONS = {
+    "刑事": ["毒品危害防制條例","殺人罪","傷害罪","竊盜罪","詐欺罪","妨害性自主罪","公共危險罪","偽造文書罪","侵占罪","背信罪","恐嚇罪","妨害自由罪","洗錢防制法","貪污治罪條例","組織犯罪防制條例","違反槍砲彈藥刀械管制條例","其他"],
+    "民事": ["損害賠償","返還借款","清償債務","侵權行為損害賠償","分割共有物","確認契約關係","給付買賣價金","給付租金","返還定金","撤銷詐害行為","確認所有權","拆屋還地","給付工程款","不當得利返還","假扣押","假處分","其他"],
+    "行政": ["訴願","撤銷行政處分","確認行政處分違法","課稅處分爭議","裁罰處分爭議","建照爭議","都市計畫爭議","國家賠償","其他"],
+    "家事": ["離婚","離婚後財產分配","子女監護權","子女親權","扶養費請求","繼承爭議","遺產分割","拋棄繼承","婚姻無效","撤銷婚姻","確認親子關係","收養","監護宣告","輔助宣告","其他"],
+    "勞動": ["給付資遣費","給付退休金","確認僱傭關係","終止勞動契約","給付薪資","職業災害補償","不當解僱","職場霸凌","競業禁止","其他"],
+    "智財": ["著作權侵害","商標侵害","專利侵害","營業秘密侵害","不正競爭","網域名稱爭議","其他"],
+    "非訟": ["本票裁定","支付命令","強制執行","假扣押裁定","假處分裁定","公示催告","宣告死亡","其他"],
+};
 const CASE_STATUS = ["進行中","已結案","上訴中","停止中","準備委任"];
 const INSTANCES = ["地院","高院","最高院","地檢署","高檢署","高行院","最高行政法院"];
 const COURTS = ["台北地院","士林地院","新北地院","桃園地院","新竹地院","苗栗地院","台中地院","南投地院","彰化地院","雲林地院","嘉義地院","台南地院","高雄地院","橋頭地院","屏東地院","花蓮地院","台東地院","基隆地院","宜蘭地院","澎湖地院","金門地院","台北地檢","士林地檢","新北地檢","桃園地檢","新竹地檢","台中地檢","台南地檢","高雄地檢","台北高院","台中高院","台南高院","高雄高院","最高法院","台北高行院","台中高行院","高雄高行院","最高行政法院"];
+
+
+// ── 台灣國定假日（2024-2027）──
+const TW_HOLIDAYS = {
+    // 2024
+    "2024-01-01":"元旦","2024-02-08":"除夕","2024-02-09":"春節","2024-02-10":"春節",
+    "2024-02-11":"春節","2024-02-12":"春節","2024-02-13":"春節","2024-02-14":"彈性放假",
+    "2024-02-28":"和平紀念日","2024-04-04":"兒童節","2024-04-05":"清明節",
+    "2024-06-10":"端午節","2024-09-17":"中秋節","2024-10-10":"國慶日",
+    // 2025
+    "2025-01-01":"元旦","2025-01-27":"除夕","2025-01-28":"春節","2025-01-29":"春節",
+    "2025-01-30":"春節","2025-01-31":"春節","2025-02-03":"彈性放假",
+    "2025-02-28":"和平紀念日","2025-04-03":"兒童節","2025-04-04":"清明節",
+    "2025-05-01":"勞動節","2025-05-30":"端午節","2025-06-02":"彈性放假",
+    "2025-10-06":"中秋節","2025-10-10":"國慶日",
+    // 2026
+    "2026-01-01":"元旦","2026-02-16":"除夕","2026-02-17":"春節","2026-02-18":"春節",
+    "2026-02-19":"春節","2026-02-20":"春節","2026-02-28":"和平紀念日",
+    "2026-04-03":"兒童節","2026-04-04":"清明節","2026-04-06":"彈性放假",
+    "2026-05-01":"勞動節","2026-06-19":"端午節","2026-09-25":"中秋節",
+    "2026-10-09":"彈性放假","2026-10-10":"國慶日",
+    // 2027
+    "2027-01-01":"元旦","2027-02-05":"除夕","2027-02-06":"春節","2027-02-07":"春節",
+    "2027-02-08":"春節","2027-02-09":"春節","2027-02-28":"和平紀念日",
+    "2027-04-04":"兒童節","2027-04-05":"清明節","2027-05-01":"勞動節",
+    "2027-06-09":"端午節","2027-10-01":"彈性放假","2027-10-10":"國慶日",
+};
 
 const TYPE_COLOR={刑事:"#ef4444",民事:"#3b82f6",行政:"#8b5cf6",家事:"#ec4899",勞動:"#f97316",智財:"#14b8a6",非訟:"#06b6d4"};
 const STATUS_COLOR={"進行中":"#22c55e","已結案":"#94a3b8","上訴中":"#f59e0b","停止中":"#ef4444","準備委任":"#3b82f6"};
 
 const emptyCase = {
     id:"", firmCaseNo:"", courtCaseNos:[""], division:"",
-    clientName:"", phone:"", feeReceived:0, feeUnpaid:0, disbursements:0,
+    clientName:"", phone:"", totalFee:0, payments:[], disbursements:0,
     caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
-    attorney:"", retainerDate:"", opposingParty:"", judgementLink:"", notes:"",
-    hearings:[], todos:[]
+    attorney:"", retainerDate:"", opposingParty:"", caseReason:"", judgementLink:"", notes:"",
+    hearings:[], todos:[], driveFolderUrl:"", docs:[]
 };
 
 // ── Helpers ──
-function today(){ return new Date().toISOString().split("T")[0]; }
-function daysUntil(d){ return Math.ceil((new Date(d)-new Date(today()))/86400000); }
+function today(){
+    // 使用台灣時區 UTC+8，避免跨日誤差
+    const tw = new Date(new Date().getTime() + 8*60*60*1000);
+    return tw.toISOString().split("T")[0];
+}
+function daysUntil(d){
+    // 兩端都用台灣時間的「當日零時」比較，避免時區造成的差一天問題
+    const todayMs = new Date(today()+"T00:00:00+08:00").getTime();
+    const targetMs = new Date(d+"T00:00:00+08:00").getTime();
+    return Math.round((targetMs - todayMs) / 86400000);
+}
 function fmt(n){ return n ? Number(n).toLocaleString("zh-TW")+" 元" : "—"; }
 function fmtK(n){ return (Number(n||0)/10000).toFixed(1); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
@@ -200,6 +434,147 @@ function toast(msg){
 
 function Badge({label,color}){
     return <span className="badge" style={{background:color+"22",color,border:`1px solid ${color}44`}}>{label}</span>;
+}
+
+// ══════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════
+function Login({onLogin}){
+    const [email, setEmail] = React.useState("");
+    const [password, setPassword] = React.useState("");
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState("");
+    const [showPw, setShowPw] = React.useState(false);
+
+    const handleLogin = async(e)=>{
+        e && e.preventDefault();
+        if(!email.trim()||!password){ setError("請輸入帳號和密碼"); return; }
+        setLoading(true); setError("");
+        try{
+            await window.fbAuth.signInWithEmailAndPassword(window.auth, email.trim(), password);
+            // onAuthStateChanged 會自動觸發 onLogin
+        }catch(err){
+            console.error(err);
+            const msg = {
+                "auth/invalid-email":"Email 格式錯誤",
+                "auth/user-not-found":"帳號不存在",
+                "auth/wrong-password":"密碼錯誤，請重新輸入",
+                "auth/invalid-credential":"帳號或密碼錯誤，請重新輸入",
+                "auth/too-many-requests":"嘗試次數過多，請稍後再試",
+            }[err.code] || ("登入失敗："+err.message);
+            setError(msg);
+            setLoading(false);
+        }
+    };
+
+    return(
+        <div className="login-wrap">
+            <div className="login-box">
+                <div className="login-logo">⚖</div>
+                <div className="login-title">律師案件管理系統</div>
+                <div className="login-sub">LEGAL CASE MANAGER</div>
+                {error && <div className="login-err">⚠️ {error}</div>}
+                <div className="fg" style={{marginBottom:14}}>
+                    <label className="fl">帳號（Email）</label>
+                    <input className="fi" type="email" autoComplete="username"
+                        placeholder="office@yourfirm.com"
+                        value={email} onChange={e=>setEmail(e.target.value)}
+                        onKeyDown={e=>e.key==="Enter"&&handleLogin()}
+                        disabled={loading}/>
+                </div>
+                <div className="fg" style={{marginBottom:24}}>
+                    <label className="fl">密碼</label>
+                    <div style={{position:"relative"}}>
+                        <input className="fi" type={showPw?"text":"password"} autoComplete="current-password"
+                            placeholder="••••••••"
+                            value={password} onChange={e=>setPassword(e.target.value)}
+                            onKeyDown={e=>e.key==="Enter"&&handleLogin()}
+                            disabled={loading}
+                            style={{paddingRight:44}}/>
+                        <button onClick={()=>setShowPw(s=>!s)}
+                            style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"var(--text3)",cursor:"pointer",fontSize:16,padding:4}}>
+                            {showPw?"🙈":"👁"}
+                        </button>
+                    </div>
+                </div>
+                <button className="btn btn-gold" onClick={handleLogin} disabled={loading}
+                    style={{width:"100%",justifyContent:"center",fontSize:15,padding:"12px"}}>
+                    {loading ? "登入中…" : "🔐 登入"}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ══════════════════════════════════════════
+//  ROOT (auth gate)
+// ══════════════════════════════════════════
+function Root(){
+    const [user, setUser] = React.useState(undefined); // undefined=checking, null=no user
+
+    React.useEffect(()=>{
+        const wait = setInterval(()=>{
+            if(!window.auth) return;
+            clearInterval(wait);
+            window.fbAuth.onAuthStateChanged(window.auth, u=>setUser(u||null));
+        },100);
+        return ()=>clearInterval(wait);
+    },[]);
+
+    if(user===undefined) return(
+        <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg)"}}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,color:"var(--text3)"}}>
+                <div className="spinner"/>
+                <div>載入中…</div>
+            </div>
+        </div>
+    );
+    if(!user) return <Login/>;
+    return <App user={user}/>;
+}
+
+// ══════════════════════════════════════════
+//  THEME HOOK
+// ══════════════════════════════════════════
+function useTheme(){
+    // Determine auto theme: light 06:00-20:00, dark otherwise
+    function getAutoTheme(){
+        const h = new Date().getHours();
+        return (h >= 6 && h < 20) ? "light" : "dark";
+    }
+
+    const [mode, setMode] = useState(()=>{
+        return localStorage.getItem("themeMode") || "auto";
+    });
+    const [autoTheme, setAutoTheme] = useState(getAutoTheme);
+
+    // Update auto theme every minute
+    useEffect(()=>{
+        const timer = setInterval(()=>setAutoTheme(getAutoTheme()), 60000);
+        return ()=>clearInterval(timer);
+    },[]);
+
+    // Apply theme to <html>
+    useEffect(()=>{
+        const effective = mode === "auto" ? autoTheme : mode;
+        if(effective === "light"){
+            document.documentElement.classList.add("light");
+        } else {
+            document.documentElement.classList.remove("light");
+        }
+    },[mode, autoTheme]);
+
+    // Persist preference
+    useEffect(()=>{
+        localStorage.setItem("themeMode", mode);
+    },[mode]);
+
+    const effective = mode === "auto" ? autoTheme : mode;
+    const cycleMode = ()=>{
+        setMode(m => m === "auto" ? "light" : m === "light" ? "dark" : "auto");
+    };
+
+    return { mode, effective, cycleMode };
 }
 
 // ══════════════════════════════════════════
@@ -232,7 +607,7 @@ async function syncCaseTodosToCalendar(caseData){
     }catch(_){}
 }
 
-function App(){
+function App({user}){
     const [cases, setCases] = useState([]);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState("list"); // list | detail | form | stats
@@ -243,33 +618,173 @@ function App(){
     const [filterStatus, setFilterStatus] = useState("全部");
     const [filterType, setFilterType] = useState("全部");
     const [deleteConfirm, setDeleteConfirm] = useState(false);
+    const [detailTab, setDetailTab] = useState("info"); // info | timeline | notes
+    const [noteInput, setNoteInput] = useState("");
+    const [noteTag, setNoteTag] = useState("一般");
+    const [editingNote, setEditingNote] = useState(null); // {id, text, tag}
+    const [expandedNotes, setExpandedNotes] = useState({});
+    const [listTab, setListTab] = useState("list"); // list | calendar
+    const [statsYear, setStatsYear] = useState("全部");
+    const [statsMonth, setStatsMonth] = useState("全部");
+    const [calDate, setCalDate] = useState(new Date());
+    const [calTodos, setCalTodos] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(e){ return []; } });
+    const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
+    const [calTodoInput, setCalTodoInput] = useState("");
+    const [filterTag, setFilterTag] = useState("全部");
+    const [sortBy, setSortBy] = useState("retainerDate"); // retainerDate | feeReceived | feeUnpaid | nextHearing
+    const [sortDir, setSortDir] = useState("desc");
+    const [allTags, setAllTags] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("caseTags")||"[]"); }catch(e){ return []; } });
+    const [tagModal, setTagModal] = useState(false);
+    const [tagForm, setTagForm] = useState({name:"",color:"#ef4444"});
     // inline add forms
     const [newH, setNewH] = useState({date:"",time:"",agency:"",courtroom:"",note:""});
     const [newT, setNewT] = useState({text:"",due:""});
+    const [newDoc, setNewDoc] = useState({label:"",url:"",type:"筆錄"});
+    const [newPay, setNewPay] = useState({amount:"",date:today(),method:"現金",note:""});
+    const [tools, setTools] = useState(()=>{
+        try{ return JSON.parse(localStorage.getItem("quickTools")||"[]"); }catch(e){ return []; }
+    });
+    const [toolModal, setToolModal] = useState(false);
+    const [toolForm, setToolForm] = useState({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"});
+    const [editingToolId, setEditingToolId] = useState(null);
+    const { mode, effective, cycleMode } = useTheme();
+
+    const applyCalTodos = useCallback((items)=>{
+        const safeItems = Array.isArray(items) ? items : [];
+        setCalTodos(safeItems);
+        try{
+            localStorage.setItem("calTodos", JSON.stringify(safeItems));
+            localStorage.setItem("calTodos_updatedAt", String(Date.now()));
+        }catch(_){}
+    },[]);
+
+    const refreshCalTodos = useCallback(async()=>{
+        if(!window.db || !window.fbMethods?.getDoc) return;
+        try{
+            const snap = await window.fbMethods.getDoc(window.fbMethods.doc(window.db,"calTodos","shared"));
+            if(snap.exists()) applyCalTodos(snap.data().items||[]);
+        }catch(e){
+            console.warn("calTodos refresh failed:", e);
+        }
+    },[applyCalTodos]);
+
+    const loadLatestCalTodos = useCallback(async()=>{
+        if(!window.db || !window.fbMethods?.getDoc) return calTodos;
+        try{
+            const snap = await window.fbMethods.getDoc(window.fbMethods.doc(window.db,"calTodos","shared"));
+            return snap.exists() ? (snap.data().items||[]) : [];
+        }catch(e){
+            console.warn("calTodos load latest failed:", e);
+            return calTodos;
+        }
+    },[calTodos]);
 
     // ── Firebase listener ──
     useEffect(()=>{
+        // 先從 localStorage 快取立即顯示，避免白畫面
+        try{
+            const cached = localStorage.getItem("cases_cache");
+            if(cached){ setCases(JSON.parse(cached)); setLoading(false); }
+        }catch(e){}
+
+        let unsubCases=null, unsubCalTodos=null;
+        const syncFromCache = ()=>{
+            try{
+                const cached = localStorage.getItem("calTodos");
+                if(cached) setCalTodos(JSON.parse(cached));
+            }catch(_){}
+        };
+        const wakeSync = ()=>{
+            if(document.visibilityState && document.visibilityState !== "visible") return;
+            refreshCalTodos();
+        };
+        window.addEventListener("storage", syncFromCache);
+        window.addEventListener("focus", wakeSync);
+        window.addEventListener("online", wakeSync);
+        window.addEventListener("pageshow", wakeSync);
+        document.addEventListener("visibilitychange", wakeSync);
+
         const wait = setInterval(()=>{
             if(!window.db) return;
             clearInterval(wait);
-            const {collection,onSnapshot} = window.fbMethods;
-            const unsub = onSnapshot(collection(window.db,"cases"), snap=>{
-                setCases(snap.docs.map(d=>({...d.data(),id:d.id})));
-                setLoading(false);
-            }, err=>{ console.error(err); setLoading(false); });
-            return ()=>unsub();
+            const {collection,onSnapshot,doc} = window.fbMethods;
+            // Load calTodos from Firebase (realtime)
+            unsubCalTodos = onSnapshot(window.fbMethods.doc(window.db,"calTodos","shared"), snap=>{
+                if(snap.exists()){
+                    const items=snap.data().items||[];
+                    applyCalTodos(items);
+                }
+            }, e=>console.warn("calTodos listen failed:",e));
+            refreshCalTodos();
+            unsubCases = onSnapshot(
+                collection(window.db,"cases"),
+                snap=>{
+                    const data = snap.docs.map(d=>({...d.data(),id:d.id}));
+                    setCases(data);
+                    setLoading(false);
+                    try{ localStorage.setItem("cases_cache", JSON.stringify(data)); }catch(e){}
+                },
+                err=>{
+                    console.error("Firestore 錯誤：", err.code, err.message);
+                    setLoading(false);
+                    if(err.code==="permission-denied"){
+                        toast("❌ 權限不足：請至 Firebase Console 修改 Firestore 安全規則");
+                    } else {
+                        toast("⚠️ 雲端連線失敗，顯示本機快取");
+                    }
+                }
+            );
         },200);
-        return ()=>clearInterval(wait);
-    },[]);
+
+        const timeout = setTimeout(()=>{
+            setLoading(f=>{ if(f) toast("⚠️ 連線逾時，請確認 Firestore 規則"); return false; });
+        },6000);
+
+        return ()=>{
+            clearInterval(wait); clearTimeout(timeout);
+            if(unsubCalTodos) unsubCalTodos();
+            if(unsubCases) unsubCases();
+            window.removeEventListener("storage", syncFromCache);
+            window.removeEventListener("focus", wakeSync);
+            window.removeEventListener("online", wakeSync);
+            window.removeEventListener("pageshow", wakeSync);
+            document.removeEventListener("visibilitychange", wakeSync);
+        };
+    },[applyCalTodos, refreshCalTodos]);
 
     const selected = cases.find(c=>c.id===selectedId);
 
     const filtered = cases.filter(c=>{
         const q=search.toLowerCase();
-        const ms=!q||[c.clientName,c.firmCaseNo,c.opposingParty,c.attorney,c.currentAgency,...(c.courtCaseNos||[])].some(x=>(x||"").toLowerCase().includes(q));
+        const searchFields=[
+            c.clientName, c.firmCaseNo, c.opposingParty, c.attorney,
+            c.currentAgency, c.court, c.division, c.notes, c.judgementLink, c.caseReason||"",
+            ...(c.courtCaseNos||[]),
+            ...(c.hearings||[]).map(h=>[h.agency,h.note,h.courtroom].filter(Boolean).join(" ")),
+            ...(c.todos||[]).map(t=>t.text),
+            ...(c.docs||[]).map(d=>d.label),
+            ...(c.tags||[]),
+        ];
+        const ms=!q||searchFields.some(x=>(x||"").toLowerCase().includes(q));
         const mst=filterStatus==="全部"||c.status===filterStatus;
         const mt=filterType==="全部"||c.caseType===filterType;
-        return ms&&mst&&mt;
+        const mTag=filterTag==="全部"||(c.tags||[]).includes(filterTag);
+        return ms&&mst&&mt&&mTag;
+    });
+
+    // Sort
+    const sortedFiltered = [...filtered].sort((a,b)=>{
+        let va, vb;
+        if(sortBy==="retainerDate"){ va=a.retainerDate||""; vb=b.retainerDate||""; }
+        else if(sortBy==="feeReceived"){ va=getReceived(a); vb=getReceived(b); }
+        else if(sortBy==="feeUnpaid"){ va=getUnpaid(a); vb=getUnpaid(b); }
+        else if(sortBy==="nextHearing"){
+            va=(a.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((x,y)=>x.date.localeCompare(y.date))[0]?.date||"9999";
+            vb=(b.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((x,y)=>x.date.localeCompare(y.date))[0]?.date||"9999";
+        }
+        if(va<vb) return sortDir==="asc"?-1:1;
+        if(va>vb) return sortDir==="asc"?1:-1;
+        return 0;
     });
 
     const upcoming = [];
@@ -288,12 +803,20 @@ function App(){
         try{
             const id = editId || uid();
             const data = {...formData, id};
+            toast("⏳ 儲存中…");
             await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"cases",id), data);
             await syncCaseTodosToCalendar(data);
-            toast("✅ 案件已儲存至雲端");
+            toast("✅ 已儲存至雲端");
             setSelectedId(id);
             setView(editId?"detail":"list");
-        }catch(e){ toast("❌ 儲存失敗："+e.message); }
+        }catch(e){
+            console.error("儲存失敗：", e.code, e.message);
+            if(e.code==="permission-denied"){
+                toast("❌ 儲存失敗：請至 Firebase 修改 Firestore 安全規則為允許讀寫");
+            } else {
+                toast("❌ 儲存失敗："+e.message);
+            }
+        }
     };
 
     const deleteCase = async()=>{
@@ -325,12 +848,323 @@ function App(){
         setNewT({text:"",due:""});
     };
     const removeTodo=i=>sf("todos",formData.todos.filter((_,idx)=>idx!==i));
+    const addDoc=()=>{
+        if(!newDoc.url.trim()){ toast("請填文件連結"); return; }
+        sf("docs",[...(formData.docs||[]),{...newDoc,id:uid()}]);
+        setNewDoc({label:"",url:"",type:"筆錄"});
+    };
+    const removeDoc=i=>sf("docs",(formData.docs||[]).filter((_,idx)=>idx!==i));
     const addCaseNo=()=>sf("courtCaseNos",[...(formData.courtCaseNos||[]),""]); 
     const updateCaseNo=(i,v)=>{const a=[...(formData.courtCaseNos||[])];a[i]=v;sf("courtCaseNos",a);};
     const removeCaseNo=i=>sf("courtCaseNos",formData.courtCaseNos.filter((_,idx)=>idx!==i));
 
     const openAdd=()=>{ setFormData({...emptyCase,id:""}); setEditId(null); setView("form"); };
     const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
+    const openDetail=(id)=>{ setSelectedId(id); setDetailTab("info"); setView("detail"); };
+
+    // ── Calendar Todos ──
+    const saveCalTodos=(updated)=>{
+        applyCalTodos(updated);
+        // Also sync to Firebase as a single doc
+        window.fbMethods.setDoc(
+            window.fbMethods.doc(window.db,"calTodos","shared"),
+            {items:updated, updatedAt:new Date().toISOString()}
+        ).catch(e=>console.warn("calTodos save failed:",e));
+    };
+    const addCalTodo=async(dateStr)=>{
+        const text = calTodoInput.trim();
+        if(!text) return;
+        const latest = await loadLatestCalTodos();
+        const updated=[...latest,{id:uid(),date:dateStr,text,done:false,createdAt:new Date().toISOString()}];
+        saveCalTodos(updated);
+        setCalTodoInput("");
+    };
+    const toggleCalTodo=async(id)=>{
+        const latest = await loadLatestCalTodos();
+        const updated=latest.map(t=>t.id===id?{...t,done:!t.done}:t);
+        saveCalTodos(updated);
+    };
+    const deleteCalTodo=async(id)=>{
+        const latest = await loadLatestCalTodos();
+        const updated=latest.filter(t=>t.id!==id);
+        saveCalTodos(updated);
+    };
+
+    // ── Note helpers ──
+    const NOTE_TAGS=[
+        {name:"一般",color:"#64748b"},
+        {name:"重要",color:"#ef4444"},
+        {name:"法律意見",color:"#8b5cf6"},
+        {name:"當事人指示",color:"#3b82f6"},
+        {name:"庭後記錄",color:"#f59e0b"},
+        {name:"待確認",color:"#f97316"},
+    ];
+    const addNote=async(c)=>{
+        if(!noteInput.trim()){ toast("請輸入筆記內容"); return; }
+        const note={id:uid(),text:noteInput.trim(),tag:noteTag,pinned:false,
+            createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+        const notes=[note,...(c.notes_list||[])];
+        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+        setNoteInput(""); toast("✅ 筆記已儲存");
+    };
+    const saveEditNote=async(c)=>{
+        if(!editingNote||!editingNote.text.trim()){ toast("請輸入筆記內容"); return; }
+        const notes=(c.notes_list||[]).map(n=>n.id===editingNote.id
+            ?{...n,text:editingNote.text.trim(),tag:editingNote.tag,updatedAt:new Date().toISOString()}:n);
+        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+        setEditingNote(null); toast("✅ 筆記已更新");
+    };
+    const deleteNote=async(c,id)=>{
+        if(!confirm("確認刪除這則筆記？")) return;
+        const notes=(c.notes_list||[]).filter(n=>n.id!==id);
+        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+        toast("🗑 已刪除");
+    };
+    const togglePin=async(c,id)=>{
+        const notes=(c.notes_list||[]).map(n=>n.id===id?{...n,pinned:!n.pinned}:n);
+        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+    };
+    const fmtNoteDate=(iso)=>{
+        if(!iso) return "";
+        const d=new Date(iso);
+        return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    };
+
+    // ── Fee helpers ──
+    const PAYMENT_METHODS=["現金","匯款","票據","信用卡","其他"];
+    const METHOD_CLASS={"現金":"pay-method-cash","匯款":"pay-method-transfer","票據":"pay-method-check","信用卡":"pay-method-transfer","其他":"pay-method-other"};
+    const calcReceived=(c)=>(c.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+    const calcUnpaid=(c)=>Math.max(0,Number(c.totalFee||0)-calcReceived(c));
+    // backward compat: if old feeReceived exists, treat as received
+    const getReceived=(c)=>c.payments?calcReceived(c):Number(c.feeReceived||0);
+    const getUnpaid=(c)=>c.payments?calcUnpaid(c):Number(c.feeUnpaid||0);
+
+    // ── Copy case ──
+    const copyCase=(c)=>{
+        const INSTANCE_NEXT={"地院":"高院","高院":"最高院","地檢署":"高檢署","高檢署":"最高院"};
+        const newCase={
+            ...JSON.parse(JSON.stringify(c)),
+            id:uid(),
+            firmCaseNo:c.firmCaseNo+"-上",
+            courtCaseNos:[""],
+            division:"",
+            instance:INSTANCE_NEXT[c.instance]||c.instance,
+            retainerDate:today(),
+            status:"進行中",
+            hearings:[],
+            todos:[],
+            notes:"（由 "+c.firmCaseNo+" 複製）\n"+(c.notes||""),
+            judgementLink:"",
+            driveFolderUrl:"",
+            docs:[],
+        };
+        setFormData(newCase); setEditId(null); setView("form");
+        toast("已複製案件，請確認資料後儲存");
+    };
+
+    // ── Print ──
+    const printCase=()=>window.print();
+
+    // ── AI Chat ──
+    const saveApiKey=()=>{
+        const k=aiKeyInput.trim();
+        if(!k){ toast("請輸入 API Key"); return; }
+        setAiApiKey(k);
+        localStorage.setItem("aiApiKey",k);
+        setAiKeyEditing(false);
+        setAiKeyInput("");
+        toast("✅ API Key 已儲存");
+    };
+    const clearApiKey=()=>{
+        setAiApiKey("");
+        localStorage.removeItem("aiApiKey");
+        setAiKeyEditing(false);
+        toast("已清除 API Key");
+    };
+    const getCaseMsgs=(caseId)=>aiMessages[caseId]||[];
+    const addMsg=(caseId,msg)=>setAiMessages(prev=>({...prev,[caseId]:[...(prev[caseId]||[]),msg]}));
+    const clearChat=(caseId)=>setAiMessages(prev=>({...prev,[caseId]:[]}));
+
+    const sendAiMessage=async(c)=>{
+        const text=aiInput.trim();
+        if(!text||aiLoading) return;
+        if(!aiApiKey){ toast("請先設定 Gemini API Key"); setAiKeyEditing(true); return; }
+        const userMsg={role:"user",content:text};
+        addMsg(c.id, userMsg);
+        setAiInput("");
+        setAiLoading(true);
+
+        const systemPrompt=`你是一位專業的台灣法律助理，正在協助律師處理以下案件：
+
+【案件資訊】
+事務所案件編號：${c.firmCaseNo||""}
+當事人：${c.clientName||""}
+對造：${c.opposingParty||""}
+法院案號：${(c.courtCaseNos||[]).filter(Boolean).join("、")||""}
+股別：${c.division||""}
+法院：${c.court||""} ${c.instance||""}
+案件類型：${c.caseType||""}
+案件狀態：${c.status||""}
+承辦律師：${c.attorney||""}
+備註：${c.notes||""}
+
+請根據上述案件背景，以繁體中文回答律師的問題。回答要專業、精準、具有實務參考價值。`;
+
+        // Build Gemini contents — inject system as first user/model turn
+        const history=getCaseMsgs(c.id);
+        const contents=[];
+        // System prompt as first turn
+        contents.push({role:"user",parts:[{text:systemPrompt}]});
+        contents.push({role:"model",parts:[{text:"了解，我已掌握本案資訊，請問有什麼需要協助的？"}]});
+        // History
+        history.forEach(m=>{
+            if(m.role==="user") contents.push({role:"user",parts:[{text:m.content}]});
+            else if(m.role==="ai") contents.push({role:"model",parts:[{text:m.content}]});
+        });
+        // Current message
+        contents.push({role:"user",parts:[{text}]});
+
+        try{
+            const model="gemini-2.0-flash";
+            const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${aiApiKey}`;
+            let res;
+            try{
+                res=await fetch(url,{
+                    method:"POST",
+                    headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify({
+                        contents,
+                        generationConfig:{maxOutputTokens:1500,temperature:0.7}
+                    })
+                });
+            }catch(networkErr){
+                // fetch 本身失敗：通常是 CORS 或網路問題
+                throw new Error("網路連線失敗，請確認網路狀態（"+networkErr.message+"）");
+            }
+            if(!res.ok){
+                let errBody={};
+                try{ errBody=await res.json(); }catch(_){}
+                const msg=errBody?.error?.message||"";
+                if(res.status===400) throw new Error("請求格式錯誤："+(msg||"請確認 API Key 是否正確"));
+                if(res.status===401||res.status===403) throw new Error("API Key 無效，請至 Google AI Studio 確認");
+                if(res.status===429){
+                    const retry=res.headers.get("Retry-After");
+                    throw new Error("Gemini 免費額度達上限，請稍後再試"+(retry?`（${retry}秒後）`:""));
+                }
+                if(res.status===500||res.status===503) throw new Error("Gemini 伺服器暫時無法回應，請稍後再試");
+                throw new Error(msg||`HTTP ${res.status}`);
+            }
+            const data=await res.json();
+            // Check for safety block
+            const candidate=data.candidates?.[0];
+            if(!candidate) throw new Error("Gemini 未回傳結果，可能觸發安全過濾");
+            if(candidate.finishReason==="SAFETY") throw new Error("此問題觸發 Gemini 安全過濾，請換個方式提問");
+            const reply=candidate.content?.parts?.[0]?.text||"（無回應）";
+            addMsg(c.id,{role:"ai",content:reply});
+        }catch(e){
+            console.error("Gemini error:",e);
+            addMsg(c.id,{role:"ai",content:"⚠️ "+e.message});
+            if(e.message.includes("API Key")||e.message.includes("無效")) setAiKeyEditing(true);
+        }finally{
+            setAiLoading(false);
+        }
+    };
+
+    // ── Tag helpers ──
+    const TAG_COLORS=["#ef4444","#f97316","#f59e0b","#22c55e","#3b82f6","#8b5cf6","#ec4899","#64748b"];
+    const saveTag=()=>{
+        if(!tagForm.name.trim()){ toast("請填標籤名稱"); return; }
+        if(allTags.find(t=>t.name===tagForm.name.trim())){ toast("標籤已存在"); return; }
+        const updated=[...allTags,{id:uid(),name:tagForm.name.trim(),color:tagForm.color}];
+        setAllTags(updated); localStorage.setItem("caseTags",JSON.stringify(updated));
+        setTagForm({name:"",color:"#ef4444"}); setTagModal(false); toast("✅ 標籤已新增");
+    };
+    const deleteTag=(id)=>{
+        const updated=allTags.filter(t=>t.id!==id);
+        setAllTags(updated); localStorage.setItem("caseTags",JSON.stringify(updated));
+    };
+    const toggleCaseTag=async(c,tagName)=>{
+        const tags=(c.tags||[]).includes(tagName)?(c.tags||[]).filter(t=>t!==tagName):[...(c.tags||[]),tagName];
+        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{tags});
+    };
+
+    // ── Excel export ──
+    const exportExcel=()=>{
+        const headers=["事務所案件編號","當事人姓名","連絡電話","對造","法院案號","股別","法院","審級","案件類型","案由","狀態","承辦律師","委任日期","本件律師費","已收款合計","未收款","代墊款項","標籤","備註"];
+        const rows=cases.map(c=>[
+            c.firmCaseNo||"", c.clientName||"", c.phone||"", c.opposingParty||"",
+            (c.courtCaseNos||[]).filter(Boolean).join("、"), c.division||"", c.court||"", c.instance||"",
+            c.caseType||"", c.status||"", c.attorney||"", c.retainerDate||"",
+            Number(c.totalFee||0), getReceived(c), getUnpaid(c), Number(c.disbursements||0), c.caseReason||"",
+            (c.tags||[]).join("、"), (c.notes||"").replace(/\n/g," "),
+        ]);
+        // Build CSV with BOM for Excel UTF-8
+        const bom="﻿";
+        const esc=v=>'"'+String(v).replace(/"/g,'""')+'"';
+        const csv=bom+[headers,...rows].map(r=>r.map(esc).join(",")).join("\n");
+        const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+        const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+        a.download=`案件清單_${today()}.csv`; a.click();
+        toast("✅ 已匯出，用 Excel 開啟即可");
+    };
+
+    // ── Tools helpers ──
+    const saveTool=()=>{
+        if(!toolForm.name.trim()){ toast("請填工具名稱"); return; }
+        if(!toolForm.url.trim()){ toast("請填連結網址"); return; }
+        let url = toolForm.url.trim();
+        if(!/^https?:\/\//.test(url)) url = "https://"+url;
+        const updated = editingToolId
+            ? tools.map(t=>t.id===editingToolId?{...toolForm,url,id:editingToolId}:t)
+            : [...tools, {...toolForm,url,id:uid()}];
+        setTools(updated);
+        localStorage.setItem("quickTools", JSON.stringify(updated));
+        setToolModal(false); setEditingToolId(null);
+        setToolForm({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"});
+        toast("✅ 工具已儲存");
+    };
+    const deleteTool=(id)=>{
+        const updated = tools.filter(t=>t.id!==id);
+        setTools(updated);
+        localStorage.setItem("quickTools", JSON.stringify(updated));
+        toast("🗑 已移除");
+    };
+    const openAddTool=()=>{ setToolForm({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"}); setEditingToolId(null); setToolModal(true); };
+    const openEditTool=(t)=>{ setToolForm({emoji:t.emoji,name:t.name,url:t.url,desc:t.desc||"",color:t.color||"#c8a96e"}); setEditingToolId(t.id); setToolModal(true); };
+
+    // ── Google Calendar ──
+    const openGoogleCalendar=(h, c)=>{
+        // 日期格式轉換：2025-04-22 → 20250422
+        const dateStr = (h.date||"").replace(/-/g,"");
+        // 時間格式：09:30 → 093000，無時間則用全天
+        const hasTime = !!(h.time);
+        let start, end;
+        if(hasTime){
+            const timeStr = (h.time||"0900").replace(":","")+"00";
+            start = `${dateStr}T${timeStr}`;
+            // 預設結束時間 = 開始 + 1小時
+            const [hh, mm] = (h.time||"09:00").split(":").map(Number);
+            const endHH = String(hh+1).padStart(2,"0");
+            end = `${dateStr}T${endHH}${String(mm).padStart(2,"0")}00`;
+        } else {
+            // 全天事件
+            const nextDay = new Date(h.date);
+            nextDay.setDate(nextDay.getDate()+1);
+            start = dateStr;
+            end = nextDay.toISOString().split("T")[0].replace(/-/g,"");
+        }
+        const title = encodeURIComponent(`【開庭】${c.clientName} ${h.note||""}`);
+        const location = encodeURIComponent(`${h.agency||""} ${h.courtroom||""}`.trim());
+        const detail = encodeURIComponent([
+            `案件編號：${c.firmCaseNo||""}`,
+            `案號：${(c.courtCaseNos||[]).filter(Boolean).join("、")}`,
+            `對造：${c.opposingParty||""}`,
+            `股別：${c.division||""}`,
+            h.note ? `庭期性質：${h.note}` : "",
+        ].filter(Boolean).join("\n"));
+        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&location=${location}&details=${detail}`;
+        window.open(url,"_blank");
+    };
 
     // ── LOADING ──
     if(loading) return(
@@ -345,9 +1179,17 @@ function App(){
         <div className="app">
             <div className="header">
                 <div className="header-title">⚖ 案件管理系統</div>
-                <div style={{display:"flex",gap:8}}>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <button className="theme-btn" onClick={cycleMode} title="切換主題">
+                        {mode==="auto" ? "🕐 自動" : mode==="light" ? "☀️ 白天" : "🌙 夜間"}
+                    </button>
+                    <button className="btn btn-outline btn-sm" onClick={()=>setView("tools")}>🔧 工具箱</button>
                     <button className="btn btn-outline btn-sm" onClick={()=>setView("stats")}>📊 統計</button>
                     <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
+                    <button className="btn btn-outline btn-sm" title="登出"
+                        onClick={()=>{ if(confirm("確認登出？")) window.fbAuth.signOut(window.auth); }}>
+                        🚪
+                    </button>
                 </div>
             </div>
 
@@ -357,8 +1199,8 @@ function App(){
                     ["案件總數", cases.length, "件", "var(--gold)"],
                     ["進行中", cases.filter(c=>c.status==="進行中").length, "件", "var(--green)"],
                     ["近期開庭", upcoming.length, "場", "var(--yellow)"],
-                    ["已收款", fmtK(cases.reduce((s,c)=>s+Number(c.feeReceived||0),0)), "萬", "var(--gold)"],
-                    ["未收款", fmtK(cases.reduce((s,c)=>s+Number(c.feeUnpaid||0),0)), "萬", cases.some(c=>Number(c.feeUnpaid)>0)?"var(--red)":"var(--text3)"],
+                    ["已收款", fmtK(cases.reduce((s,c)=>s+getReceived(c),0)), "萬", "var(--gold)"],
+                    ["未收款", fmtK(cases.reduce((s,c)=>s+getUnpaid(c),0)), "萬", cases.some(c=>getUnpaid(c)>0)?"var(--red)":"var(--text3)"],
                     ["代墊款", fmtK(cases.reduce((s,c)=>s+Number(c.disbursements||0),0)), "萬", "var(--purple)"],
                 ].map(([l,v,u,c])=>(
                     <div key={l} className="stat-card">
@@ -377,7 +1219,7 @@ function App(){
                             const d=daysUntil(h.date);
                             return(
                                 <div key={i} className="chip" style={{borderColor:d<=3?"var(--red)":d<=7?"var(--yellow)":"var(--border)"}}
-                                    onClick={()=>{setSelectedId(h.caseId);setView("detail");}}>
+                                    onClick={()=>openDetail(h.caseId)}>
                                     <div style={{color:d<=3?"var(--red)":"var(--gold)",fontWeight:700,fontSize:12}}>{h.date} {h.time}</div>
                                     <div style={{color:"var(--text)",fontSize:12,marginTop:2}}>{h.clientName} · {h.note||h.agency||"開庭"}</div>
                                     <div style={{color:"var(--text3)",fontSize:11,marginTop:2}}>{d===0?"今天！":d===1?"明天":`${d}天後`}</div>
@@ -389,31 +1231,268 @@ function App(){
             )}
 
             <div className="content">
+                {/* View tabs */}
+                <div style={{display:"flex",gap:0,marginBottom:14,borderBottom:"1px solid var(--border)"}}>
+                    {[["list","📋 列表"],["calendar","📅 月曆"]].map(([t,l])=>(
+                        <button key={t} onClick={()=>setListTab(t)} style={{
+                            padding:"9px 18px",border:"none",background:"transparent",
+                            color:listTab===t?"var(--gold)":"var(--text3)",
+                            fontWeight:listTab===t?700:400,fontSize:13,cursor:"pointer",
+                            borderBottom:listTab===t?"2px solid var(--gold)":"2px solid transparent",
+                            fontFamily:"inherit",
+                        }}>{l}</button>
+                    ))}
+                    <div style={{flex:1}}/>
+                    <button className="btn btn-outline btn-sm" style={{margin:"4px 0"}} onClick={exportExcel}>📤 匯出 Excel</button>
+                </div>
+
                 {/* Filters */}
                 <div className="filter-row">
-                    <input className="search-inp" placeholder="🔍 搜尋當事人、案號、律師…" value={search} onChange={e=>setSearch(e.target.value)}/>
+                    <input className="search-inp" placeholder="🔍 搜尋當事人、案號、備註、筆錄…" value={search} onChange={e=>setSearch(e.target.value)}/>
                     <select className="fsel" value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
                         {["全部",...CASE_STATUS].map(s=><option key={s}>{s}</option>)}
                     </select>
                     <select className="fsel" value={filterType} onChange={e=>setFilterType(e.target.value)}>
                         {["全部",...CASE_TYPES].map(t=><option key={t}>{t}</option>)}
                     </select>
-                    <span style={{color:"var(--text4)",fontSize:12,whiteSpace:"nowrap"}}>{filtered.length} 件</span>
+                    <select className="fsel" value={sortBy} onChange={e=>setSortBy(e.target.value)}>
+                        <option value="retainerDate">委任日期</option>
+                        <option value="nextHearing">最近開庭</option>
+                        <option value="feeReceived">已收款</option>
+                        <option value="feeUnpaid">未收款</option>
+                    </select>
+                    <button className="btn btn-outline btn-sm" onClick={()=>setSortDir(d=>d==="asc"?"desc":"asc")}
+                        title={sortDir==="desc"?"由大到小（點切換）":"由小到大（點切換）"}>
+                        {sortDir==="desc"?"↓":"↑"}
+                    </button>
+                    <span style={{color:"var(--text4)",fontSize:12,whiteSpace:"nowrap"}}>{sortedFiltered.length} 件</span>
                 </div>
 
+                {/* Tag filter row */}
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
+                    <button className="tag-pill" onClick={()=>setFilterTag("全部")}
+                        style={{background:filterTag==="全部"?"var(--gold)":"var(--bg4)",color:filterTag==="全部"?"#000":"var(--text3)"}}>
+                        全部
+                    </button>
+                    {allTags.map(t=>(
+                        <button key={t.id} className="tag-pill" onClick={()=>setFilterTag(filterTag===t.name?"全部":t.name)}
+                            style={{background:filterTag===t.name?t.color:t.color+"22",color:filterTag===t.name?"#fff":t.color,border:`1px solid ${t.color}44`}}>
+                            {t.name}
+                        </button>
+                    ))}
+                    <button className="tag-pill" onClick={()=>setTagModal(true)}
+                        style={{background:"transparent",border:"1px dashed var(--border)",color:"var(--text4)"}}>
+                        ＋ 新增標籤
+                    </button>
+                </div>
+
+                {/* Tag modal */}
+                {tagModal && (
+                    <div className="tool-modal-overlay" onClick={e=>e.target===e.currentTarget&&setTagModal(false)}>
+                        <div className="tool-modal">
+                            <div style={{fontWeight:700,fontSize:15,marginBottom:16}}>🏷 管理標籤</div>
+                            {/* Existing tags */}
+                            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
+                                {allTags.map(t=>(
+                                    <span key={t.id} className="tag-pill" style={{background:t.color+"22",color:t.color,border:`1px solid ${t.color}44`}}>
+                                        {t.name}
+                                        <span style={{cursor:"pointer",marginLeft:2}} onClick={()=>deleteTag(t.id)}>✕</span>
+                                    </span>
+                                ))}
+                                {allTags.length===0 && <div style={{color:"var(--text4)",fontSize:13}}>尚無標籤</div>}
+                            </div>
+                            <div className="fg" style={{marginBottom:10}}>
+                                <label className="fl">新標籤名稱</label>
+                                <input className="fi" value={tagForm.name} onChange={e=>setTagForm(f=>({...f,name:e.target.value}))} placeholder="例如：緊急、等候判決、上訴中"/>
+                            </div>
+                            <div style={{display:"flex",gap:6,marginBottom:18}}>
+                                {["#ef4444","#f97316","#f59e0b","#22c55e","#3b82f6","#8b5cf6","#ec4899","#64748b"].map(c=>(
+                                    <div key={c} className={"tag-color-swatch"+(tagForm.color===c?" sel":"")} style={{background:c}} onClick={()=>setTagForm(f=>({...f,color:c}))}/>
+                                ))}
+                            </div>
+                            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                                <button className="btn btn-outline btn-sm" onClick={()=>setTagModal(false)}>關閉</button>
+                                <button className="btn btn-gold" onClick={saveTag}>新增標籤</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── CALENDAR VIEW ── */}
+                {listTab==="calendar" && (()=>{
+                    const y=calDate.getFullYear(), m=calDate.getMonth();
+                    const firstDay=new Date(y,m,1).getDay();
+                    const daysInMonth=new Date(y,m+1,0).getDate();
+                    const todayStr=today();
+                    // Build hearing map: date -> [{clientName, caseType, note, caseId}]
+                    const hearingMap={};
+                    cases.forEach(c=>{
+                        (c.hearings||[]).forEach(h=>{
+                            if(!hearingMap[h.date]) hearingMap[h.date]=[];
+                            hearingMap[h.date].push({clientName:c.clientName,caseType:c.caseType,note:h.note||h.agency||"開庭",caseId:c.id,time:h.time||""});
+                        });
+                    });
+                    const cells=[];
+                    // Previous month padding
+                    const prevDays=new Date(y,m,0).getDate();
+                    for(let i=firstDay-1;i>=0;i--) cells.push({day:prevDays-i,cur:false});
+                    for(let d=1;d<=daysInMonth;d++) cells.push({day:d,cur:true});
+                    while(cells.length%7!==0) cells.push({day:cells.length-daysInMonth-firstDay+1,cur:false});
+                    const monthStr=`${y}年${m+1}月`;
+                    return(
+                        <div className="cal-wrap">
+                            <div className="cal-header">
+                                <button className="cal-nav" onClick={()=>setCalDate(new Date(y,m-1,1))}>‹</button>
+                                <div style={{fontWeight:700,fontSize:16,color:"var(--text)"}}>{monthStr}</div>
+                                <button className="cal-nav" onClick={()=>setCalDate(new Date(y,m+1,1))}>›</button>
+                            </div>
+                            <div className="cal-grid">
+                                {[["日","sun"],["一",""],["二",""],["三",""],["四",""],["五",""],["六","sat"]].map(([d,cls])=>(
+                                    <div key={d} className={`cal-dow${cls?" "+cls:""}`}>{d}</div>
+                                ))}
+                                {cells.map((cell,i)=>{
+                                    const dow=i%7; // 0=日,6=六
+                                    const dateStr=cell.cur?`${y}-${String(m+1).padStart(2,"0")}-${String(cell.day).padStart(2,"0")}`:"";
+                                    const events=dateStr?hearingMap[dateStr]||[]:[];
+                                    const isToday=dateStr===todayStr;
+                                    const isSun=dow===0;
+                                    const isSat=dow===6;
+                                    const holidayName=dateStr?TW_HOLIDAYS[dateStr]:"";
+                                    const isHoliday=!!holidayName&&!isSun&&!isSat; // non-weekend public holiday
+                                    const cls=[
+                                        "cal-day",
+                                        !cell.cur?"other-month":"",
+                                        isToday?"today-cell":"",
+                                        isSun?"is-sun":"",
+                                        isSat?"is-sat":"",
+                                        isHoliday?"is-holiday":"",
+                                    ].filter(Boolean).join(" ");
+                                    const dateTodos=dateStr?calTodos.filter(t=>t.date===dateStr):[];
+                                    return(
+                                        <div key={i} className={cls} style={{cursor:cell.cur?"pointer":"default"}}
+                                            onClick={()=>cell.cur&&setCalTodoModal(dateStr)}>
+                                            <div className="cal-day-num">{cell.day}</div>
+                                            {holidayName && cell.cur && (
+                                                <div className="cal-holiday-label" title={holidayName}>
+                                                    {holidayName==="彈性放假"?"補假":holidayName}
+                                                </div>
+                                            )}
+                                            {events.slice(0,2).map((ev,ei)=>(
+                                                <div key={ei} className="cal-event"
+                                                    style={{background:(TYPE_COLOR[ev.caseType]||"#64748b")+"33",color:TYPE_COLOR[ev.caseType]||"#64748b"}}
+                                                    onClick={e=>{e.stopPropagation();openDetail(ev.caseId);}}
+                                                    title={`${ev.clientName} ${ev.time} ${ev.note}`}>
+                                                    {ev.time&&`${ev.time} `}{ev.clientName}
+                                                </div>
+                                            ))}
+                                            {events.length>2 && <div style={{fontSize:9,color:"var(--text4)",paddingLeft:3}}>+{events.length-2}庭</div>}
+                                            {dateTodos.slice(0,2).map((t,ti)=>(
+                                                <div key={ti} className={`cal-todo-dot${t.done?" done":""}`}
+                                                    onClick={e=>{e.stopPropagation();toggleCalTodo(t.id);}}>
+                                                    {t.done?"✓":""} {t.text}
+                                                </div>
+                                            ))}
+                                            {dateTodos.length>2 && <div style={{fontSize:9,color:"#8b5cf6",paddingLeft:3}}>+{dateTodos.length-2}項</div>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="cal-legend">
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#ef4444"}}/><span style={{color:"#ef4444",fontWeight:700}}>日/假日</span></div>
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#3b82f6"}}/><span style={{color:"#3b82f6",fontWeight:700}}>六</span></div>
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:4,background:"rgba(139,92,246,.4)"}}/><span style={{color:"#8b5cf6",fontWeight:700}}>待辦</span></div>
+                                <div style={{width:1,height:14,background:"var(--border)",margin:"0 4px"}}/>
+                                {CASE_TYPES.map(t=><div key={t} className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:TYPE_COLOR[t]||"#64748b"}}/>{t}</div>)}
+                            </div>
+                            <div style={{fontSize:10,color:"var(--text4)",padding:"6px 18px 0",textAlign:"right"}}>點選日期可新增待辦事項</div>
+                        </div>
+                    );
+                })()}
+
+                {/* Calendar Todo Modal */}
+                {calTodoModal && (()=>{
+                    const ds=calTodoModal;
+                    const d=new Date(ds+"T00:00:00+08:00");
+                    const wd=["日","一","二","三","四","五","六"][d.getDay()];
+                    const label=`${d.getMonth()+1}月${d.getDate()}日（${wd}）`;
+                    const todosForDay=calTodos.filter(t=>t.date===ds).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+                    const hearingsForDay=(()=>{
+                        const hm={};
+                        cases.forEach(c=>(c.hearings||[]).forEach(h=>{if(!hm[h.date])hm[h.date]=[];hm[h.date].push({...h,clientName:c.clientName,firmCaseNo:c.firmCaseNo,caseType:c.caseType,caseId:c.id});}));
+                        return hm[ds]||[];
+                    })();
+                    return(
+                        <div className="cal-todo-modal" onClick={()=>setCalTodoModal(null)}>
+                            <div className="cal-todo-sheet" onClick={e=>e.stopPropagation()}>
+                                {/* Header */}
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                                    <div>
+                                        <div style={{fontWeight:800,fontSize:17,color:"var(--text)"}}>{label}</div>
+                                        {TW_HOLIDAYS[ds] && <div style={{fontSize:12,color:"var(--red)",marginTop:2}}>🎌 {TW_HOLIDAYS[ds]}</div>}
+                                    </div>
+                                    <button onClick={()=>setCalTodoModal(null)} style={{background:"var(--bg4)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",color:"var(--text2)",fontSize:16}}>✕</button>
+                                </div>
+
+                                {/* Hearings on this day */}
+                                {hearingsForDay.length>0 && <>
+                                    <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>🏛 當日庭期</div>
+                                    {hearingsForDay.map((h,i)=>(
+                                        <div key={i} onClick={()=>{openDetail(h.caseId);setCalTodoModal(null);}}
+                                            style={{background:"var(--bg3)",border:`1px solid ${TYPE_COLOR[h.caseType]||"#64748b"}33`,borderRadius:10,padding:"10px 12px",marginBottom:8,cursor:"pointer",display:"flex",gap:10,alignItems:"center"}}>
+                                            <span style={{fontSize:15,color:TYPE_COLOR[h.caseType]||"#64748b"}}>🏛</span>
+                                            <div style={{flex:1}}>
+                                                <div style={{fontWeight:700,color:"var(--text)",fontSize:13}}>{h.clientName}</div>
+                                                <div style={{fontSize:11,color:"var(--text3)"}}>{h.time&&`${h.time} · `}{h.note||h.agency||""}</div>
+                                            </div>
+                                            <Badge label={h.caseType} color={TYPE_COLOR[h.caseType]||"#64748b"}/>
+                                        </div>
+                                    ))}
+                                    <div style={{height:1,background:"var(--border)",margin:"12px 0"}}/>
+                                </>}
+
+                                {/* Todos */}
+                                <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>✅ 待辦事項</div>
+                                {todosForDay.length===0 && <div style={{color:"var(--text4)",fontSize:13,padding:"8px 0 14px"}}>尚無待辦，在下方新增</div>}
+                                {todosForDay.map(t=>(
+                                    <div key={t.id} className="cal-todo-item" onClick={()=>toggleCalTodo(t.id)}>
+                                        <div className={`cal-todo-check${t.done?" done":""}`}>
+                                            {t.done && <span style={{color:"#fff",fontSize:11,fontWeight:900}}>✓</span>}
+                                        </div>
+                                        <div style={{flex:1,color:t.done?"var(--text4)":"var(--text)",textDecoration:t.done?"line-through":"none",fontSize:14}}>{t.text}</div>
+                                        <button className="cal-todo-del" onClick={e=>{e.stopPropagation();deleteCalTodo(t.id);}}>🗑</button>
+                                    </div>
+                                ))}
+
+                                {/* Add new todo */}
+                                <div style={{display:"flex",gap:8,marginTop:14}}>
+                                    <input
+                                        style={{flex:1,background:"var(--bg)",border:"1px solid var(--border)",borderRadius:9,padding:"10px 13px",color:"var(--text)",fontSize:13,outline:"none",fontFamily:"inherit"}}
+                                        placeholder="新增待辦事項…"
+                                        value={calTodoInput}
+                                        onChange={e=>setCalTodoInput(e.target.value)}
+                                        onKeyDown={e=>{ if(e.key==="Enter"){ addCalTodo(ds); } }}
+                                        autoFocus
+                                    />
+                                    <button className="btn btn-gold" onClick={()=>addCalTodo(ds)} disabled={!calTodoInput.trim()}>＋ 新增</button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 {/* Mobile cards */}
-                <div className="case-cards">
-                    {filtered.length===0 && <div className="empty"><div className="ico">📂</div>查無案件</div>}
-                    {filtered.map(c=>{
+                {listTab==="list" && <div className="case-cards">
+                    {sortedFiltered.length===0 && <div className="empty"><div className="ico">📂</div>查無案件</div>}
+                    {sortedFiltered.map(c=>{
                         const nh=(c.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
                         const pt=(c.todos||[]).filter(t=>!t.done).length;
                         return(
-                            <div key={c.id} className="case-card" onClick={()=>{setSelectedId(c.id);setView("detail");}}>
+                            <div key={c.id} className="case-card" onClick={()=>openDetail(c.id)}>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                                     <div>
                                         <div style={{color:"var(--gold)",fontWeight:700,fontFamily:"monospace",fontSize:12}}>{c.firmCaseNo}</div>
                                         <div style={{fontWeight:700,fontSize:16,color:"var(--text)",marginTop:2}}>{c.clientName}</div>
-                                        <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{c.currentAgency||c.court||""}</div>
+                                        <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{c.currentAgency||c.court||""}{c.caseReason&&<span style={{color:"var(--text4)",marginLeft:4}}>· {c.caseReason}</span>}</div>
                                     </div>
                                     <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
                                         <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/>
@@ -425,17 +1504,18 @@ function App(){
                                     {pt>0 && <span style={{background:"#ef444422",color:"var(--red)",borderRadius:10,padding:"1px 8px",fontWeight:700}}>✅ {pt}項</span>}
                                 </div>
                                 <div style={{display:"flex",gap:14,marginTop:8,fontSize:12}}>
-                                    <div><div style={{color:"var(--text4)",fontSize:10}}>已收</div><div style={{color:"var(--green)",fontWeight:700}}>{c.feeReceived?Number(c.feeReceived).toLocaleString():"—"}</div></div>
-                                    <div><div style={{color:"var(--text4)",fontSize:10}}>未收</div><div style={{color:c.feeUnpaid>0?"var(--red)":"var(--text3)",fontWeight:700}}>{c.feeUnpaid?Number(c.feeUnpaid).toLocaleString():"—"}</div></div>
+                                    <div><div style={{color:"var(--text4)",fontSize:10}}>應收</div><div style={{color:"var(--gold)",fontWeight:700}}>{c.totalFee?Number(c.totalFee).toLocaleString():"—"}</div></div>
+                                    <div><div style={{color:"var(--text4)",fontSize:10}}>已收</div><div style={{color:"var(--green)",fontWeight:700}}>{getReceived(c)?getReceived(c).toLocaleString():"—"}</div></div>
+                                    <div><div style={{color:"var(--text4)",fontSize:10}}>未收</div><div style={{color:getUnpaid(c)>0?"var(--red)":"var(--text3)",fontWeight:700}}>{getUnpaid(c)?getUnpaid(c).toLocaleString():"—"}</div></div>
                                     <div><div style={{color:"var(--text4)",fontSize:10}}>代墊</div><div style={{color:"var(--purple)",fontWeight:700}}>{c.disbursements?Number(c.disbursements).toLocaleString():"—"}</div></div>
                                 </div>
                             </div>
                         );
                     })}
-                </div>
+                </div>}
 
                 {/* Desktop table */}
-                <div className="tbl-wrap">
+                {listTab==="list" && <div className="tbl-wrap">
                     <table>
                         <thead><tr>
                             <th>案件編號</th><th>當事人</th><th>對造</th><th>繫屬機關</th><th>類型</th><th>狀態</th>
@@ -443,20 +1523,20 @@ function App(){
                             <th>最近開庭</th><th>待辦</th><th></th>
                         </tr></thead>
                         <tbody>
-                            {filtered.length===0 && <tr><td colSpan={12} style={{textAlign:"center",padding:40,color:"var(--text3)"}}>查無案件</td></tr>}
-                            {filtered.map(c=>{
+                            {sortedFiltered.length===0 && <tr><td colSpan={12} style={{textAlign:"center",padding:40,color:"var(--text3)"}}>查無案件</td></tr>}
+                            {sortedFiltered.map(c=>{
                                 const nh=(c.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
                                 const pt=(c.todos||[]).filter(t=>!t.done).length;
                                 return(
-                                    <tr key={c.id} className="trow" onClick={()=>{setSelectedId(c.id);setView("detail");}}>
+                                    <tr key={c.id} className="trow" onClick={()=>openDetail(c.id)}>
                                         <td><span style={{color:"var(--gold)",fontWeight:700,fontFamily:"monospace",fontSize:11}}>{c.firmCaseNo}</span></td>
                                         <td><span style={{fontWeight:700,color:"var(--text)"}}>{c.clientName}</span></td>
                                         <td style={{color:"var(--text3)",fontSize:11}}>{c.opposingParty||"—"}</td>
                                         <td style={{color:"var(--text3)",fontSize:11}}>{c.currentAgency||"—"}</td>
                                         <td><Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/></td>
                                         <td><Badge label={c.status} color={STATUS_COLOR[c.status]||"#64748b"}/></td>
-                                        <td style={{textAlign:"right",color:"var(--green)"}}>{c.feeReceived?Number(c.feeReceived).toLocaleString():"—"}</td>
-                                        <td style={{textAlign:"right",color:c.feeUnpaid>0?"var(--red)":"var(--text3)"}}>{c.feeUnpaid?Number(c.feeUnpaid).toLocaleString():"—"}</td>
+                                        <td style={{textAlign:"right",color:"var(--green)"}}>{getReceived(c)?getReceived(c).toLocaleString():"—"}</td>
+                                        <td style={{textAlign:"right",color:getUnpaid(c)>0?"var(--red)":"var(--text3)"}}>{getUnpaid(c)?getUnpaid(c).toLocaleString():"—"}</td>
                                         <td style={{textAlign:"right",color:"var(--purple)"}}>{c.disbursements?Number(c.disbursements).toLocaleString():"—"}</td>
                                         <td style={{color:nh&&daysUntil(nh.date)<=7?"var(--yellow)":"var(--text3)",fontSize:11}}>{nh?nh.date:"—"}</td>
                                         <td>{pt>0?<span style={{background:"#ef444422",color:"var(--red)",borderRadius:10,padding:"1px 8px",fontSize:11,fontWeight:700}}>{pt}</span>:"—"}</td>
@@ -468,12 +1548,14 @@ function App(){
                             })}
                         </tbody>
                     </table>
-                </div>
+                </div>}
             </div>
 
             <div className="bnav">
                 <button className="bnav-btn active"><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("tools")}><span className="bnav-icon">🔧</span>工具</button>
+                <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
             </div>
         </div>
@@ -485,10 +1567,24 @@ function App(){
             <div className="header">
                 <button className="btn btn-outline btn-sm" onClick={()=>setView("list")}>← 返回</button>
                 <div style={{fontWeight:700,color:"var(--text)",fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,textAlign:"center"}}>{selected.clientName}</div>
-                <div style={{display:"flex",gap:8}}>
-                    <button className="btn btn-outline btn-sm" onClick={()=>openEdit(selected)}>✏️ 編輯</button>
-                    <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm(true)}>🗑</button>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button className="btn btn-outline btn-sm no-print" onClick={()=>copyCase(selected)}>📎 複製上訴</button>
+                    <button className="btn btn-outline btn-sm no-print" onClick={printCase}>🖨 列印</button>
+                    <button className="btn btn-outline btn-sm no-print" onClick={()=>openEdit(selected)}>✏️ 編輯</button>
+                    <button className="btn btn-danger btn-sm no-print" onClick={()=>setDeleteConfirm(true)}>🗑</button>
                 </div>
+            </div>
+            {/* Tab switcher */}
+            <div style={{display:"flex",gap:0,padding:"0 16px",background:"var(--bg2)",borderBottom:"1px solid var(--border)"}}>
+                {[["info","📋 案件資訊"],["timeline","🕐 時間軸"],["notes","📓 案件筆記"]].map(([t,l])=>(
+                    <button key={t} onClick={()=>setDetailTab(t)} style={{
+                        padding:"10px 18px",border:"none",background:"transparent",
+                        color:detailTab===t?"var(--gold)":"var(--text3)",
+                        fontWeight:detailTab===t?700:400,fontSize:13,cursor:"pointer",
+                        borderBottom:detailTab===t?"2px solid var(--gold)":"2px solid transparent",
+                        fontFamily:"inherit",transition:"all .2s",
+                    }}>{l}</button>
+                ))}
             </div>
 
             {deleteConfirm && (
@@ -505,14 +1601,173 @@ function App(){
             )}
 
             <div className="content">
+                {/* Print title */}
+                <div className="print-title">⚖ 律師案件管理系統 — 案件報告<br/><span style={{fontSize:13,fontWeight:400}}>{selected.clientName} · {selected.firmCaseNo} · 列印日期：{today()}</span></div>
+
                 {/* Badge row */}
-                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
                     <Badge label={selected.caseType} color={TYPE_COLOR[selected.caseType]||"#64748b"}/>
                     <Badge label={selected.status} color={STATUS_COLOR[selected.status]||"#64748b"}/>
                     <Badge label={selected.instance} color="#64748b"/>
+                    {(selected.tags||[]).map(tag=>{
+                        const t=allTags.find(x=>x.name===tag);
+                        return t?<Badge key={tag} label={tag} color={t.color}/>:null;
+                    })}
                 </div>
+                {/* Tag toggle row */}
+                {allTags.length>0 && (
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14,alignItems:"center"}}>
+                        <span style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".06em",textTransform:"uppercase"}}>標籤：</span>
+                        {allTags.map(t=>{
+                            const active=(selected.tags||[]).includes(t.name);
+                            return(
+                                <button key={t.id} className="tag-pill" onClick={()=>toggleCaseTag(selected,t.name)}
+                                    style={{background:active?t.color:t.color+"22",color:active?"#fff":t.color,border:`1px solid ${t.color}44`}}>
+                                    {active?"✓ ":""}{t.name}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
 
-                <div className="detail-grid">
+                {/* ── TIMELINE TAB ── */}
+                {detailTab==="timeline" && (()=>{
+                    // Build timeline events
+                    const events = [];
+                    if(selected.retainerDate) events.push({date:selected.retainerDate,type:"milestone",icon:"⚖",label:"案件委任",detail:`委任律師 ${selected.attorney||""}`,color:"var(--gold)"});
+                    (selected.hearings||[]).forEach(h=>{
+                        const d=daysUntil(h.date);
+                        events.push({date:h.date,time:h.time,type:d<0?"past":d===0?"today":"future",icon:"🏛",label:`${h.agency||"開庭"} ${h.note?`· ${h.note}`:""}`,detail:`${h.courtroom||""} ${h.time||""}`.trim(),color:d<0?"var(--text4)":d===0?"var(--red)":d<=7?"var(--yellow)":"var(--gold)"});
+                    });
+                    (selected.todos||[]).forEach(t=>{
+                        if(t.due) events.push({date:t.due,type:"todo",done:t.done,icon:t.done?"✓":"○",label:t.text,detail:t.done?"已完成":"待辦",color:t.done?"var(--green)":"var(--purple)"});
+                    });
+                    events.sort((a,b)=>a.date.localeCompare(b.date));
+                    return(
+                        <div className="tl-wrap">
+                            {events.length===0 && <div className="empty"><div className="ico">🕐</div>尚無時間軸事件</div>}
+                            {events.map((ev,i)=>{
+                                const dotClass = ev.type==="todo"?(ev.done?"tl-dot todo done":"tl-dot todo"):ev.type==="milestone"?"tl-dot milestone":`tl-dot ${ev.type}`;
+                                const bodyClass = `tl-body ${ev.type==="todo"?"":ev.type}`;
+                                const d = daysUntil(ev.date);
+                                return(
+                                    <div key={i} className="tl-item">
+                                        <div className={dotClass}/>
+                                        <div className="tl-date">{ev.date}{ev.time&&` ${ev.time}`}</div>
+                                        <div className={bodyClass}>
+                                            <div className="tl-tag" style={{color:ev.color}}>{ev.icon} {ev.type==="hearing"||ev.type==="past"||ev.type==="future"||ev.type==="today"?"開庭":ev.type==="todo"?"待辦":ev.type==="milestone"?"里程碑":""}</div>
+                                            <div style={{color:"var(--text)",fontWeight:600,fontSize:14}}>{ev.label}</div>
+                                            {ev.detail && <div style={{color:"var(--text3)",fontSize:12,marginTop:3}}>{ev.detail}</div>}
+                                            {ev.type==="future"&&<div style={{color:"var(--gold)",fontSize:11,marginTop:4}}>📅 {d===0?"今天":d===1?"明天":`${d}天後`}</div>}
+                                            {ev.type==="today"&&<div style={{color:"var(--red)",fontSize:11,fontWeight:700,marginTop:4}}>🔴 今天開庭！</div>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
+
+                {/* ── INFO TAB ── */}
+
+                {/* ── NOTES TAB ── */}
+                {detailTab==="notes" && (()=>{
+                    const allNotes=(selected.notes_list||[]);
+                    const sorted=[...allNotes.filter(n=>n.pinned),...allNotes.filter(n=>!n.pinned)];
+                    const tagMap=Object.fromEntries(NOTE_TAGS.map(t=>[t.name,t.color]));
+                    return(
+                        <div className="notes-wrap">
+                            {/* New note editor */}
+                            <div className="note-editor">
+                                <textarea
+                                    placeholder="記錄案件相關事項、法律意見、當事人指示、庭後心得…&#10;&#10;按 Ctrl+Enter 快速儲存"
+                                    value={noteInput}
+                                    onChange={e=>setNoteInput(e.target.value)}
+                                    onKeyDown={e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); addNote(selected); } }}
+                                    autoFocus={false}
+                                />
+                                <div className="note-toolbar">
+                                    <div className="note-tag-sel">
+                                        {NOTE_TAGS.map(t=>(
+                                            <button key={t.name} className={"note-tag-opt"+(noteTag===t.name?" sel":"")}
+                                                style={{background:t.color+"22",color:t.color,border:`1px solid ${t.color}44`}}
+                                                onClick={()=>setNoteTag(t.name)}>{t.name}</button>
+                                        ))}
+                                    </div>
+                                    <button className="btn btn-gold btn-sm" onClick={()=>addNote(selected)}
+                                        disabled={!noteInput.trim()} style={{flexShrink:0}}>
+                                        💾 儲存筆記
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Notes list */}
+                            {sorted.length===0 && (
+                                <div className="notes-empty">
+                                    <div className="ico">📓</div>
+                                    <div>尚無筆記</div>
+                                    <div style={{fontSize:12,marginTop:6}}>在上方輸入框記錄案件相關事項</div>
+                                </div>
+                            )}
+                            {sorted.map(n=>{
+                                const isEditing=editingNote?.id===n.id;
+                                const isExpanded=expandedNotes[n.id];
+                                const isLong=n.text.length>200||n.text.split("\n").length>4;
+                                const tagColor=tagMap[n.tag]||"#64748b";
+                                return(
+                                    <div key={n.id} className={"note-card"+(n.pinned?" pinned":"")}>
+                                        <div className="note-header">
+                                            <div className="note-meta">
+                                                {n.pinned && <span style={{color:"var(--gold)",fontSize:13}}>📌</span>}
+                                                <span className="note-tag" style={{background:tagColor+"22",color:tagColor,border:`1px solid ${tagColor}44`}}>{n.tag}</span>
+                                                <span>{fmtNoteDate(n.createdAt)}</span>
+                                                {n.updatedAt!==n.createdAt && <span style={{color:"var(--text4)"}}>（已編輯）</span>}
+                                            </div>
+                                            <div className="note-actions">
+                                                <button className="note-action-btn" title={n.pinned?"取消置頂":"置頂"} onClick={()=>togglePin(selected,n.id)}>{n.pinned?"📌":"📍"}</button>
+                                                <button className="note-action-btn" title="編輯" onClick={()=>setEditingNote({id:n.id,text:n.text,tag:n.tag})}>✏️</button>
+                                                <button className="note-action-btn" title="刪除" onClick={()=>deleteNote(selected,n.id)}>🗑</button>
+                                            </div>
+                                        </div>
+                                        {isEditing?(
+                                            <div>
+                                                <textarea
+                                                    style={{width:"100%",background:"var(--bg)",border:"1px solid var(--gold)44",borderRadius:8,padding:"10px 12px",color:"var(--text)",fontSize:13,fontFamily:"inherit",lineHeight:1.75,resize:"vertical",minHeight:100,outline:"none"}}
+                                                    value={editingNote.text}
+                                                    onChange={e=>setEditingNote(v=>({...v,text:e.target.value}))}
+                                                    autoFocus
+                                                />
+                                                <div style={{display:"flex",gap:6,flexWrap:"wrap",margin:"10px 0 8px"}}>
+                                                    {NOTE_TAGS.map(t=>(
+                                                        <button key={t.name} className={"note-tag-opt"+(editingNote.tag===t.name?" sel":"")}
+                                                            style={{background:t.color+"22",color:t.color,border:`1px solid ${t.color}44`}}
+                                                            onClick={()=>setEditingNote(v=>({...v,tag:t.name}))}>{t.name}</button>
+                                                    ))}
+                                                </div>
+                                                <div style={{display:"flex",gap:8}}>
+                                                    <button className="btn btn-outline btn-sm" onClick={()=>setEditingNote(null)}>取消</button>
+                                                    <button className="btn btn-gold btn-sm" onClick={()=>saveEditNote(selected)}>儲存</button>
+                                                </div>
+                                            </div>
+                                        ):(
+                                            <>
+                                                <div className={"note-body"+(isLong&&!isExpanded?" collapsed":"")}>{n.text}</div>
+                                                {isLong && (
+                                                    <button onClick={()=>setExpandedNotes(v=>({...v,[n.id]:!v[n.id]}))}
+                                                        style={{background:"none",border:"none",color:"var(--gold)",fontSize:12,cursor:"pointer",marginTop:6,padding:0,fontFamily:"inherit"}}>
+                                                        {isExpanded?"▲ 收起":"▼ 展開全文"}
+                                                    </button>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
+
+                {detailTab==="info" && <div className="detail-grid">
                     {/* 基本資料 */}
                     <div className="card">
                         <div className="card-title">📋 案件基本資料</div>
@@ -547,14 +1802,42 @@ function App(){
                         </div>
                         <div className="info-row"><div className="info-lbl">對造當事人</div><div className="info-val">{selected.opposingParty||"—"}</div></div>
                         <hr className="divider"/>
-                        <div className="info-row">
-                            <div className="info-lbl">律師費已收</div>
-                            <div className="info-val" style={{color:"var(--green)",fontWeight:700}}>{fmt(selected.feeReceived)}</div>
+                        {/* Fee summary */}
+                        <div className="fee-summary">
+                            <div className="fee-summary-row">
+                                <span style={{fontSize:12,color:"var(--text3)"}}>本件律師費</span>
+                                <span style={{fontWeight:800,fontSize:15,color:"var(--gold)"}}>{fmt(selected.totalFee)}</span>
+                            </div>
+                            <div className="fee-summary-row">
+                                <span style={{fontSize:12,color:"var(--text3)"}}>已收款合計</span>
+                                <span style={{fontWeight:700,color:"var(--green)"}}>{fmt(getReceived(selected))}</span>
+                            </div>
+                            <div className="fee-summary-row">
+                                <span style={{fontSize:12,color:"var(--text3)"}}>尚未收款</span>
+                                <span style={{fontWeight:700,color:getUnpaid(selected)>0?"var(--red)":"var(--text3)"}}>{fmt(getUnpaid(selected))}</span>
+                            </div>
+                            {Number(selected.totalFee)>0 && <>
+                                <div className="fee-progress">
+                                    <div className="fee-progress-bar" style={{width:`${Math.min(100,(getReceived(selected)/Number(selected.totalFee)*100)).toFixed(1)}%`}}/>
+                                </div>
+                                <div style={{fontSize:10,color:"var(--text4)",textAlign:"right"}}>{(getReceived(selected)/Number(selected.totalFee)*100).toFixed(1)}% 已收</div>
+                            </>}
                         </div>
-                        <div className="info-row">
-                            <div className="info-lbl">律師費未收</div>
-                            <div className="info-val" style={{color:selected.feeUnpaid>0?"var(--red)":"var(--text3)",fontWeight:700}}>{fmt(selected.feeUnpaid)}</div>
-                        </div>
+                        {/* Payment records */}
+                        {(selected.payments||[]).length>0 && <>
+                            <div style={{fontSize:10,color:"var(--text3)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>收款記錄</div>
+                            {(selected.payments||[]).map((p,i)=>(
+                                <div key={i} className="pay-record">
+                                    <div style={{flex:1}}>
+                                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                                            <span style={{fontWeight:800,fontSize:15,color:"var(--green)"}}>{Number(p.amount).toLocaleString()} 元</span>
+                                            <span className={`pay-badge ${METHOD_CLASS[p.method]||"pay-method-other"}`}>{p.method}</span>
+                                        </div>
+                                        <div style={{fontSize:12,color:"var(--text3)"}}>{p.date}{p.note&&` · ${p.note}`}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </>}
                         <div className="info-row">
                             <div className="info-lbl">代墊款項</div>
                             <div className="info-val" style={{color:"var(--purple)",fontWeight:700}}>{fmt(selected.disbursements)}</div>
@@ -578,11 +1861,48 @@ function App(){
                         {(selected.hearings||[]).length===0 && <div style={{color:"var(--text3)",padding:"12px 0"}}>尚無開庭記錄</div>}
                         {(selected.hearings||[]).sort((a,b)=>a.date.localeCompare(b.date)).map((h,i)=>{
                             const d=daysUntil(h.date);
+                            const isPast = d < 0;
                             return(
-                                <div key={i} className="hearing-item" style={{borderLeftColor:d>=0&&d<=7?"var(--yellow)":d<0?"var(--border)":"var(--border)"}}>
-                                    <div style={{color:"var(--gold)",fontWeight:700}}>{h.date} {h.time&&`${h.time}`}</div>
-                                    <div style={{color:"var(--text)",fontSize:13}}>{h.agency} {h.note&&`· ${h.note}`}</div>
-                                    <div style={{color:"var(--text3)",fontSize:11}}>{h.courtroom} {d>=0?`（${d===0?"今天":d===1?"明天":d+"天後"}）`:"（已過）"}</div>
+                                <div key={i} className="hearing-item" style={{borderLeftColor:d>=0&&d<=3?"var(--red)":d>=0&&d<=7?"var(--yellow)":"var(--border)",marginBottom:14}}>
+                                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                                        <div style={{flex:1}}>
+                                            <div style={{color:"var(--gold)",fontWeight:700}}>{h.date} {h.time&&h.time}</div>
+                                            <div style={{color:"var(--text)",fontSize:13,marginTop:2}}>{h.agency} {h.note&&`· ${h.note}`}</div>
+                                            <div style={{color:"var(--text3)",fontSize:11,marginTop:2}}>
+                                                {h.courtroom}
+                                                {" "}
+                                                {isPast
+                                                    ? <span style={{color:"var(--text4)"}}>（已過）</span>
+                                                    : <span style={{color:d<=3?"var(--red)":d<=7?"var(--yellow)":"var(--text3)"}}>
+                                                        （{d===0?"今天！":d===1?"明天":`${d}天後`}）
+                                                      </span>
+                                                }
+                                            </div>
+                                        </div>
+                                        {!isPast && (
+                                            <button
+                                                onClick={()=>openGoogleCalendar(h, selected)}
+                                                title="加入 Google 日曆"
+                                                style={{
+                                                    background:"rgba(66,133,244,.15)",
+                                                    border:"1px solid rgba(66,133,244,.4)",
+                                                    borderRadius:8,
+                                                    color:"#4285f4",
+                                                    padding:"6px 10px",
+                                                    fontSize:11,
+                                                    fontWeight:700,
+                                                    cursor:"pointer",
+                                                    display:"flex",
+                                                    alignItems:"center",
+                                                    gap:4,
+                                                    whiteSpace:"nowrap",
+                                                    flexShrink:0,
+                                                    fontFamily:"inherit",
+                                                }}>
+                                                📅 加入日曆
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}
@@ -604,12 +1924,52 @@ function App(){
                             </div>
                         ))}
                     </div>
-                </div>
+                    {/* 電子卷證 */}
+                    <div className="card">
+                        <div className="card-title">📁 開庭筆錄 & 電子卷證</div>
+
+                        {/* Drive 資料夾 */}
+                        {selected.driveFolderUrl ? (
+                            <a className="drive-btn" href={selected.driveFolderUrl} target="_blank" rel="noreferrer" style={{marginBottom:16,display:"flex"}}>
+                                <span className="drive-icon">📂</span>
+                                <div>
+                                    <div style={{color:"#4285f4",fontWeight:700,fontSize:14}}>開啟 Google Drive 卷證資料夾</div>
+                                    <div style={{color:"var(--text3)",fontSize:11,marginTop:2}}>點擊開啟雲端資料夾</div>
+                                </div>
+                                <span style={{marginLeft:"auto",fontSize:18,color:"#4285f4"}}>→</span>
+                            </a>
+                        ) : (
+                            <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0",borderBottom:"1px solid var(--border)",marginBottom:12}}>
+                                尚未設定 Drive 資料夾，請編輯案件填入連結
+                            </div>
+                        )}
+
+                        {/* 個別文件連結 */}
+                        {(selected.docs||[]).length > 0 && <>
+                            <div style={{fontSize:11,color:"var(--text3)",fontWeight:700,letterSpacing:".06em",marginBottom:8,textTransform:"uppercase"}}>個別文件連結</div>
+                            {(selected.docs||[]).map((d,i)=>(
+                                <div key={i} className="drive-doc-row">
+                                    <span style={{fontSize:16,flexShrink:0}}>{d.type==="筆錄"?"📝":d.type==="書狀"?"📄":d.type==="證物"?"🗂":"🔗"}</span>
+                                    <a href={d.url} target="_blank" rel="noreferrer">{d.label||d.url}</a>
+                                    <span style={{color:"var(--text4)",fontSize:11,flexShrink:0}}>{d.type||""}</span>
+                                </div>
+                            ))}
+                        </>}
+
+                        {(selected.docs||[]).length === 0 && !selected.driveFolderUrl && null}
+                        {(selected.docs||[]).length === 0 && selected.driveFolderUrl && (
+                            <div style={{color:"var(--text4)",fontSize:12,marginTop:8}}>可在編輯頁面新增個別文件連結</div>
+                        )}
+                    </div>
+
+                </div>}
             </div>
 
             <div className="bnav">
                 <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("tools")}><span className="bnav-icon">🔧</span>工具</button>
+                <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
             </div>
         </div>
@@ -617,14 +1977,59 @@ function App(){
 
     // ══ STATS VIEW ══
     if(view==="stats"){
+        // ── Build year/month options from retainerDate ──
+        const allYears=[...new Set(cases.map(c=>(c.retainerDate||"").slice(0,4)).filter(Boolean))].sort((a,b)=>b-a);
+        const months=["01","02","03","04","05","06","07","08","09","10","11","12"];
+
+        // ── Filter cases by year/month (based on retainerDate) ──
+        const filteredCases=cases.filter(c=>{
+            const d=c.retainerDate||"";
+            if(statsYear!=="全部" && !d.startsWith(statsYear)) return false;
+            if(statsMonth!=="全部" && d.slice(5,7)!==statsMonth) return false;
+            return true;
+        });
+
+        // ── Filter payments by year/month (based on payment date) ──
+        const allPayments=[];
+        cases.forEach(c=>{
+            (c.payments||[]).forEach(p=>{
+                const d=p.date||"";
+                const yOk=statsYear==="全部"||d.startsWith(statsYear);
+                const mOk=statsMonth==="全部"||d.slice(5,7)===statsMonth;
+                if(yOk&&mOk) allPayments.push({...p,caseId:c.id,clientName:c.clientName,firmCaseNo:c.firmCaseNo});
+            });
+        });
+
+        // ── Aggregates ──
         const byType={}, byStatus={};
         CASE_TYPES.forEach(t=>byType[t]=0); CASE_STATUS.forEach(s=>byStatus[s]=0);
-        cases.forEach(c=>{byType[c.caseType]=(byType[c.caseType]||0)+1; byStatus[c.status]=(byStatus[c.status]||0)+1;});
-        const totalFee=cases.reduce((s,c)=>s+Number(c.feeReceived||0)+Number(c.feeUnpaid||0),0);
-        const recv=cases.reduce((s,c)=>s+Number(c.feeReceived||0),0);
-        const unpaid=cases.reduce((s,c)=>s+Number(c.feeUnpaid||0),0);
-        const disb=cases.reduce((s,c)=>s+Number(c.disbursements||0),0);
-        const pct=totalFee>0?(recv/totalFee*100).toFixed(1):0;
+        filteredCases.forEach(c=>{
+            byType[c.caseType]=(byType[c.caseType]||0)+1;
+            byStatus[c.status]=(byStatus[c.status]||0)+1;
+        });
+        const totalFee=filteredCases.reduce((s,c)=>s+Number(c.totalFee||0),0);
+        const unpaid=filteredCases.reduce((s,c)=>s+getUnpaid(c),0);
+        const disb=filteredCases.reduce((s,c)=>s+Number(c.disbursements||0),0);
+        // Received = sum of filtered payments
+        const recv=allPayments.reduce((s,p)=>s+Number(p.amount||0),0);
+        const pct=totalFee>0?Math.min(100,(recv/totalFee*100)).toFixed(1):0;
+
+        // ── Monthly breakdown (for year view) ──
+        const monthlyData=statsYear!=="全部"?months.map(m=>{
+            const mCases=cases.filter(c=>(c.retainerDate||"").startsWith(statsYear+"-"+m));
+            const mPayments=cases.flatMap(c=>(c.payments||[]).filter(p=>(p.date||"").startsWith(statsYear+"-"+m)));
+            return {
+                month:statsYear+"/"+m,
+                caseCount:mCases.length,
+                recv:mPayments.reduce((s,p)=>s+Number(p.amount||0),0),
+                totalFee:mCases.reduce((s,c)=>s+Number(c.totalFee||0),0),
+            };
+        }):[];
+        const maxRecv=monthlyData.length?Math.max(...monthlyData.map(d=>d.recv),1):1;
+
+        const periodLabel=statsYear==="全部"?"全部期間":statsMonth==="全部"?`${statsYear}年`:
+            `${statsYear}年${parseInt(statsMonth)}月`;
+
         return(
             <div className="app">
                 <div className="header">
@@ -633,36 +2038,124 @@ function App(){
                     <div/>
                 </div>
                 <div className="content">
+                    {/* ── Period selector ── */}
+                    <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+                        <select className="fsel" value={statsYear} onChange={e=>{setStatsYear(e.target.value);setStatsMonth("全部");}}>
+                            <option value="全部">全部年份</option>
+                            {allYears.map(y=><option key={y} value={y}>{y}年</option>)}
+                        </select>
+                        {statsYear!=="全部" && (
+                            <select className="fsel" value={statsMonth} onChange={e=>setStatsMonth(e.target.value)}>
+                                <option value="全部">全年</option>
+                                {months.map(m=><option key={m} value={m}>{parseInt(m)}月</option>)}
+                            </select>
+                        )}
+                        <div style={{
+                            background:"rgba(200,169,110,.1)",border:"1px solid rgba(200,169,110,.3)",
+                            borderRadius:8,padding:"6px 14px",fontSize:13,color:"var(--gold)",fontWeight:700,
+                        }}>📅 {periodLabel}</div>
+                        {(statsYear!=="全部"||statsMonth!=="全部") && (
+                            <button className="btn btn-outline btn-sm" onClick={()=>{setStatsYear("全部");setStatsMonth("全部");}}>✕ 清除篩選</button>
+                        )}
+                    </div>
+
                     <div className="detail-grid">
+                        {/* ── Summary ── */}
                         <div className="card">
-                            <div className="card-title">💰 律師費總覽</div>
-                            {[["應收總計",totalFee,"var(--gold)"],["已收款",recv,"var(--green)"],["未收款",unpaid,"var(--red)"],["代墊款",disb,"var(--purple)"]].map(([l,v,c])=>(
-                                <div key={l} className="info-row">
-                                    <div className="info-lbl">{l}</div>
-                                    <div className="info-val" style={{color:c,fontWeight:700}}>{Number(v).toLocaleString()} 元</div>
-                                </div>
-                            ))}
+                            <div className="card-title">💰 {periodLabel} 律師費總覽</div>
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+                                {[
+                                    ["委任案件數",filteredCases.length+" 件","var(--gold)"],
+                                    ["實收款項",recv.toLocaleString()+" 元","var(--green)"],
+                                    ["應收律師費",totalFee.toLocaleString()+" 元","var(--text2)"],
+                                    ["未收款",unpaid.toLocaleString()+" 元","var(--red)"],
+                                    ["代墊款項",disb.toLocaleString()+" 元","var(--purple)"],
+                                    ["收款筆數",allPayments.length+" 筆","var(--blue)"],
+                                ].map(([l,v,c])=>(
+                                    <div key={l} style={{background:"var(--bg)",borderRadius:8,padding:"10px 12px",border:"1px solid var(--border)"}}>
+                                        <div style={{fontSize:10,color:"var(--text4)",marginBottom:4,letterSpacing:".04em"}}>{l}</div>
+                                        <div style={{fontSize:14,fontWeight:800,color:c}}>{v}</div>
+                                    </div>
+                                ))}
+                            </div>
                             {totalFee>0 && <>
-                                <div style={{margin:"14px 0 6px",fontSize:11,color:"var(--text3)"}}>收款進度 {pct}%</div>
+                                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"var(--text3)",marginBottom:4}}>
+                                    <span>收款進度</span><span>{pct}%</span>
+                                </div>
                                 <div style={{background:"var(--bg4)",borderRadius:6,height:10,overflow:"hidden"}}>
-                                    <div style={{background:"var(--green)",height:"100%",width:`${Math.min(100,pct)}%`,borderRadius:6,transition:"width .6s"}}/>
+                                    <div style={{background:"var(--green)",height:"100%",width:`${pct}%`,borderRadius:6,transition:"width .6s"}}/>
                                 </div>
                             </>}
                         </div>
+
+                        {/* ── Monthly bar chart (year view only) ── */}
+                        {statsYear!=="全部" && statsMonth==="全部" && (
+                            <div className="card" style={{gridColumn:"span 1"}}>
+                                <div className="card-title">📈 {statsYear}年 逐月收款</div>
+                                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                                    {monthlyData.filter(d=>d.recv>0||d.caseCount>0).map(d=>(
+                                        <div key={d.month} style={{display:"flex",alignItems:"center",gap:8}}>
+                                            <div style={{fontSize:11,color:"var(--text3)",width:32,flexShrink:0}}>{d.month.slice(5)}月</div>
+                                            <div style={{flex:1,background:"var(--bg4)",borderRadius:4,height:18,overflow:"hidden",position:"relative"}}>
+                                                <div style={{
+                                                    background:"linear-gradient(90deg,var(--green),#16a34a)",
+                                                    height:"100%",borderRadius:4,
+                                                    width:`${(d.recv/maxRecv*100).toFixed(1)}%`,
+                                                    transition:"width .5s",
+                                                    minWidth:d.recv>0?"4px":"0",
+                                                }}/>
+                                            </div>
+                                            <div style={{fontSize:11,color:"var(--green)",fontWeight:700,width:90,textAlign:"right",flexShrink:0}}>
+                                                {d.recv>0?d.recv.toLocaleString()+" 元":"—"}
+                                            </div>
+                                            {d.caseCount>0 && <div style={{fontSize:10,color:"var(--text4)",flexShrink:0}}>{d.caseCount}件</div>}
+                                        </div>
+                                    ))}
+                                    {monthlyData.every(d=>d.recv===0&&d.caseCount===0) && (
+                                        <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0"}}>本年度尚無資料</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Payment records in period ── */}
+                        {allPayments.length>0 && (
+                            <div className="card">
+                                <div className="card-title">💳 {periodLabel} 收款記錄（{allPayments.length}筆）</div>
+                                <div style={{maxHeight:280,overflowY:"auto"}}>
+                                    {allPayments.sort((a,b)=>b.date.localeCompare(a.date)).map((p,i)=>(
+                                        <div key={i} className="pay-record" style={{cursor:"pointer"}} onClick={()=>openDetail(p.caseId)}>
+                                            <div style={{flex:1}}>
+                                                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                                                    <span style={{fontWeight:800,color:"var(--green)"}}>{Number(p.amount).toLocaleString()} 元</span>
+                                                    <span className={`pay-badge ${METHOD_CLASS[p.method]||"pay-method-other"}`}>{p.method}</span>
+                                                </div>
+                                                <div style={{fontSize:11,color:"var(--text3)"}}>{p.date} · {p.clientName} {p.note&&`· ${p.note}`}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Case type distribution ── */}
                         <div className="card">
-                            <div className="card-title">📊 案件類型</div>
+                            <div className="card-title">📊 案件類型（委任）</div>
                             {CASE_TYPES.filter(t=>byType[t]>0).map(t=>(
                                 <div key={t} className="info-row">
                                     <div><Badge label={t} color={TYPE_COLOR[t]||"#64748b"}/></div>
                                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                                         <div style={{background:"var(--bg4)",borderRadius:4,height:6,width:80,overflow:"hidden"}}>
-                                            <div style={{background:TYPE_COLOR[t]||"#64748b",height:"100%",width:`${(byType[t]/cases.length*100).toFixed(0)}%`}}/>
+                                            <div style={{background:TYPE_COLOR[t]||"#64748b",height:"100%",width:`${filteredCases.length?((byType[t]/filteredCases.length)*100).toFixed(0):0}%`}}/>
                                         </div>
                                         <div style={{color:"var(--text)",fontWeight:700,minWidth:28,textAlign:"right"}}>{byType[t]}</div>
                                     </div>
                                 </div>
                             ))}
+                            {Object.values(byType).every(v=>v===0) && <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0"}}>此期間無案件</div>}
                         </div>
+
+                        {/* ── Case status ── */}
                         <div className="card">
                             <div className="card-title">📈 案件狀態</div>
                             {CASE_STATUS.filter(s=>byStatus[s]>0).map(s=>(
@@ -670,20 +2163,23 @@ function App(){
                                     <div><Badge label={s} color={STATUS_COLOR[s]||"#64748b"}/></div>
                                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                                         <div style={{background:"var(--bg4)",borderRadius:4,height:6,width:80,overflow:"hidden"}}>
-                                            <div style={{background:STATUS_COLOR[s]||"#64748b",height:"100%",width:`${(byStatus[s]/cases.length*100).toFixed(0)}%`}}/>
+                                            <div style={{background:STATUS_COLOR[s]||"#64748b",height:"100%",width:`${filteredCases.length?((byStatus[s]/filteredCases.length)*100).toFixed(0):0}%`}}/>
                                         </div>
                                         <div style={{color:"var(--text)",fontWeight:700,minWidth:28,textAlign:"right"}}>{byStatus[s]}</div>
                                     </div>
                                 </div>
                             ))}
+                            {Object.values(byStatus).every(v=>v===0) && <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0"}}>此期間無案件</div>}
                         </div>
+
+                        {/* ── Reminders (always full scope) ── */}
                         <div className="card">
-                            <div className="card-title">⚠️ 提醒事項</div>
+                            <div className="card-title">⚠️ 全部案件提醒</div>
                             {[
-                                ["未完成待辦", cases.reduce((s,c)=>s+(c.todos||[]).filter(t=>!t.done).length,0)+" 項", "var(--red)"],
-                                ["本週開庭", upcoming.filter(h=>daysUntil(h.date)<=7).length+" 場", "var(--yellow)"],
-                                ["本月開庭", upcoming.length+" 場", "var(--gold)"],
-                                ["未收款案件數", cases.filter(c=>Number(c.feeUnpaid)>0).length+" 件", "var(--red)"],
+                                ["未完成待辦",cases.reduce((s,c)=>s+(c.todos||[]).filter(t=>!t.done).length,0)+" 項","var(--red)"],
+                                ["本週開庭",upcoming.filter(h=>daysUntil(h.date)<=7).length+" 場","var(--yellow)"],
+                                ["本月開庭",upcoming.length+" 場","var(--gold)"],
+                                ["未收款案件數",cases.filter(c=>getUnpaid(c)>0).length+" 件","var(--red)"],
                             ].map(([l,v,c])=>(
                                 <div key={l} className="info-row">
                                     <div className="info-lbl">{l}</div>
@@ -696,11 +2192,232 @@ function App(){
                 <div className="bnav">
                     <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                     <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                    <button className="bnav-btn" onClick={()=>setView("tools")}><span className="bnav-icon">🔧</span>工具</button>
+                    <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                     <button className="bnav-btn active"><span className="bnav-icon">📊</span>統計</button>
                 </div>
             </div>
         );
     }
+
+    // ══ TOOLS VIEW ══
+    if(view==="tools") return(
+        <div className="app">
+            <div className="header">
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <button className="btn btn-outline btn-sm" onClick={()=>setView("list")}>← 返回</button>
+                    <div className="header-title">🔧 常用工具</div>
+                </div>
+                <button className="btn btn-gold" onClick={openAddTool}>＋ 新增工具</button>
+            </div>
+
+            {/* Tool add/edit modal */}
+            {toolModal && (
+                <div className="tool-modal-overlay" onClick={e=>e.target===e.currentTarget&&setToolModal(false)}>
+                    <div className="tool-modal">
+                        <div style={{fontWeight:700,fontSize:16,color:"var(--text)",marginBottom:18}}>
+                            {editingToolId?"✏️ 編輯工具":"➕ 新增工具"}
+                        </div>
+
+                        {/* Emoji picker */}
+                        <div className="fg" style={{marginBottom:14}}>
+                            <label className="fl">圖示（Emoji）</label>
+                            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                                <span style={{fontSize:36}}>{toolForm.emoji}</span>
+                                <input className="fi" style={{flex:1}} value={toolForm.emoji}
+                                    onChange={e=>setToolForm(f=>({...f,emoji:e.target.value}))}
+                                    placeholder="輸入任何 emoji，例如 🤖 ⚖ 📋"/>
+                            </div>
+                        </div>
+
+                        {/* Name */}
+                        <div className="fg" style={{marginBottom:14}}>
+                            <label className="fl">工具名稱</label>
+                            <input className="fi" value={toolForm.name}
+                                onChange={e=>setToolForm(f=>({...f,name:e.target.value}))}
+                                placeholder="例如：ChatGPT、司法院查詢、我的試算表"/>
+                        </div>
+
+                        {/* URL */}
+                        <div className="fg" style={{marginBottom:14}}>
+                            <label className="fl">網址連結</label>
+                            <input className="fi" type="url" value={toolForm.url}
+                                onChange={e=>setToolForm(f=>({...f,url:e.target.value}))}
+                                placeholder="https://..."/>
+                        </div>
+
+                        {/* Desc */}
+                        <div className="fg" style={{marginBottom:14}}>
+                            <label className="fl">說明（選填）</label>
+                            <input className="fi" value={toolForm.desc}
+                                onChange={e=>setToolForm(f=>({...f,desc:e.target.value}))}
+                                placeholder="簡短描述用途"/>
+                        </div>
+
+                        {/* Color */}
+                        <div className="fg" style={{marginBottom:22}}>
+                            <label className="fl">主題色</label>
+                            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:4}}>
+                                {['#c8a96e', '#3b82f6', '#22c55e', '#ef4444', '#8b5cf6', '#f97316', '#14b8a6', '#ec4899', '#64748b', '#f59e0b'].map(c=>(
+                                    <div key={c} className={"color-dot"+(toolForm.color===c?" selected":"")}
+                                        style={{background:c}} onClick={()=>setToolForm(f=>({...f,color:c}))}/>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+                            <button className="btn btn-outline btn-sm" onClick={()=>setToolModal(false)}>取消</button>
+                            {editingToolId && <button className="btn btn-danger btn-sm" onClick={()=>{deleteTool(editingToolId);setToolModal(false);}}>刪除</button>}
+                            <button className="btn btn-gold" onClick={saveTool}>💾 儲存</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="content">
+                {tools.length===0 && (
+                    <div className="empty" style={{marginBottom:20}}>
+                        <div className="ico">🔧</div>
+                        <div>尚未新增任何工具</div>
+                        <div style={{fontSize:12,color:"var(--text4)",marginTop:6}}>點右上角「＋ 新增工具」開始建立您的工具箱</div>
+                    </div>
+                )}
+                <div className="tool-grid">
+                    {tools.map(t=>(
+                        <div key={t.id} style={{position:"relative"}}>
+                            <a className="tool-card" href={t.url} target="_blank" rel="noreferrer"
+                                style={{borderTop:`3px solid ${t.color||"var(--gold)"}`,paddingTop:28}}>
+                                <div className="tool-emoji">{t.emoji||"🔗"}</div>
+                                <div className="tool-name">{t.name}</div>
+                                {t.desc && <div className="tool-desc">{t.desc}</div>}
+                            </a>
+                            <button className="tool-del" onClick={e=>{e.preventDefault();e.stopPropagation();openEditTool(t);}}>✏️ 編輯</button>
+                        </div>
+                    ))}
+                    <div className="tool-add-card" onClick={openAddTool}>
+                        <div style={{fontSize:32}}>＋</div>
+                        <div style={{fontSize:12,fontWeight:600}}>新增工具</div>
+                    </div>
+                </div>
+
+                {/* Suggested tools */}
+                {tools.length===0 && (
+                    <div>
+                        <div style={{fontSize:11,color:"var(--text3)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:12}}>推薦常用法律工具</div>
+                        <div className="tool-grid">
+                            {[
+                                {emoji:"⚖",name:"司法院裁判書",url:"https://judgment.judicial.gov.tw",desc:"查詢判決書",color:"#c8a96e"},
+                                {emoji:"📋",name:"法院開庭查詢",url:"https://www.judicial.gov.tw/tw/cp-1363-78984-5a3fd-1.html",desc:"查詢開庭進度",color:"#3b82f6"},
+                                {emoji:"🔍",name:"法源法律網",url:"https://www.lawbank.com.tw",desc:"法規與判決查詢",color:"#8b5cf6"},
+                                {emoji:"🤖",name:"Claude AI",url:"https://claude.ai",desc:"AI法律助理",color:"#f97316"},
+                                {emoji:"📊",name:"Google 試算表",url:"https://sheets.google.com",desc:"帳務計算",color:"#22c55e"},
+                                {emoji:"📁",name:"Google Drive",url:"https://drive.google.com",desc:"雲端卷證",color:"#f59e0b"},
+                            ].map((t,i)=>(
+                                <div key={i} style={{position:"relative"}}>
+                                    <a className="tool-card" href={t.url} target="_blank" rel="noreferrer"
+                                        style={{borderTop:`3px solid ${t.color}`,opacity:.7}}>
+                                        <div className="tool-emoji">{t.emoji}</div>
+                                        <div className="tool-name">{t.name}</div>
+                                        <div className="tool-desc">{t.desc}</div>
+                                    </a>
+                                    <button style={{position:"absolute",bottom:8,right:8,background:"var(--bg4)",border:"none",borderRadius:6,padding:"3px 8px",fontSize:10,color:"var(--text3)",cursor:"pointer",fontFamily:"inherit"}}
+                                        onClick={()=>{setToolForm({emoji:t.emoji,name:t.name,url:t.url,desc:t.desc,color:t.color});setEditingToolId(null);setToolModal(true);}}>
+                                        ＋ 加入
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+            <div className="bnav">
+                <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
+                <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn active"><span className="bnav-icon">🔧</span>工具</button>
+                <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
+                <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
+            </div>
+        </div>
+    );
+
+    // ══ CONTACTS VIEW ══
+    if(view==="contacts") return(
+        <div className="app">
+            <div className="header">
+                <button className="btn btn-outline btn-sm" onClick={()=>setView("list")}>← 返回</button>
+                <div className="header-title">👥 當事人通訊錄</div>
+                <div/>
+            </div>
+            <div className="content">
+                {/* Search */}
+                <div className="filter-row" style={{marginBottom:16}}>
+                    <input className="search-inp" placeholder="🔍 搜尋姓名、電話…" value={search} onChange={e=>setSearch(e.target.value)}/>
+                </div>
+                {(()=>{
+                    // Group cases by clientName + phone
+                    const map = {};
+                    cases.forEach(c=>{
+                        const key = c.clientName + "|" + (c.phone||"");
+                        if(!map[key]) map[key]={name:c.clientName, phone:c.phone||"", cases:[]};
+                        map[key].cases.push(c);
+                    });
+                    const contacts = Object.values(map)
+                        .filter(ct=>{
+                            const q=search.toLowerCase();
+                            return !q || ct.name.toLowerCase().includes(q) || ct.phone.includes(q);
+                        })
+                        .sort((a,b)=>a.name.localeCompare(b.name,"zh-TW"));
+                    if(contacts.length===0) return <div className="empty"><div className="ico">👤</div>查無當事人</div>;
+                    return contacts.map((ct,i)=>(
+                        <div key={i} className="contact-card">
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+                                <div>
+                                    <div className="contact-name">{ct.name}</div>
+                                    {ct.phone
+                                        ? <a className="contact-phone" href={`tel:${ct.phone}`}>📞 {ct.phone}</a>
+                                        : <div style={{color:"var(--text4)",fontSize:13,marginTop:4}}>未填連絡電話</div>
+                                    }
+                                </div>
+                                <div style={{textAlign:"right"}}>
+                                    <div style={{fontSize:11,color:"var(--text4)"}}>案件數</div>
+                                    <div style={{fontSize:22,fontWeight:800,color:"var(--gold)"}}>{ct.cases.length}</div>
+                                </div>
+                            </div>
+                            <div className="contact-cases">
+                                {ct.cases.map(c=>(
+                                    <div key={c.id} className="contact-case-row"
+                                        onClick={()=>{setSelectedId(c.id);setDetailTab("info");setView("detail");}}>
+                                        <span style={{color:"var(--gold)",fontFamily:"monospace",fontSize:12,flexShrink:0}}>{c.firmCaseNo}</span>
+                                        <span style={{flex:1,color:"var(--text2)",fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.courtCaseNo||(c.courtCaseNos||[])[0]||""}</span>
+                                        <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/>
+                                        <Badge label={c.status} color={STATUS_COLOR[c.status]||"#64748b"}/>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Fee summary across all cases */}
+                            {ct.cases.length > 1 && (()=>{
+                                const totalRecv = ct.cases.reduce((s,c)=>s+Number(c.feeReceived||0),0);
+                                const totalUnpaid = ct.cases.reduce((s,c)=>s+Number(c.feeUnpaid||0),0);
+                                return(
+                                    <div style={{display:"flex",gap:16,marginTop:10,paddingTop:10,borderTop:"1px solid var(--border)",fontSize:12}}>
+                                        <div><span style={{color:"var(--text4)"}}>已收合計 </span><span style={{color:"var(--green)",fontWeight:700}}>{totalRecv.toLocaleString()} 元</span></div>
+                                        {totalUnpaid>0 && <div><span style={{color:"var(--text4)"}}>未收合計 </span><span style={{color:"var(--red)",fontWeight:700}}>{totalUnpaid.toLocaleString()} 元</span></div>}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    ));
+                })()}
+            </div>
+            <div className="bnav">
+                <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
+                <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("tools")}><span className="bnav-icon">🔧</span>工具</button>
+                <button className="bnav-btn active"><span className="bnav-icon">👥</span>通訊錄</button>
+                <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
+            </div>
+        </div>
+    );
 
     // ══ FORM VIEW ══
     const isEdit=!!editId;
@@ -726,11 +2443,41 @@ function App(){
                     {[["caseType","案件類型",CASE_TYPES],["status","案件狀態",CASE_STATUS],["instance","審級",INSTANCES],["court","法院",COURTS]].map(([k,l,opts])=>(
                         <div key={k} className="fg">
                             <label className="fl">{l}</label>
-                            <select className="fi" value={F[k]||""} onChange={e=>sf(k,e.target.value)}>
+                            <select className="fi" value={F[k]||""} onChange={e=>{
+                                sf(k,e.target.value);
+                                if(k==="caseType") sf("caseReason",""); // reset reason on type change
+                            }}>
                                 {opts.map(o=><option key={o}>{o}</option>)}
                             </select>
                         </div>
                     ))}
+                    {/* Case reason — datalist for flexible input + suggestions */}
+                    <div className="fg" style={{gridColumn:"span 2"}}>
+                        <label className="fl">案由</label>
+                        <div style={{display:"flex",gap:8,flexDirection:"column"}}>
+                            <input className="fi" list="reason-list" value={F.caseReason||""}
+                                onChange={e=>sf("caseReason",e.target.value)}
+                                placeholder="選擇常見案由或自由輸入…"/>
+                            <datalist id="reason-list">
+                                {(CASE_REASONS[F.caseType]||[]).map(r=><option key={r} value={r}/>)}
+                            </datalist>
+                            {/* Quick pick chips */}
+                            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                                {(CASE_REASONS[F.caseType]||[]).slice(0,-1).map(r=>(
+                                    <button key={r} type="button"
+                                        onClick={()=>sf("caseReason",r)}
+                                        style={{
+                                            background:F.caseReason===r?"var(--gold)":"var(--bg4)",
+                                            color:F.caseReason===r?"#000":"var(--text3)",
+                                            border:`1px solid ${F.caseReason===r?"var(--gold)":"var(--border)"}`,
+                                            borderRadius:20,padding:"3px 10px",fontSize:11,
+                                            cursor:"pointer",fontFamily:"inherit",fontWeight:F.caseReason===r?700:400,
+                                            transition:"all .15s",
+                                        }}>{r}</button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* 法院案號（多筆） */}
@@ -758,13 +2505,81 @@ function App(){
 
                 {/* 費用 */}
                 <div className="section-hdr">💰 費用管理</div>
-                <div className="form-grid">
-                    {[["feeReceived","律師費已收款（元）"],["feeUnpaid","律師費未收款（元）"],["disbursements","代墊款項（元）"]].map(([k,l])=>(
-                        <div key={k} className="fg">
-                            <label className="fl">{l}</label>
-                            <input className="fi" type="number" min="0" value={F[k]||""} onChange={e=>sf(k,e.target.value)}/>
+                <div className="form-grid" style={{marginBottom:16}}>
+                    <div className="fg">
+                        <label className="fl">本件律師費（元）</label>
+                        <input className="fi" type="number" min="0" value={F.totalFee||""} onChange={e=>sf("totalFee",e.target.value)} placeholder="應收律師費總額"/>
+                    </div>
+                    <div className="fg">
+                        <label className="fl">代墊款項（元）</label>
+                        <input className="fi" type="number" min="0" value={F.disbursements||""} onChange={e=>sf("disbursements",e.target.value)}/>
+                    </div>
+                </div>
+                {/* Auto-calculated summary */}
+                {Number(F.totalFee)>0 && (
+                    <div className="fee-summary" style={{marginBottom:16}}>
+                        <div className="fee-summary-row">
+                            <span style={{fontSize:12,color:"var(--text3)"}}>本件律師費</span>
+                            <span style={{fontWeight:700,color:"var(--gold)"}}>{Number(F.totalFee).toLocaleString()} 元</span>
                         </div>
-                    ))}
+                        <div className="fee-summary-row">
+                            <span style={{fontSize:12,color:"var(--text3)"}}>已收款合計</span>
+                            <span style={{fontWeight:700,color:"var(--green)"}}>{(F.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0).toLocaleString()} 元</span>
+                        </div>
+                        <div className="fee-summary-row">
+                            <span style={{fontSize:12,color:"var(--text3)"}}>自動計算未收款</span>
+                            <span style={{fontWeight:800,color:Math.max(0,Number(F.totalFee)-(F.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0))>0?"var(--red)":"var(--green)"}}>
+                                {Math.max(0,Number(F.totalFee)-(F.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0)).toLocaleString()} 元
+                            </span>
+                        </div>
+                        {Number(F.totalFee)>0 && (()=>{
+                            const pct=Math.min(100,((F.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0)/Number(F.totalFee)*100)).toFixed(1);
+                            return <>
+                                <div className="fee-progress"><div className="fee-progress-bar" style={{width:`${pct}%`}}/></div>
+                                <div style={{fontSize:10,color:"var(--text4)",textAlign:"right"}}>{pct}% 已收</div>
+                            </>;
+                        })()}
+                    </div>
+                )}
+                {/* Payment records */}
+                <div style={{fontSize:10,color:"var(--text3)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>收款記錄</div>
+                {(F.payments||[]).map((p,i)=>(
+                    <div key={i} className="item-row">
+                        <div style={{flex:1}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                                <span style={{fontWeight:800,color:"var(--green)"}}>{Number(p.amount).toLocaleString()} 元</span>
+                                <span className={`pay-badge ${METHOD_CLASS[p.method]||"pay-method-other"}`}>{p.method}</span>
+                            </div>
+                            <div style={{fontSize:11,color:"var(--text3)"}}>{p.date}{p.note&&` · ${p.note}`}</div>
+                        </div>
+                        <button className="btn btn-danger btn-icon" onClick={()=>sf("payments",(F.payments||[]).filter((_,idx)=>idx!==i))}>✕</button>
+                    </div>
+                ))}
+                {/* Add payment */}
+                <div className="add-row" style={{marginTop:10,alignItems:"flex-end"}}>
+                    <div className="fg" style={{flex:"1 1 130px"}}>
+                        <label className="fl">金額（元）</label>
+                        <input className="fi" type="number" min="0" value={newPay.amount} onChange={e=>setNewPay(p=>({...p,amount:e.target.value}))} placeholder="0"/>
+                    </div>
+                    <div className="fg" style={{flex:"1 1 130px"}}>
+                        <label className="fl">收款日期</label>
+                        <input className="fi" type="date" value={newPay.date} onChange={e=>setNewPay(p=>({...p,date:e.target.value}))}/>
+                    </div>
+                    <div className="fg" style={{flex:"0 0 100px"}}>
+                        <label className="fl">付款方式</label>
+                        <select className="fi" value={newPay.method} onChange={e=>setNewPay(p=>({...p,method:e.target.value}))}>
+                            {PAYMENT_METHODS.map(m=><option key={m}>{m}</option>)}
+                        </select>
+                    </div>
+                    <div className="fg" style={{flex:"1 1 120px"}}>
+                        <label className="fl">備註（選填）</label>
+                        <input className="fi" value={newPay.note} onChange={e=>setNewPay(p=>({...p,note:e.target.value}))} placeholder="例：第一期款"/>
+                    </div>
+                    <button className="btn btn-gold btn-sm" onClick={()=>{
+                        if(!newPay.amount){ toast("請填收款金額"); return; }
+                        sf("payments",[...(F.payments||[]),{...newPay,id:uid()}]);
+                        setNewPay({amount:"",date:today(),method:"現金",note:""});
+                    }} style={{flexShrink:0}}>＋ 新增</button>
                 </div>
 
                 {/* 開庭 */}
@@ -804,12 +2619,78 @@ function App(){
                     <button className="btn btn-gold btn-sm" onClick={addTodo}>＋ 新增</button>
                 </div>
 
+                {/* 電子卷證 */}
+                <div className="section-hdr">📁 開庭筆錄 & 電子卷證</div>
+                <div className="fg" style={{marginBottom:16}}>
+                    <label className="fl">Google Drive 卷證資料夾連結</label>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <input className="fi" type="url" style={{flex:1}} value={F.driveFolderUrl||""} onChange={e=>sf("driveFolderUrl",e.target.value)} placeholder="貼上 Google Drive 資料夾的分享連結…"/>
+                        {F.driveFolderUrl && <a href={F.driveFolderUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{flexShrink:0,textDecoration:"none"}}>開啟 →</a>}
+                    </div>
+                    <div style={{color:"var(--text4)",fontSize:11,marginTop:5}}>
+                        💡 在 Google Drive 資料夾按右鍵 →「共用」→「複製連結」貼上即可
+                    </div>
+                </div>
+
+                {/* 個別文件連結 */}
+                <div style={{marginBottom:8,fontSize:11,color:"var(--text3)",fontWeight:700,letterSpacing:".06em",textTransform:"uppercase"}}>個別文件連結（筆錄、書狀、證物…）</div>
+                {(F.docs||[]).map((d,i)=>(
+                    <div key={i} className="item-row">
+                        <span style={{fontSize:15,flexShrink:0}}>{d.type==="筆錄"?"📝":d.type==="書狀"?"📄":d.type==="證物"?"🗂":"🔗"}</span>
+                        <div style={{flex:1,minWidth:0}}>
+                            <div style={{color:"var(--text)",fontSize:13}}>{d.label||"（未命名）"}</div>
+                            <div style={{color:"var(--text3)",fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.url}</div>
+                        </div>
+                        <span style={{color:"var(--text4)",fontSize:11,flexShrink:0}}>{d.type}</span>
+                        <button className="btn btn-danger btn-icon" onClick={()=>removeDoc(i)}>✕</button>
+                    </div>
+                ))}
+                <div className="add-row" style={{alignItems:"flex-end"}}>
+                    <div className="fg" style={{flex:"1 1 150px"}}>
+                        <label className="fl">文件名稱</label>
+                        <input className="fi" value={newDoc.label} onChange={e=>setNewDoc(d=>({...d,label:e.target.value}))} placeholder="113年4月22日準備程序筆錄"/>
+                    </div>
+                    <div className="fg" style={{flex:"2 1 200px"}}>
+                        <label className="fl">文件連結（Drive/雲端連結）</label>
+                        <input className="fi" type="url" value={newDoc.url} onChange={e=>setNewDoc(d=>({...d,url:e.target.value}))} placeholder="https://drive.google.com/..."/>
+                    </div>
+                    <div className="fg" style={{flex:"0 0 100px"}}>
+                        <label className="fl">類型</label>
+                        <select className="fi" value={newDoc.type} onChange={e=>setNewDoc(d=>({...d,type:e.target.value}))}>
+                            {["筆錄","書狀","證物","判決","其他"].map(t=><option key={t}>{t}</option>)}
+                        </select>
+                    </div>
+                    <button className="btn btn-gold btn-sm" onClick={addDoc} style={{flexShrink:0}}>＋ 新增</button>
+                </div>
+
                 {/* 判決連結 & 備註 */}
-                <div className="section-hdr">📝 其他資訊</div>
+                <div className="section-hdr" style={{marginTop:24}}>📝 其他資訊</div>
                 <div className="fg" style={{marginBottom:12}}>
                     <label className="fl">判決書連結（可貼司法院裁判書網址）</label>
                     <input className="fi" type="url" value={F.judgementLink||""} onChange={e=>sf("judgementLink",e.target.value)} placeholder="https://..."/>
                 </div>
+                {/* Tags in form */}
+                {allTags.length>0 && (
+                    <div className="fg" style={{marginBottom:12}}>
+                        <label className="fl">標籤</label>
+                        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
+                            {allTags.map(t=>{
+                                const active=(F.tags||[]).includes(t.name);
+                                return(
+                                    <button key={t.id} type="button" className="tag-pill"
+                                        onClick={()=>{
+                                            const cur=F.tags||[];
+                                            sf("tags",active?cur.filter(x=>x!==t.name):[...cur,t.name]);
+                                        }}
+                                        style={{background:active?t.color:t.color+"22",color:active?"#fff":t.color,border:`1px solid ${t.color}44`}}>
+                                        {active?"✓ ":""}{t.name}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 <div className="fg">
                     <label className="fl">備註</label>
                     <textarea className="fi" value={F.notes||""} onChange={e=>sf("notes",e.target.value)} placeholder="案件備忘、特殊注意事項…"/>
@@ -821,6 +2702,8 @@ function App(){
             <div className="bnav">
                 <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>案件</button>
                 <button className="bnav-btn active"><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>setView("tools")}><span className="bnav-icon">🔧</span>工具</button>
+                <button className="bnav-btn" onClick={()=>setView("contacts")}><span className="bnav-icon">👥</span>通訊錄</button>
                 <button className="bnav-btn" onClick={()=>setView("stats")}><span className="bnav-icon">📊</span>統計</button>
             </div>
         </div>
@@ -828,7 +2711,17 @@ function App(){
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App/>);
+root.render(<Root/>);
+</script>
+<script>
+// Register Service Worker for offline support
+if("serviceWorker" in navigator){
+    window.addEventListener("load",()=>{
+        navigator.serviceWorker.register("sw.js", {scope: "./"})
+            .then(r=>{ console.log("SW registered, scope:", r.scope); })
+            .catch(e=>{ console.warn("SW registration failed (offline support disabled):", e); });
+    });
+}
 </script>
 </body>
 </html>

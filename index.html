@@ -152,6 +152,20 @@ textarea.fi{resize:vertical;min-height:80px;}
 
 
 
+
+/* ── CAL TODO ── */
+.cal-todo-dot{display:flex;align-items:center;gap:3px;padding:2px 5px;border-radius:4px;font-size:9px;font-weight:700;margin-bottom:2px;cursor:pointer;background:rgba(139,92,246,.15);color:#8b5cf6;border:1px solid rgba(139,92,246,.3);}
+.cal-todo-dot.done{opacity:.45;text-decoration:line-through;}
+.cal-todo-modal{position:fixed;inset:0;background:#00000099;display:flex;align-items:flex-end;justify-content:center;z-index:600;padding:0;}
+@media(min-width:600px){.cal-todo-modal{align-items:center;padding:20px;}}
+.cal-todo-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:24px 20px 32px;max-height:80vh;overflow-y:auto;}
+@media(min-width:600px){.cal-todo-sheet{border-radius:16px;}}
+.cal-todo-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.cal-todo-check{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .2s;}
+.cal-todo-check.done{background:var(--green);border-color:var(--green);}
+.cal-todo-del{background:none;border:none;color:var(--text4);cursor:pointer;padding:2px 6px;font-size:13px;border-radius:4px;margin-left:auto;flex-shrink:0;}
+.cal-todo-del:hover{color:var(--red);}
+
 /* ── CASE NOTES ── */
 .notes-wrap{display:flex;flex-direction:column;gap:14px;}
 .note-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;box-shadow:var(--shadow);}
@@ -586,6 +600,9 @@ function App({user}){
     const [statsYear, setStatsYear] = useState("全部");
     const [statsMonth, setStatsMonth] = useState("全部");
     const [calDate, setCalDate] = useState(new Date());
+    const [calTodos, setCalTodos] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(e){ return []; } });
+    const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
+    const [calTodoInput, setCalTodoInput] = useState("");
     const [filterTag, setFilterTag] = useState("全部");
     const [sortBy, setSortBy] = useState("retainerDate"); // retainerDate | feeReceived | feeUnpaid | nextHearing
     const [sortDir, setSortDir] = useState("desc");
@@ -616,7 +633,16 @@ function App({user}){
         const wait = setInterval(()=>{
             if(!window.db) return;
             clearInterval(wait);
-            const {collection,onSnapshot} = window.fbMethods;
+            const {collection,onSnapshot,doc,getDoc} = window.fbMethods;
+            // Load calTodos from Firebase
+            window.fbMethods.doc(window.db,"settings","calTodos");
+            onSnapshot(window.fbMethods.doc(window.db,"settings","calTodos"), snap=>{
+                if(snap.exists()){
+                    const items=snap.data().items||[];
+                    setCalTodos(items);
+                    try{ localStorage.setItem("calTodos",JSON.stringify(items)); }catch(_){}
+                }
+            });
             onSnapshot(
                 collection(window.db,"cases"),
                 snap=>{
@@ -750,6 +776,31 @@ function App({user}){
     const openAdd=()=>{ setFormData({...emptyCase,id:""}); setEditId(null); setView("form"); };
     const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
     const openDetail=(id)=>{ setSelectedId(id); setDetailTab("info"); setView("detail"); };
+
+    // ── Calendar Todos ──
+    const saveCalTodos=(updated)=>{
+        setCalTodos(updated);
+        try{ localStorage.setItem("calTodos",JSON.stringify(updated)); }catch(_){}
+        // Also sync to Firebase as a single doc
+        window.fbMethods.setDoc(
+            window.fbMethods.doc(window.db,"settings","calTodos"),
+            {items:updated, updatedAt:new Date().toISOString()}
+        ).catch(()=>{});
+    };
+    const addCalTodo=(dateStr)=>{
+        if(!calTodoInput.trim()) return;
+        const updated=[...calTodos,{id:uid(),date:dateStr,text:calTodoInput.trim(),done:false,createdAt:new Date().toISOString()}];
+        saveCalTodos(updated);
+        setCalTodoInput("");
+    };
+    const toggleCalTodo=(id)=>{
+        const updated=calTodos.map(t=>t.id===id?{...t,done:!t.done}:t);
+        saveCalTodos(updated);
+    };
+    const deleteCalTodo=(id)=>{
+        const updated=calTodos.filter(t=>t.id!==id);
+        saveCalTodos(updated);
+    };
 
     // ── Note helpers ──
     const NOTE_TAGS=[
@@ -1228,23 +1279,32 @@ function App({user}){
                                         isSat?"is-sat":"",
                                         isHoliday?"is-holiday":"",
                                     ].filter(Boolean).join(" ");
+                                    const dateTodos=dateStr?calTodos.filter(t=>t.date===dateStr):[];
                                     return(
-                                        <div key={i} className={cls}>
+                                        <div key={i} className={cls} style={{cursor:cell.cur?"pointer":"default"}}
+                                            onClick={()=>cell.cur&&setCalTodoModal(dateStr)}>
                                             <div className="cal-day-num">{cell.day}</div>
                                             {holidayName && cell.cur && (
                                                 <div className="cal-holiday-label" title={holidayName}>
                                                     {holidayName==="彈性放假"?"補假":holidayName}
                                                 </div>
                                             )}
-                                            {events.slice(0,3).map((ev,ei)=>(
+                                            {events.slice(0,2).map((ev,ei)=>(
                                                 <div key={ei} className="cal-event"
                                                     style={{background:(TYPE_COLOR[ev.caseType]||"#64748b")+"33",color:TYPE_COLOR[ev.caseType]||"#64748b"}}
-                                                    onClick={()=>openDetail(ev.caseId)}
+                                                    onClick={e=>{e.stopPropagation();openDetail(ev.caseId);}}
                                                     title={`${ev.clientName} ${ev.time} ${ev.note}`}>
                                                     {ev.time&&`${ev.time} `}{ev.clientName}
                                                 </div>
                                             ))}
-                                            {events.length>3 && <div style={{fontSize:9,color:"var(--text4)",paddingLeft:3}}>+{events.length-3}筆</div>}
+                                            {events.length>2 && <div style={{fontSize:9,color:"var(--text4)",paddingLeft:3}}>+{events.length-2}庭</div>}
+                                            {dateTodos.slice(0,2).map((t,ti)=>(
+                                                <div key={ti} className={`cal-todo-dot${t.done?" done":""}`}
+                                                    onClick={e=>{e.stopPropagation();toggleCalTodo(t.id);}}>
+                                                    {t.done?"✓":""} {t.text}
+                                                </div>
+                                            ))}
+                                            {dateTodos.length>2 && <div style={{fontSize:9,color:"#8b5cf6",paddingLeft:3}}>+{dateTodos.length-2}項</div>}
                                         </div>
                                     );
                                 })}
@@ -1252,8 +1312,81 @@ function App({user}){
                             <div className="cal-legend">
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#ef4444"}}/><span style={{color:"#ef4444",fontWeight:700}}>日/假日</span></div>
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#3b82f6"}}/><span style={{color:"#3b82f6",fontWeight:700}}>六</span></div>
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:4,background:"rgba(139,92,246,.4)"}}/><span style={{color:"#8b5cf6",fontWeight:700}}>待辦</span></div>
                                 <div style={{width:1,height:14,background:"var(--border)",margin:"0 4px"}}/>
                                 {CASE_TYPES.map(t=><div key={t} className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:TYPE_COLOR[t]||"#64748b"}}/>{t}</div>)}
+                            </div>
+                            <div style={{fontSize:10,color:"var(--text4)",padding:"6px 18px 0",textAlign:"right"}}>點選日期可新增待辦事項</div>
+                        </div>
+                    );
+                })()}
+
+                {/* Calendar Todo Modal */}
+                {calTodoModal && (()=>{
+                    const ds=calTodoModal;
+                    const d=new Date(ds+"T00:00:00+08:00");
+                    const wd=["日","一","二","三","四","五","六"][d.getDay()];
+                    const label=`${d.getMonth()+1}月${d.getDate()}日（${wd}）`;
+                    const todosForDay=calTodos.filter(t=>t.date===ds).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+                    const hearingsForDay=(()=>{
+                        const hm={};
+                        cases.forEach(c=>(c.hearings||[]).forEach(h=>{if(!hm[h.date])hm[h.date]=[];hm[h.date].push({...h,clientName:c.clientName,firmCaseNo:c.firmCaseNo,caseType:c.caseType,caseId:c.id});}));
+                        return hm[ds]||[];
+                    })();
+                    return(
+                        <div className="cal-todo-modal" onClick={()=>setCalTodoModal(null)}>
+                            <div className="cal-todo-sheet" onClick={e=>e.stopPropagation()}>
+                                {/* Header */}
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                                    <div>
+                                        <div style={{fontWeight:800,fontSize:17,color:"var(--text)"}}>{label}</div>
+                                        {TW_HOLIDAYS[ds] && <div style={{fontSize:12,color:"var(--red)",marginTop:2}}>🎌 {TW_HOLIDAYS[ds]}</div>}
+                                    </div>
+                                    <button onClick={()=>setCalTodoModal(null)} style={{background:"var(--bg4)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",color:"var(--text2)",fontSize:16}}>✕</button>
+                                </div>
+
+                                {/* Hearings on this day */}
+                                {hearingsForDay.length>0 && <>
+                                    <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>🏛 當日庭期</div>
+                                    {hearingsForDay.map((h,i)=>(
+                                        <div key={i} onClick={()=>{openDetail(h.caseId);setCalTodoModal(null);}}
+                                            style={{background:"var(--bg3)",border:`1px solid ${TYPE_COLOR[h.caseType]||"#64748b"}33`,borderRadius:10,padding:"10px 12px",marginBottom:8,cursor:"pointer",display:"flex",gap:10,alignItems:"center"}}>
+                                            <span style={{fontSize:15,color:TYPE_COLOR[h.caseType]||"#64748b"}}>🏛</span>
+                                            <div style={{flex:1}}>
+                                                <div style={{fontWeight:700,color:"var(--text)",fontSize:13}}>{h.clientName}</div>
+                                                <div style={{fontSize:11,color:"var(--text3)"}}>{h.time&&`${h.time} · `}{h.note||h.agency||""}</div>
+                                            </div>
+                                            <Badge label={h.caseType} color={TYPE_COLOR[h.caseType]||"#64748b"}/>
+                                        </div>
+                                    ))}
+                                    <div style={{height:1,background:"var(--border)",margin:"12px 0"}}/>
+                                </>}
+
+                                {/* Todos */}
+                                <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>✅ 待辦事項</div>
+                                {todosForDay.length===0 && <div style={{color:"var(--text4)",fontSize:13,padding:"8px 0 14px"}}>尚無待辦，在下方新增</div>}
+                                {todosForDay.map(t=>(
+                                    <div key={t.id} className="cal-todo-item" onClick={()=>toggleCalTodo(t.id)}>
+                                        <div className={`cal-todo-check${t.done?" done":""}`}>
+                                            {t.done && <span style={{color:"#fff",fontSize:11,fontWeight:900}}>✓</span>}
+                                        </div>
+                                        <div style={{flex:1,color:t.done?"var(--text4)":"var(--text)",textDecoration:t.done?"line-through":"none",fontSize:14}}>{t.text}</div>
+                                        <button className="cal-todo-del" onClick={e=>{e.stopPropagation();deleteCalTodo(t.id);}}>🗑</button>
+                                    </div>
+                                ))}
+
+                                {/* Add new todo */}
+                                <div style={{display:"flex",gap:8,marginTop:14}}>
+                                    <input
+                                        style={{flex:1,background:"var(--bg)",border:"1px solid var(--border)",borderRadius:9,padding:"10px 13px",color:"var(--text)",fontSize:13,outline:"none",fontFamily:"inherit"}}
+                                        placeholder="新增待辦事項…"
+                                        value={calTodoInput}
+                                        onChange={e=>setCalTodoInput(e.target.value)}
+                                        onKeyDown={e=>{ if(e.key==="Enter"){ addCalTodo(ds); } }}
+                                        autoFocus
+                                    />
+                                    <button className="btn btn-gold" onClick={()=>addCalTodo(ds)} disabled={!calTodoInput.trim()}>＋ 新增</button>
+                                </div>
                             </div>
                         </div>
                     );

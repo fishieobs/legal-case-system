@@ -115,8 +115,17 @@ const TYPE_COLOR = {刑事:"#ef4444",民事:"#3b82f6",行政:"#8b5cf6",家事:"#
 const DAYS_AHEAD = 7; // show hearings within next 7 days
 
 // ── Helpers ──
-function today(){ return new Date().toISOString().split("T")[0]; }
-function daysUntil(d){ return Math.ceil((new Date(d)-new Date(today()))/86400000); }
+function today(){
+    // 使用台灣時區 UTC+8，避免跨日誤差
+    const tw = new Date(new Date().getTime() + 8*60*60*1000);
+    return tw.toISOString().split("T")[0];
+}
+function daysUntil(d){
+    // 兩端都用台灣時間的「當日零時」比較，避免時區造成的差一天問題
+    const todayMs = new Date(today()+"T00:00:00+08:00").getTime();
+    const targetMs = new Date(d+"T00:00:00+08:00").getTime();
+    return Math.round((targetMs - todayMs) / 86400000);
+}
 function pad(n){ return String(n).padStart(2,"0"); }
 function fmtDate(iso){
     const d=new Date(iso+"T00:00:00");

@@ -160,16 +160,28 @@ function applyTheme(mode){
     const effective = mode==="auto" ? getAutoTheme() : mode;
     if(effective==="light") document.documentElement.classList.add("light");
     else document.documentElement.classList.remove("light");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", effective==="light" ? "#f0f4f8" : "#0a1628");
 }
 let themeMode = localStorage.getItem("widget_theme")||"auto";
 applyTheme(themeMode);
+function themeLabel(){
+    if(themeMode==="auto") return `自動 (${getAutoTheme()==="light"?"白天淺色":"晚上深色"})`;
+    if(themeMode==="light") return "白天 淺色";
+    return "晚上 深色";
+}
 function cycleTheme(){
     themeMode = themeMode==="auto"?"light":themeMode==="light"?"dark":"auto";
     localStorage.setItem("widget_theme",themeMode);
     applyTheme(themeMode);
     render(); // re-render so all components pick up new CSS variables
 }
-setInterval(()=>{ if(themeMode==="auto") applyTheme("auto"); }, 60000);
+setInterval(()=>{
+    if(themeMode!=="auto") return;
+    const before = document.documentElement.classList.contains("light") ? "light" : "dark";
+    applyTheme("auto");
+    const after = document.documentElement.classList.contains("light") ? "light" : "dark";
+    if(before!==after) render();
+}, 60000);
 let clockTimer=null, unsubCases=null;
 
 // ── Render engine ──
@@ -285,7 +297,7 @@ function buildWidget(){
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="clock" id="clock">${nowStr()}</span>
             <button class="refresh-btn ${state.refreshing?"refreshing":""}" id="btn-refresh" title="重新整理">↻</button>
-            <button class="theme-btn" id="btn-theme">${themeMode==="auto"?"🕐 自動 (依時間)":themeMode==="light"?"☀️ 白天":"🌙 夜間"}</button>
+            <button class="theme-btn" id="btn-theme" type="button" title="切換顯示模式">${themeLabel()}</button>
             <a href="index.html" class="btn-link">📋 案件系統</a>
             <button class="btn-link" id="btn-logout">登出</button>
         </div>
@@ -456,6 +468,9 @@ function bindEvents(){
         state.refreshing=true; render();
         setTimeout(()=>{ state.refreshing=false; render(); },800);
     });
+
+    // Theme switch: auto -> day/light -> night/dark
+    document.getElementById("btn-theme")?.addEventListener("click",cycleTheme);
 
     // Clock
     if(clockTimer) clearInterval(clockTimer);

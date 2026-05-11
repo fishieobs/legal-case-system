@@ -580,6 +580,33 @@ function useTheme(){
 // ══════════════════════════════════════════
 //  APP
 // ══════════════════════════════════════════
+async function syncCaseTodosToCalendar(caseData){
+    if(!window.db || !window.fbMethods?.getDoc) return;
+    const caseId = caseData.id;
+    const calRef = window.fbMethods.doc(window.db,"calTodos","shared");
+    const snap = await window.fbMethods.getDoc(calRef);
+    const existing = snap.exists() ? (snap.data().items||[]) : [];
+    const kept = existing.filter(t=>!(t.source==="caseTodo" && t.caseId===caseId));
+    const linked = (caseData.todos||[])
+        .filter(t=>t.due)
+        .map(t=>({
+            id:`caseTodo_${caseId}_${t.id}`,
+            source:"caseTodo",
+            caseId,
+            todoId:t.id,
+            date:t.due,
+            text:[caseData.clientName||caseData.firmCaseNo, t.text].filter(Boolean).join("｜"),
+            done:!!t.done,
+            createdAt:t.createdAt||new Date().toISOString()
+        }));
+    const updated = [...kept, ...linked];
+    await window.fbMethods.setDoc(calRef,{items:updated, updatedAt:new Date().toISOString()});
+    try{
+        localStorage.setItem("calTodos", JSON.stringify(updated));
+        localStorage.setItem("calTodos_updatedAt", String(Date.now()));
+    }catch(_){}
+}
+
 function App({user}){
     const [cases, setCases] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -778,6 +805,7 @@ function App({user}){
             const data = {...formData, id};
             toast("⏳ 儲存中…");
             await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"cases",id), data);
+            await syncCaseTodosToCalendar(data);
             toast("✅ 已儲存至雲端");
             setSelectedId(id);
             setView(editId?"detail":"list");
@@ -793,6 +821,7 @@ function App({user}){
 
     const deleteCase = async()=>{
         try{
+            if(selected) await syncCaseTodosToCalendar({...selected,todos:[]});
             await window.fbMethods.deleteDoc(window.fbMethods.doc(window.db,"cases",selectedId));
             toast("🗑 案件已刪除");
             setDeleteConfirm(false); setView("list");
@@ -802,6 +831,7 @@ function App({user}){
     const toggleTodo = async(c, todoId)=>{
         const todos = (c.todos||[]).map(t=>t.id===todoId?{...t,done:!t.done}:t);
         await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{todos});
+        await syncCaseTodosToCalendar({...c,todos});
     };
 
     // ── Form helpers ──

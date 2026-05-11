@@ -108,7 +108,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'N
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -182,9 +182,47 @@ setInterval(()=>{
     const after = document.documentElement.classList.contains("light") ? "light" : "dark";
     if(before!==after) render();
 }, 60000);
-let clockTimer=null, unsubCases=null;
+let clockTimer=null, unsubCases=null, unsubCalTodos=null;
+
+function applyCalTodos(items){
+    state.calTodos = Array.isArray(items) ? items : [];
+    try{
+        localStorage.setItem("calTodos", JSON.stringify(state.calTodos));
+        localStorage.setItem("calTodos_updatedAt", String(Date.now()));
+    }catch(_){}
+    render();
+}
+
+async function refreshCalTodos(){
+    if(!state.user) return;
+    try{
+        const snap = await getDoc(doc(db,"calTodos","shared"));
+        if(snap.exists()) applyCalTodos(snap.data().items||[]);
+    }catch(e){
+        try{ state.calTodos=JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(_){}
+        render();
+    }
+}
+
+function syncCalTodosFromCache(){
+    try{
+        state.calTodos = JSON.parse(localStorage.getItem("calTodos")||"[]");
+        render();
+    }catch(_){}
+}
+
+function wakeSyncCalTodos(){
+    if(document.visibilityState && document.visibilityState !== "visible") return;
+    refreshCalTodos();
+}
 
 // ── Render engine ──
+window.addEventListener("storage", syncCalTodosFromCache);
+window.addEventListener("focus", wakeSyncCalTodos);
+window.addEventListener("online", wakeSyncCalTodos);
+window.addEventListener("pageshow", wakeSyncCalTodos);
+document.addEventListener("visibilitychange", wakeSyncCalTodos);
+
 const root = document.getElementById("root");
 function render(){ applyTheme(themeMode); root.innerHTML = buildHTML(); bindEvents(); }
 
@@ -194,14 +232,13 @@ onAuthStateChanged(auth, u=>{
     state.authChecked=true;
     if(u && !unsubCases){
         // Listen to calTodos (realtime sync)
-        onSnapshot(doc(db,"calTodos","shared"), snap=>{
-            state.calTodos = snap.exists() ? (snap.data().items||[]) : [];
-            try{ localStorage.setItem("calTodos",JSON.stringify(state.calTodos)); }catch(_){}
-            render();
+        unsubCalTodos = onSnapshot(doc(db,"calTodos","shared"), snap=>{
+            applyCalTodos(snap.exists() ? (snap.data().items||[]) : []);
         }, ()=>{
             try{ state.calTodos=JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(_){}
             render();
         });
+        refreshCalTodos();
         unsubCases = onSnapshot(collection(db,"cases"), snap=>{
             state.cases = snap.docs.map(d=>({...d.data(),id:d.id}));
             // cache locally
@@ -216,6 +253,7 @@ onAuthStateChanged(auth, u=>{
             render();
         });
     }
+    if(!u && unsubCalTodos){ unsubCalTodos(); unsubCalTodos=null; }
     if(!u && unsubCases){ unsubCases(); unsubCases=null; }
     render();
 });

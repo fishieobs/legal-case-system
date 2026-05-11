@@ -334,7 +334,7 @@ a{color:var(--blue);}
 <!-- Firebase -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     const firebaseConfig = {
         apiKey: "AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",
@@ -349,7 +349,7 @@ a{color:var(--blue);}
     const auth = getAuth(app);
     window.db = db;
     window.auth = auth;
-    window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc };
+    window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc };
     window.fbAuth = { signInWithEmailAndPassword, signOut, onAuthStateChanged };
     window.firebaseReady = true;
 </script>
@@ -622,6 +622,36 @@ function App({user}){
     const [editingToolId, setEditingToolId] = useState(null);
     const { mode, effective, cycleMode } = useTheme();
 
+    const applyCalTodos = useCallback((items)=>{
+        const safeItems = Array.isArray(items) ? items : [];
+        setCalTodos(safeItems);
+        try{
+            localStorage.setItem("calTodos", JSON.stringify(safeItems));
+            localStorage.setItem("calTodos_updatedAt", String(Date.now()));
+        }catch(_){}
+    },[]);
+
+    const refreshCalTodos = useCallback(async()=>{
+        if(!window.db || !window.fbMethods?.getDoc) return;
+        try{
+            const snap = await window.fbMethods.getDoc(window.fbMethods.doc(window.db,"calTodos","shared"));
+            if(snap.exists()) applyCalTodos(snap.data().items||[]);
+        }catch(e){
+            console.warn("calTodos refresh failed:", e);
+        }
+    },[applyCalTodos]);
+
+    const loadLatestCalTodos = useCallback(async()=>{
+        if(!window.db || !window.fbMethods?.getDoc) return calTodos;
+        try{
+            const snap = await window.fbMethods.getDoc(window.fbMethods.doc(window.db,"calTodos","shared"));
+            return snap.exists() ? (snap.data().items||[]) : [];
+        }catch(e){
+            console.warn("calTodos load latest failed:", e);
+            return calTodos;
+        }
+    },[calTodos]);
+
     // ── Firebase listener ──
     useEffect(()=>{
         // 先從 localStorage 快取立即顯示，避免白畫面
@@ -630,19 +660,36 @@ function App({user}){
             if(cached){ setCases(JSON.parse(cached)); setLoading(false); }
         }catch(e){}
 
+        let unsubCases=null, unsubCalTodos=null;
+        const syncFromCache = ()=>{
+            try{
+                const cached = localStorage.getItem("calTodos");
+                if(cached) setCalTodos(JSON.parse(cached));
+            }catch(_){}
+        };
+        const wakeSync = ()=>{
+            if(document.visibilityState && document.visibilityState !== "visible") return;
+            refreshCalTodos();
+        };
+        window.addEventListener("storage", syncFromCache);
+        window.addEventListener("focus", wakeSync);
+        window.addEventListener("online", wakeSync);
+        window.addEventListener("pageshow", wakeSync);
+        document.addEventListener("visibilitychange", wakeSync);
+
         const wait = setInterval(()=>{
             if(!window.db) return;
             clearInterval(wait);
-            const {collection,onSnapshot,doc,getDoc} = window.fbMethods;
+            const {collection,onSnapshot,doc} = window.fbMethods;
             // Load calTodos from Firebase (realtime)
-            onSnapshot(window.fbMethods.doc(window.db,"calTodos","shared"), snap=>{
+            unsubCalTodos = onSnapshot(window.fbMethods.doc(window.db,"calTodos","shared"), snap=>{
                 if(snap.exists()){
                     const items=snap.data().items||[];
-                    setCalTodos(items);
-                    try{ localStorage.setItem("calTodos",JSON.stringify(items)); }catch(_){}
+                    applyCalTodos(items);
                 }
             }, e=>console.warn("calTodos listen failed:",e));
-            onSnapshot(
+            refreshCalTodos();
+            unsubCases = onSnapshot(
                 collection(window.db,"cases"),
                 snap=>{
                     const data = snap.docs.map(d=>({...d.data(),id:d.id}));
@@ -666,8 +713,17 @@ function App({user}){
             setLoading(f=>{ if(f) toast("⚠️ 連線逾時，請確認 Firestore 規則"); return false; });
         },6000);
 
-        return ()=>{ clearInterval(wait); clearTimeout(timeout); };
-    },[]);
+        return ()=>{
+            clearInterval(wait); clearTimeout(timeout);
+            if(unsubCalTodos) unsubCalTodos();
+            if(unsubCases) unsubCases();
+            window.removeEventListener("storage", syncFromCache);
+            window.removeEventListener("focus", wakeSync);
+            window.removeEventListener("online", wakeSync);
+            window.removeEventListener("pageshow", wakeSync);
+            document.removeEventListener("visibilitychange", wakeSync);
+        };
+    },[applyCalTodos, refreshCalTodos]);
 
     const selected = cases.find(c=>c.id===selectedId);
 
@@ -778,26 +834,29 @@ function App({user}){
 
     // ── Calendar Todos ──
     const saveCalTodos=(updated)=>{
-        setCalTodos(updated);
-        try{ localStorage.setItem("calTodos",JSON.stringify(updated)); }catch(_){}
+        applyCalTodos(updated);
         // Also sync to Firebase as a single doc
         window.fbMethods.setDoc(
             window.fbMethods.doc(window.db,"calTodos","shared"),
             {items:updated, updatedAt:new Date().toISOString()}
         ).catch(e=>console.warn("calTodos save failed:",e));
     };
-    const addCalTodo=(dateStr)=>{
-        if(!calTodoInput.trim()) return;
-        const updated=[...calTodos,{id:uid(),date:dateStr,text:calTodoInput.trim(),done:false,createdAt:new Date().toISOString()}];
+    const addCalTodo=async(dateStr)=>{
+        const text = calTodoInput.trim();
+        if(!text) return;
+        const latest = await loadLatestCalTodos();
+        const updated=[...latest,{id:uid(),date:dateStr,text,done:false,createdAt:new Date().toISOString()}];
         saveCalTodos(updated);
         setCalTodoInput("");
     };
-    const toggleCalTodo=(id)=>{
-        const updated=calTodos.map(t=>t.id===id?{...t,done:!t.done}:t);
+    const toggleCalTodo=async(id)=>{
+        const latest = await loadLatestCalTodos();
+        const updated=latest.map(t=>t.id===id?{...t,done:!t.done}:t);
         saveCalTodos(updated);
     };
-    const deleteCalTodo=(id)=>{
-        const updated=calTodos.filter(t=>t.id!==id);
+    const deleteCalTodo=async(id)=>{
+        const latest = await loadLatestCalTodos();
+        const updated=latest.filter(t=>t.id!==id);
         saveCalTodos(updated);
     };
 

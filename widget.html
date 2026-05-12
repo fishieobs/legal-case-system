@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="今日庭期">
 <meta name="theme-color" content="#0a1628">
-<link rel="apple-touch-icon" href="shinkai_widget_icon_preview.svg">
-<link rel="icon" type="image/svg+xml" href="shinkai_widget_icon_preview.svg">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
 <title>⚖ 今日庭期</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -24,7 +24,8 @@
     --green:#16a34a;--red:#dc2626;--yellow:#d97706;--blue:#2563eb;--border:#e2e8f0;
     --shadow:0 2px 8px rgba(0,0,0,.08);
 }
-html,body{transition:background .3s,color .3s; min-height:100vh;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',system-ui,sans-serif;}
+html,body{transition:background .3s,color .3s;}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',system-ui,sans-serif;}
 
 /* ── HEADER ── */
 .header{background:var(--bg2);padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
@@ -38,67 +39,84 @@ html,body{transition:background .3s,color .3s; min-height:100vh;background:var(-
 /* ── CONTENT ── */
 .content{padding:16px;max-width:600px;margin:0 auto;}
 
-/* ── QR CODE SECTION ── */
-.qr-section {
-    background: linear-gradient(135deg, var(--bg2), var(--bg3));
-    border: 1px solid var(--gold);
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(200, 169, 110, 0.15);
-}
-.qr-info h4 { font-size: 14px; color: var(--gold); margin-bottom: 4px; }
-.qr-info p { font-size: 11px; color: var(--text3); }
-.qr-preview { width: 44px; height: 44px; background: #fff; border-radius: 6px; padding: 3px; }
-
-/* 全螢幕覆蓋層 */
-#qr-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: #ffffff; /* 強制背景變白以利掃描 */
-    z-index: 9999;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-#qr-overlay img { width: 85%; max-width: 450px; height: auto; }
-#qr-overlay .close-hint { margin-top: 30px; color: #000; font-size: 14px; font-weight: bold; padding: 10px 20px; border: 1px solid #ddd; border-radius: 20px; }
-
-/* ── REMAINING STYLES (TRUNCATED FOR BREVITY - SAME AS ORIGINAL) ── */
+/* ── DAY SECTION ── */
 .day-section{margin-bottom:20px;}
 .day-label{font-size:11px;font-weight:700;color:var(--text4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
 .day-label::after{content:"";flex:1;height:1px;background:var(--border);}
+
+/* ── HEARING CARD ── */
 .hearing-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;display:flex;gap:14px;align-items:stretch;transition:border-color .2s;cursor:pointer;text-decoration:none;}
 .hearing-card:hover{border-color:var(--gold)44;}
+.hearing-card:active{opacity:.85;}
 .hearing-card.today{border-left:4px solid var(--gold);}
+.hearing-card.urgent{border-left:4px solid var(--red);}
 .time-col{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;flex-shrink:0;}
 .time-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;line-height:1.2;text-align:center;flex-direction:column;}
 .info-col{flex:1;min-width:0;}
 .client-name{font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;}
 .case-no{font-size:11px;color:var(--text4);font-family:monospace;margin-bottom:6px;}
+.meta-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:4px;}
 .badge{display:inline-block;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;}
-.summary-bar{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;margin-bottom:20px;}
-.summary-item{flex:1;text-align:center;}
-.summary-num{font-size:22px;font-weight:800;color:var(--gold);}
-.summary-lbl{font-size:10px;color:var(--text4);}
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
-.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:36px 32px;width:100%;max-width:360px;}
-.fi{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);width:100%;margin-bottom:15px;}
-.btn-gold{background:linear-gradient(135deg,var(--gold),#a07840);color:#0a0a0a;border:none;border-radius:8px;padding:11px;font-weight:700;width:100%;cursor:pointer;}
+.detail-row{font-size:12px;color:var(--text3);margin-top:4px;display:flex;align-items:center;gap:5px;}
+.countdown{font-size:11px;font-weight:700;margin-top:6px;}
+
+/* ── EMPTY ── */
+.empty-day{background:var(--bg3);border:1px dashed var(--border);border-radius:12px;padding:24px;text-align:center;color:var(--text4);font-size:13px;}
+
+/* ── LOADING ── */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px;color:var(--text3);}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SUMMARY BAR ── */
+.summary-bar{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;gap:0;margin-bottom:20px;overflow:hidden;}
+.summary-item{flex:1;text-align:center;padding:4px 8px;}
+.summary-item+.summary-item{border-left:1px solid var(--border);}
+.summary-num{font-size:22px;font-weight:800;color:var(--gold);line-height:1;}
+.summary-lbl{font-size:10px;color:var(--text4);margin-top:3px;letter-spacing:.04em;}
+
+/* ── CLOCK ── */
+.clock{font-size:13px;color:var(--text3);font-variant-numeric:tabular-nums;font-family:monospace;}
+
+/* ── REFRESH ── */
+.refresh-btn{background:none;border:none;color:var(--text4);cursor:pointer;font-size:16px;padding:4px;border-radius:6px;transition:color .2s;}
+.refresh-btn:hover{color:var(--gold);}
+.refreshing{animation:spin .6s linear infinite;}
+.theme-btn{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:4px 10px;cursor:pointer;font-size:12px;color:var(--text3);font-family:inherit;}
+.theme-btn:hover{border-color:var(--gold);color:var(--gold);}
+.todo-item{background:var(--bg3);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;}
+.todo-item.done{opacity:.5;}
+.todo-check{width:18px;height:18px;border-radius:4px;border:2px solid rgba(139,92,246,.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.todo-check.done{background:#8b5cf6;border-color:#8b5cf6;}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg);}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 20px 60px #000a;}
+.fi{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-size:13px;outline:none;font-family:inherit;width:100%;}
+.fi:focus{border-color:var(--gold);}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#a07840);color:#0a0a0a;border:none;border-radius:8px;padding:11px 20px;font-weight:700;font-size:14px;cursor:pointer;width:100%;font-family:inherit;}
+.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
+
+.widget-tools{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;flex-direction:column;gap:10px;}
+.tool-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.form-row{display:grid;grid-template-columns:1fr 96px;gap:8px;}
+.form-row.three{grid-template-columns:1fr 1fr 1fr;}
+.fi-sm{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-size:13px;outline:none;font-family:inherit;min-width:0;}
+.fi-sm:focus{border-color:var(--gold);}
+.btn-small{background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-small.gold{background:linear-gradient(135deg,var(--gold),#a07840);border:none;color:#0a0a0a;}
+.btn-small.danger{color:var(--red);border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.08);}
+.notice{font-size:11px;color:var(--text3);line-height:1.5;}
+.delete-hearing{margin-top:8px;width:auto;padding:5px 9px;font-size:11px;}
+@media(max-width:480px){.form-row,.form-row.three{grid-template-columns:1fr;}}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+@media(max-width:480px){.content{padding:12px;}.client-name{font-size:15px;}}
 </style>
 </head>
 <body>
 <div id="root"></div>
-
-<div id="qr-overlay" onclick="hideFullScreenQR()">
-    <img src="6059931759689797479.jpg" alt="Lawyer Identity QR Code">
-    <div class="close-hint">點擊任何地方返回</div>
-</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -118,43 +136,286 @@ const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 const auth = getAuth(app);
 
-// 全螢幕控制函式
-window.showFullScreenQR = function() {
-    const overlay = document.getElementById('qr-overlay');
-    overlay.style.display = 'flex';
-    if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen();
+// ── Constants ──
+const TYPE_COLOR = {刑事:"#ef4444",民事:"#3b82f6",行政:"#8b5cf6",家事:"#ec4899",勞動:"#f97316",智財:"#14b8a6",非訟:"#06b6d4"};
+const DAYS_AHEAD = 7; // show hearings within next 7 days
+
+// ── Helpers ──
+function today(){
+    // 使用台灣時區 UTC+8，避免跨日誤差
+    const tw = new Date(new Date().getTime() + 8*60*60*1000);
+    return tw.toISOString().split("T")[0];
+}
+function daysUntil(d){
+    // 兩端都用台灣時間的「當日零時」比較，避免時區造成的差一天問題
+    const todayMs = new Date(today()+"T00:00:00+08:00").getTime();
+    const targetMs = new Date(d+"T00:00:00+08:00").getTime();
+    return Math.round((targetMs - todayMs) / 86400000);
+}
+function pad(n){ return String(n).padStart(2,"0"); }
+function fmtDate(iso){
+    const d=new Date(iso+"T00:00:00");
+    const wd=["日","一","二","三","四","五","六"][d.getDay()];
+    return `${d.getMonth()+1}/${d.getDate()}（${wd}）`;
+}
+function nowStr(){
+    const n=new Date();
+    return `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+}
+
+// ── State ──
+function readJSON(key,fallback){ try{ return JSON.parse(localStorage.getItem(key)||""); }catch(_){ return fallback; } }
+function loadWidgetHearings(){ return readJSON("widgetHearings",[]); }
+function loadReminder(){ return {...{enabled:false,time:"08:00"}, ...readJSON("widgetReminder",{})}; }
+function saveLocal(key,value){ try{ localStorage.setItem(key,JSON.stringify(value)); }catch(_){} }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+let state = { user:null, authChecked:false, cases:[], calTodos:[], widgetHearings:loadWidgetHearings(), showAddHearing:false, reminder:loadReminder(), refreshing:false, notice:"" };
+
+// ── Theme ──
+function getAutoTheme(){ const h=new Date().getHours(); return (h>=6&&h<20)?"light":"dark"; }
+function applyTheme(mode){
+    const effective = mode==="auto" ? getAutoTheme() : mode;
+    if(effective==="light") document.documentElement.classList.add("light");
+    else document.documentElement.classList.remove("light");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", effective==="light" ? "#f0f4f8" : "#0a1628");
+}
+let themeMode = localStorage.getItem("widget_theme")||"auto";
+applyTheme(themeMode);
+function themeLabel(){
+    if(themeMode==="auto") return `自動 (${getAutoTheme()==="light"?"白天淺色":"晚上深色"})`;
+    if(themeMode==="light") return "白天 淺色";
+    return "晚上 深色";
+}
+function cycleTheme(){
+    themeMode = themeMode==="auto"?"light":themeMode==="light"?"dark":"auto";
+    localStorage.setItem("widget_theme",themeMode);
+    applyTheme(themeMode);
+    render(); // re-render so all components pick up new CSS variables
+}
+setInterval(()=>{
+    if(themeMode!=="auto") return;
+    const before = document.documentElement.classList.contains("light") ? "light" : "dark";
+    applyTheme("auto");
+    const after = document.documentElement.classList.contains("light") ? "light" : "dark";
+    if(before!==after) render();
+}, 60000);
+let clockTimer=null, unsubCases=null, unsubWidgetHearings=null, reminderTimer=null;
+
+function applyCalTodos(items){
+    state.calTodos = Array.isArray(items) ? items : [];
+    try{
+        localStorage.setItem("calTodos", JSON.stringify(state.calTodos));
+        localStorage.setItem("calTodos_updatedAt", String(Date.now()));
+    }catch(_){}
+    render();
+}
+
+async function refreshCalTodos(){
+    if(!state.user) return;
+    try{
+        const snap = await getDoc(doc(db,"calTodos","shared"));
+        if(snap.exists()) applyCalTodos(snap.data().items||[]);
+    }catch(e){
+        try{ state.calTodos=JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(_){}
+        render();
     }
-};
+}
 
-window.hideFullScreenQR = function() {
-    const overlay = document.getElementById('qr-overlay');
-    overlay.style.display = 'none';
-    if (document.fullscreenElement) {
-        document.exitFullscreen();
+function syncCalTodosFromCache(){
+    try{
+        state.calTodos = JSON.parse(localStorage.getItem("calTodos")||"[]");
+        render();
+    }catch(_){}
+}
+
+function wakeSyncCalTodos(){
+    if(document.visibilityState && document.visibilityState !== "visible") return;
+    refreshCalTodos();
+}
+
+// ── Render engine ──
+const root = document.getElementById("root");
+function render(){ applyTheme(themeMode); root.innerHTML = buildHTML(); bindEvents(); }
+function setNotice(msg){ state.notice=msg; render(); }
+function saveWidgetHearings(items){
+    state.widgetHearings = items.sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.time||"").localeCompare(b.time||""));
+    saveLocal("widgetHearings",state.widgetHearings);
+    if(state.user){
+        setDoc(doc(db,"widgetHearings","shared"),{items:state.widgetHearings,updatedAt:new Date().toISOString()})
+            .catch(e=>{
+                console.warn("widgetHearings 儲存失敗：",e.code);
+                if(e.code==="permission-denied"){
+                    state.notice="⚠️ 跨裝置同步失敗：請至 Firebase 更新 Firestore 規則（詳見說明）";
+                    render();
+                }
+            });
     }
-};
+}
+function saveReminder(reminder){ state.reminder=reminder; saveLocal("widgetReminder",reminder); startReminderTimer(); render(); }
+function notificationAllowed(){ return "Notification" in window && Notification.permission==="granted"; }
+async function ensureNotificationPermission(){
+    if(!("Notification" in window)){ setNotice("此瀏覽器不支援通知功能"); return false; }
+    if(Notification.permission==="granted") return true;
+    if(Notification.permission==="denied"){ setNotice("瀏覽器已封鎖通知，請至設定手動開啟"); return false; }
+    const permission = await Notification.requestPermission();
+    if(permission!=="granted"){ setNotice("通知授權未獲批准"); return false; }
+    return true;
+}function notifyTodayHearings(force=false){
+    const todays = getHearings().filter(h=>h.daysUntil===0);
+    if(!force){
+        if(!state.reminder.enabled) return;
+        if(nowHHMM() < state.reminder.time) return;
+        const sentKey = `widgetReminderSent_${today()}`;
+        if(localStorage.getItem(sentKey)==="1") return;
+        localStorage.setItem(sentKey,"1");
+    }
+    if(todays.length===0){ if(force) setNotice("今日無庭期"); return; }
+    const body = todays.slice(0,5).map(h=>`${h.time||"待定"} ${h.clientName||"Hearing"} ${[h.agency,h.courtroom].filter(Boolean).join(" ")}`).join("\n");
+    if(notificationAllowed()) new Notification(`今日開庭：${todays.length}場`,{body});
+    else setNotice(`今日開庭：${todays.length}場 - ${todays.map(h=>`${h.time||"待定"} ${h.clientName}`).join("、")}`);
+}function startReminderTimer(){
+    if(reminderTimer) clearInterval(reminderTimer);
+    reminderTimer=setInterval(()=>notifyTodayHearings(false),60000);
+}
 
-// ... 此處承接原始程式碼的 State 與 Helpers ...
-let state = { user:null, authChecked:false, cases:[], calTodos:[], widgetHearings:[], showAddHearing:false, reminder:{enabled:false,time:"08:00"}, refreshing:false, notice:"" };
-
+// ── Auth ──
 onAuthStateChanged(auth, u=>{
     state.user=u;
     state.authChecked=true;
-    if(u){
-        onSnapshot(collection(db,"cases"), snap=>{
+    if(u && !unsubCases){
+        // ── widgetHearings 即時同步 ──
+        unsubWidgetHearings = onSnapshot(
+            doc(db,"widgetHearings","shared"),
+            snap=>{
+                if(snap.exists()){
+                    state.widgetHearings = snap.data().items||[];
+                    saveLocal("widgetHearings",state.widgetHearings);
+                    render();
+                }
+            },
+            err=>{
+                console.warn("widgetHearings 同步失敗：",err.code, "— 請確認 Firestore 規則已加入 widgetHearings");
+                // fallback to localStorage
+                try{ state.widgetHearings=JSON.parse(localStorage.getItem("widgetHearings")||"[]"); }catch(_){}
+                render();
+            }
+        );
+        // ── calTodos 即時同步 ──
+        onSnapshot(
+            doc(db,"calTodos","shared"),
+            snap=>{
+                state.calTodos = snap.exists() ? (snap.data().items||[]) : [];
+                try{ localStorage.setItem("calTodos",JSON.stringify(state.calTodos)); }catch(_){}
+                render();
+            },
+            err=>{
+                console.warn("calTodos 同步失敗：",err.code);
+                try{ state.calTodos=JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(_){}
+                render();
+            }
+        );
+        // ── cases 即時同步 ──
+        unsubCases = onSnapshot(collection(db,"cases"), snap=>{
             state.cases = snap.docs.map(d=>({...d.data(),id:d.id}));
+            // cache locally
+            try{ localStorage.setItem("widget_cases_cache", JSON.stringify(state.cases)); }catch(_){}
+            render();
+        }, err=>{
+            // fallback to cache
+            try{
+                const c=localStorage.getItem("widget_cases_cache");
+                if(c) state.cases=JSON.parse(c);
+            }catch(_){}
             render();
         });
     }
+    if(!u && unsubWidgetHearings){ unsubWidgetHearings(); unsubWidgetHearings=null; }
+    if(!u && unsubCases){ unsubCases(); unsubCases=null; }
+    startReminderTimer();
+    notifyTodayHearings(false);
     render();
 });
 
+// ── Build hearings list ──
+function getHearings(){
+    const result=[];
+    state.cases.forEach(c=>{
+        (c.hearings||[]).forEach(h=>{
+            const d=daysUntil(h.date);
+            if(d>=0 && d<=DAYS_AHEAD){
+                result.push({
+                    date:h.date, time:h.time||"", agency:h.agency||"",
+                    courtroom:h.courtroom||"", note:h.note||"",
+                    clientName:c.clientName, firmCaseNo:c.firmCaseNo,
+                    courtCaseNos:c.courtCaseNos||[], caseType:c.caseType,
+                    status:c.status, opposingParty:c.opposingParty||"",
+                    caseId:c.id, daysUntil:d,
+                });
+            }
+        });
+    });
+    (state.widgetHearings||[]).forEach(h=>{
+        const d=daysUntil(h.date);
+        if(d>=0 && d<=DAYS_AHEAD){
+            result.push({
+                ...h,
+                source:"widget",
+                caseType:h.caseType||"代庭",
+                clientName:h.clientName||"代庭",
+                firmCaseNo:h.firmCaseNo||"WIDGET",
+                agency:h.agency||"",
+                courtroom:h.courtroom||"",
+                note:h.note||"",
+                daysUntil:d,
+            });
+        }
+    });
+    return result.sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+}
+
+// ── HTML builders ──
+function buildHTML(){
+    if(!state.authChecked) return buildLoading("載入中…");
+    if(!state.user) return buildLogin();
+    return buildWidget();
+}
+
+function buildLoading(msg){
+    return `<div class="loading"><div class="spinner"></div><div>${msg}</div></div>`;
+}
+
+function buildLogin(){
+    return `
+    <div class="login-wrap">
+        <div class="login-box">
+            <div style="font-size:42px;text-align:center;margin-bottom:8px;filter:drop-shadow(0 0 14px #c8a96e55)">⚖</div>
+            <div style="font-size:1.2rem;font-weight:700;color:var(--gold);text-align:center;margin-bottom:4px">今日庭期</div>
+            <div style="font-size:11px;color:var(--text4);text-align:center;letter-spacing:.06em;margin-bottom:28px">庭期提醒小工具</div>
+            <div id="login-err" style="display:none" class="err"></div>
+            <div style="margin-bottom:12px">
+                <label style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">帳號</label>
+                <input class="fi" id="email" type="email" placeholder="office@yourfirm.com" autocomplete="username">
+            </div>
+            <div style="margin-bottom:22px">
+                <label style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">密碼</label>
+                <input class="fi" id="password" type="password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="btn-gold" id="btn-login">🔐 登入</button>
+        </div>
+    </div>`;
+}
+
 function buildWidget(){
-    const hearings = getHearings();
-    const todayH = hearings.filter(h=>daysUntil(h.date)===0);
-    const now = new Date();
-    const dateLabel = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+    const hearings=getHearings();
+    const todayH=hearings.filter(h=>h.daysUntil===0);
+    const upcomingH=hearings.filter(h=>h.daysUntil>0);
+
+    // Group upcoming by date
+    const byDate={};
+    upcomingH.forEach(h=>{ if(!byDate[h.date]) byDate[h.date]=[]; byDate[h.date].push(h); });
+
+    const now=new Date();
+    const dateLabel=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${"日一二三四五六"[now.getDay()]}）`;
 
     return `
     <div class="header">
@@ -165,76 +426,274 @@ function buildWidget(){
                 <div class="header-date">${dateLabel}</div>
             </div>
         </div>
-        <button class="btn-link" id="btn-logout">登出</button>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="clock" id="clock">${nowStr()}</span>
+            <button class="refresh-btn ${state.refreshing?"refreshing":""}" id="btn-refresh" title="重新整理">↻</button>
+            <button class="theme-btn" id="btn-theme" type="button" title="切換顯示模式">${themeLabel()}</button>
+            <a href="index.html" class="btn-link">📋 案件系統</a>
+            <button class="btn-link" id="btn-logout">登出</button>
+        </div>
     </div>
 
     <div class="content">
-        <div class="qr-section" onclick="showFullScreenQR()">
-            <div class="qr-info">
-                <h4>⚖️ 律師電子報到</h4>
-                <p>點擊開啟全螢幕 QR Code (自動優化亮度)</p>
-            </div>
-            <img src="6059931759689797479.jpg" class="qr-preview" alt="QR Preview">
-        </div>
-
+        <!-- Summary bar -->
         <div class="summary-bar">
             <div class="summary-item">
                 <div class="summary-num" style="color:${todayH.length>0?"var(--red)":"var(--text3)"}">${todayH.length}</div>
                 <div class="summary-lbl">今日開庭</div>
             </div>
             <div class="summary-item">
+                <div class="summary-num">${upcomingH.length}</div>
+                <div class="summary-lbl">近7日</div>
+            </div>
+            <div class="summary-item">
                 <div class="summary-num">${hearings.length}</div>
-                <div class="summary-lbl">近期合計</div>
+                <div class="summary-lbl">合計場次</div>
             </div>
         </div>
 
+                <div class="widget-tools">
+            <div class="tool-row" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+                <button class="btn-small gold" id="btn-toggle-hearing" type="button">${state.showAddHearing?"✕ 取消":"＋ 新增臨時庭期"}</button>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <span style="font-size:11px;color:var(--text3)">提醒時間</span>
+                        <input class="fi-sm" id="reminder-time" type="time" value="${esc(state.reminder.time||"08:00")}" style="width:100px">
+                    </div>
+                    <button class="btn-small" id="btn-enable-reminder" type="button">${state.reminder.enabled?"🔔 通知已啟用":"🔔 啟用通知"}</button>
+                    <button class="btn-small" id="btn-test-reminder" type="button" title="測試今日庭期通知">測試</button>
+                </div>
+            </div>
+            ${state.notice?`<div class="notice" style="padding:7px 12px;background:var(--bg4);border-radius:7px;color:var(--text2);font-size:12px">${esc(state.notice)}</div>`:""}
+            ${state.showAddHearing?`
+            <div id="hearing-form" style="display:flex;flex-direction:column;gap:10px;padding-top:10px;border-top:1px solid var(--border)">
+                <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase">新增臨時庭期</div>
+                <div class="form-row three">
+                    <input class="fi-sm" id="wh-client" placeholder="案件 / 當事人姓名" autocomplete="off">
+                    <input class="fi-sm" id="wh-date" type="date" value="${today()}">
+                    <input class="fi-sm" id="wh-time" type="time">
+                </div>
+                <div class="form-row">
+                    <input class="fi-sm" id="wh-agency" placeholder="法院 / 機關名稱" autocomplete="off">
+                    <input class="fi-sm" id="wh-room" placeholder="法庭（如第5庭）" autocomplete="off">
+                </div>
+                <div class="form-row">
+                    <input class="fi-sm" id="wh-note" placeholder="庭期備註（如準備程序、審理庭）" autocomplete="off">
+                    <button class="btn-small gold" id="btn-save-widget-hearing" type="button">💾 儲存</button>
+                </div>
+            </div>`:""}
+        </div>
+
+        <!-- Today -->
         <div class="day-section">
-            <div class="day-label">今日庭期</div>
-            ${todayH.length===0 ? `<div style="text-align:center;padding:20px;color:var(--text4)">今日無庭期</div>` : todayH.map(h=>buildCard(h)).join("")}
+            <div class="day-label" style="color:${todayH.length>0?"var(--red)":"var(--text4)"}">
+                ${todayH.length>0?"🔴":"⚪"} 今天
+            </div>
+            ${todayH.length===0
+                ? `<div class="empty-day">今日無庭期 ✨</div>`
+                : todayH.map(h=>buildCard(h)).join("")
+            }
+        </div>
+
+        <!-- Upcoming grouped by date -->
+        ${Object.entries(byDate).map(([date,hs])=>`
+        <div class="day-section">
+            <div class="day-label">
+                🗓 ${fmtDate(date)}
+                <span style="color:var(--text4);font-weight:400;font-size:10px">${hs[0].daysUntil===1?"明天":`${hs[0].daysUntil}天後`}</span>
+            </div>
+            ${hs.map(h=>buildCard(h)).join("")}
+        </div>`).join("")}
+
+        ${hearings.length===0?`
+        <div style="text-align:center;padding:30px 20px 20px;color:var(--text4)">
+            <div style="font-size:40px;margin-bottom:12px">🎉</div>
+            <div style="font-weight:700;color:var(--text3)">近7日無庭期</div>
+            <div style="font-size:12px;margin-top:6px">好好休息！</div>
+        </div>`:""}
+
+        <!-- Calendar Todos section -->
+        ${(()=>{
+            const upcoming7=(state.calTodos||[]).filter(t=>{
+                const d=daysUntil(t.date); return d>=0&&d<=7;
+            }).sort((a,b)=>a.date.localeCompare(b.date));
+            if(upcoming7.length===0) return "";
+            // Group by date
+            const byDate={};
+            upcoming7.forEach(t=>{ if(!byDate[t.date])byDate[t.date]=[]; byDate[t.date].push(t); });
+            const pendingCount=upcoming7.filter(t=>!t.done).length;
+            return `
+            <div class="day-section" style="margin-top:4px">
+                <div class="day-label" style="color:${pendingCount>0?"#8b5cf6":"var(--text4)"}">
+                    ✅ 近7日待辦事項${pendingCount>0?` <span style="color:#8b5cf6;font-weight:800">${pendingCount}項未完成</span>`:""}
+                </div>
+                ${Object.entries(byDate).map(([date,todos])=>{
+                    const d=daysUntil(date);
+                    const dLabel=d===0?"今天":d===1?"明天":`${d}天後`;
+                    const dd=new Date(date+"T00:00:00+08:00");
+                    const wd=["日","一","二","三","四","五","六"][dd.getDay()];
+                    return `<div style="margin-bottom:12px">
+                        <div style="font-size:11px;color:var(--text4);margin-bottom:6px;display:flex;gap:8px;align-items:center">
+                            <span>${dd.getMonth()+1}/${dd.getDate()}（${wd}）</span>
+                            <span style="color:#8b5cf6;font-weight:700">${dLabel}</span>
+                        </div>
+                        ${todos.map(t=>`
+                        <div class="todo-item${t.done?" done":""}">
+                            <div class="todo-check${t.done?" done":""}">${t.done?"<span style=\"color:#fff;font-size:10px;font-weight:900\">✓</span>":""}</div>
+                            <div style="flex:1;font-size:13px;color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
+                        </div>`).join("")}
+                    </div>`;
+                }).join("")}
+            </div>`;
+        })()}
+    </div>`;
+}
+
+function buildCard(h){
+    const color = TYPE_COLOR[h.caseType]||"#64748b";
+    const isToday = h.daysUntil===0;
+    const isUrgent = isToday && h.time && h.time < nowHHMM();
+    const cardClass = `hearing-card ${isToday?"today":""} ${isUrgent?"urgent":""}`;
+
+    // Time circle
+    const timeBg = isToday
+        ? `background:${color}22;color:${color};border:2px solid ${color}55;`
+        : `background:var(--bg4);color:var(--text3);border:2px solid var(--border);`;
+    const timeDisplay = h.time||"—";
+    const timeCircle = `<div class="time-circle" style="${timeBg}">${h.time?h.time.replace(":","\n"):"—"}</div>`;
+
+    // Countdown badge
+    let countdown = "";
+    if(isToday && h.time){
+        const [hh,mm]=h.time.split(":").map(Number);
+        const nowMin=new Date().getHours()*60+new Date().getMinutes();
+        const tMin=hh*60+mm;
+        const diff=tMin-nowMin;
+        if(diff>0) countdown=`<div class="countdown" style="color:${diff<=30?"var(--red)":"var(--yellow)"}">還有 ${diff>=60?Math.floor(diff/60)+"小時":diff+"分鐘"}</div>`;
+        else if(diff>-60) countdown=`<div class="countdown" style="color:var(--text3)">已過 ${-diff}分鐘</div>`;
+    }
+
+    const caseNo=(h.courtCaseNos||[]).filter(Boolean)[0]||h.firmCaseNo||"";
+    const cardAction = h.caseId ? ` onclick="openCase('${h.caseId}')"` : "";
+    const deleteAction = h.source==="widget" ? `<button class="btn-small danger delete-hearing" data-delete-widget-hearing="${h.id}" type="button">🗑 刪除</button>` : "";
+
+    return `
+    <div class="${cardClass}"${cardAction}>
+        <div class="time-col">${timeCircle}</div>
+        <div class="info-col">
+            <div class="client-name">${esc(h.clientName)}</div>
+            <div class="case-no">${esc(h.firmCaseNo)}${caseNo&&caseNo!==h.firmCaseNo?" · "+esc(caseNo):""}</div>
+            <div class="meta-row">
+                <span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${h.caseType}</span>
+                ${h.note?`<span class="badge" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)">${esc(h.note)}</span>`:""}
+            </div>
+            ${h.agency||h.courtroom?`<div class="detail-row">🏛 ${esc([h.agency,h.courtroom].filter(Boolean).join(" · "))}</div>`:""}
+            ${h.opposingParty?`<div class="detail-row">⚔ 對造：${esc(h.opposingParty)}</div>`:""}
+            ${countdown}
+            ${deleteAction}
         </div>
     </div>`;
 }
 
-// ... 承接原始程式碼其餘 UI Builder 與 Event Binding ...
-function render(){ 
-    const root = document.getElementById("root");
-    if(!state.user) {
-        root.innerHTML = buildLogin();
-        document.getElementById("btn-login")?.addEventListener("click", async()=>{
-            const email=document.getElementById("email").value;
-            const pw=document.getElementById("password").value;
-            await signInWithEmailAndPassword(auth, email, pw);
+function nowHHMM(){
+    return pad(new Date().getHours())+":"+pad(new Date().getMinutes());
+}
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+// ── Event binding ──
+function bindEvents(){
+    // Login
+    const btnLogin=document.getElementById("btn-login");
+    if(btnLogin){
+        const doLogin=async()=>{
+            const email=document.getElementById("email")?.value.trim();
+            const pw=document.getElementById("password")?.value;
+            const errEl=document.getElementById("login-err");
+            if(!email||!pw){ showErr(errEl,"請輸入帳號和密碼"); return; }
+            btnLogin.textContent="登入中…"; btnLogin.disabled=true;
+            try{
+                await signInWithEmailAndPassword(auth,email,pw);
+            }catch(e){
+                const msg={"auth/invalid-credential":"帳號或密碼錯誤","auth/too-many-requests":"嘗試次數過多，請稍後"}[e.code]||"登入失敗："+e.message;
+                showErr(errEl,msg);
+                btnLogin.textContent="🔐 登入"; btnLogin.disabled=false;
+            }
+        };
+        btnLogin.addEventListener("click",doLogin);
+        document.getElementById("password")?.addEventListener("keydown",e=>e.key==="Enter"&&doLogin());
+        document.getElementById("email")?.addEventListener("keydown",e=>e.key==="Enter"&&document.getElementById("password")?.focus());
+    }
+
+    // Logout
+    document.getElementById("btn-logout")?.addEventListener("click",async()=>{
+        if(unsubCases){ unsubCases(); unsubCases=null; }
+        await signOut(auth);
+    });
+
+    // Refresh
+    document.getElementById("btn-refresh")?.addEventListener("click",()=>{
+        state.refreshing=true; render();
+        setTimeout(()=>{ state.refreshing=false; render(); },800);
+    });
+
+    // Theme switch: auto -> day/light -> night/dark
+    document.getElementById("btn-theme")?.addEventListener("click",cycleTheme);
+
+    document.getElementById("btn-toggle-hearing")?.addEventListener("click",()=>{
+        state.showAddHearing=!state.showAddHearing;
+        state.notice="";
+        render();
+    });
+    document.getElementById("btn-save-widget-hearing")?.addEventListener("click",addWidgetHearingFromForm);
+    document.querySelectorAll("[data-delete-widget-hearing]").forEach(btn=>{
+        btn.addEventListener("click",e=>{
+            e.stopPropagation();
+            deleteWidgetHearing(btn.getAttribute("data-delete-widget-hearing"));
         });
-    } else {
-        root.innerHTML = buildWidget();
-        document.getElementById("btn-logout")?.addEventListener("click", ()=>signOut(auth));
+    });
+    document.getElementById("reminder-time")?.addEventListener("change",e=>{
+        saveReminder({...state.reminder,time:e.target.value||"08:00"});
+    });
+    document.getElementById("btn-enable-reminder")?.addEventListener("click",async()=>{
+        const ok=await ensureNotificationPermission();
+        saveReminder({...state.reminder,enabled:ok});
+        state.notice=ok?"通知已啟用，會在設定時間提醒今天庭期":"通知尚未啟用";
+        render();
+    });
+    document.getElementById("btn-test-reminder")?.addEventListener("click",async()=>{
+        await ensureNotificationPermission();
+        notifyTodayHearings(true);
+    });
+    // Clock
+    if(clockTimer) clearInterval(clockTimer);
+    if(state.user){
+        clockTimer=setInterval(()=>{
+            const el=document.getElementById("clock");
+            if(el) el.textContent=nowStr();
+        },1000);
     }
 }
 
-function getHearings(){
-    const res = [];
-    state.cases.forEach(c => {
-        (c.hearings||[]).forEach(h => res.push({...h, clientName: c.clientName, firmCaseNo: c.firmCaseNo}));
-    });
-    return res;
+function showErr(el,msg){ if(el){ el.textContent="⚠️ "+msg; el.style.display="block"; }}
+function addWidgetHearingFromForm(){
+    const clientName=document.getElementById("wh-client")?.value.trim();
+    const date=document.getElementById("wh-date")?.value;
+    const time=document.getElementById("wh-time")?.value;
+    const agency=document.getElementById("wh-agency")?.value.trim();
+    const courtroom=document.getElementById("wh-room")?.value.trim();
+    const note=document.getElementById("wh-note")?.value.trim();
+    if(!date){ setNotice("請選擇日期"); return; }
+    const item={id:uid(),clientName:clientName||"臨時庭期",date,time:time||"",agency,courtroom,note,caseType:"臨時庭期",createdAt:new Date().toISOString()};
+    saveWidgetHearings([...(state.widgetHearings||[]),item]);
+    state.showAddHearing=false;
+    state.notice="✅ 庭期已新增";
+    render();
+}function deleteWidgetHearing(id){
+    saveWidgetHearings((state.widgetHearings||[]).filter(h=>h.id!==id));
+    state.notice="🗑 庭期已刪除";
+    render();
 }
-function daysUntil(d){
-    const t = new Date().toISOString().split("T")[0];
-    return Math.round((new Date(d)-new Date(t))/86400000);
-}
-function buildCard(h){
-    return `<div class="hearing-card today">
-        <div class="time-col"><div class="time-circle" style="background:var(--gold)22;color:var(--gold); border:1px solid var(--gold)55;">${h.time||"—"}</div></div>
-        <div class="info-col">
-            <div class="client-name">${h.clientName}</div>
-            <div class="case-no">${h.firmCaseNo}</div>
-            <div class="badge" style="background:var(--bg4);color:var(--text3); border:1px solid var(--border)">${h.agency||""}</div>
-        </div>
-    </div>`;
-}
-function buildLogin(){
-    return `<div class="login-wrap"><div class="login-box"><h2 style="text-align:center;color:var(--gold);margin-bottom:20px;">⚖️ 登入系統</h2><input id="email" class="fi" type="email" placeholder="Email"><input id="password" class="fi" type="password" placeholder="Password"><button id="btn-login" class="btn-gold">登入</button></div></div>`;
-}
+window.openCase=(id)=>{ window.location.href=`index.html`; };
 
 render();
 </script>

@@ -97,6 +97,18 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'N
 .btn-gold{background:linear-gradient(135deg,var(--gold),#a07840);color:#0a0a0a;border:none;border-radius:8px;padding:11px 20px;font-weight:700;font-size:14px;cursor:pointer;width:100%;font-family:inherit;}
 .err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
 
+.widget-tools{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;flex-direction:column;gap:10px;}
+.tool-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.form-row{display:grid;grid-template-columns:1fr 96px;gap:8px;}
+.form-row.three{grid-template-columns:1fr 1fr 1fr;}
+.fi-sm{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-size:13px;outline:none;font-family:inherit;min-width:0;}
+.fi-sm:focus{border-color:var(--gold);}
+.btn-small{background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-small.gold{background:linear-gradient(135deg,var(--gold),#a07840);border:none;color:#0a0a0a;}
+.btn-small.danger{color:var(--red);border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.08);}
+.notice{font-size:11px;color:var(--text3);line-height:1.5;}
+.delete-hearing{margin-top:8px;width:auto;padding:5px 9px;font-size:11px;}
+@media(max-width:480px){.form-row,.form-row.three{grid-template-columns:1fr;}}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
@@ -108,7 +120,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'N
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -152,7 +164,12 @@ function nowStr(){
 }
 
 // ── State ──
-let state = { user:null, authChecked:false, cases:[], refreshing:false };
+function readJSON(key,fallback){ try{ return JSON.parse(localStorage.getItem(key)||""); }catch(_){ return fallback; } }
+function loadWidgetHearings(){ return readJSON("widgetHearings",[]); }
+function loadReminder(){ return {...{enabled:false,time:"08:00"}, ...readJSON("widgetReminder",{})}; }
+function saveLocal(key,value){ try{ localStorage.setItem(key,JSON.stringify(value)); }catch(_){} }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+let state = { user:null, authChecked:false, cases:[], widgetHearings:loadWidgetHearings(), showAddHearing:false, reminder:loadReminder(), refreshing:false, notice:"" };
 
 // ── Theme ──
 function getAutoTheme(){ const h=new Date().getHours(); return (h>=6&&h<20)?"light":"dark"; }
@@ -182,7 +199,7 @@ setInterval(()=>{
     const after = document.documentElement.classList.contains("light") ? "light" : "dark";
     if(before!==after) render();
 }, 60000);
-let clockTimer=null, unsubCases=null;
+let clockTimer=null, unsubCases=null, unsubWidgetHearings=null, reminderTimer=null;
 
 function applyCalTodos(items){
     state.calTodos = Array.isArray(items) ? items : [];
@@ -219,12 +236,53 @@ function wakeSyncCalTodos(){
 // ── Render engine ──
 const root = document.getElementById("root");
 function render(){ applyTheme(themeMode); root.innerHTML = buildHTML(); bindEvents(); }
+function setNotice(msg){ state.notice=msg; render(); }
+function saveWidgetHearings(items){
+    state.widgetHearings = items.sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.time||"").localeCompare(b.time||""));
+    saveLocal("widgetHearings",state.widgetHearings);
+    if(state.user){
+        setDoc(doc(db,"widgetHearings","shared"),{items:state.widgetHearings,updatedAt:new Date().toISOString()}).catch(e=>console.warn("widgetHearings save failed",e));
+    }
+}
+function saveReminder(reminder){ state.reminder=reminder; saveLocal("widgetReminder",reminder); startReminderTimer(); render(); }
+function notificationAllowed(){ return "Notification" in window && Notification.permission==="granted"; }
+async function ensureNotificationPermission(){
+    if(!("Notification" in window)){ setNotice("This browser does not support notifications"); return false; }
+    if(Notification.permission==="granted") return true;
+    if(Notification.permission==="denied"){ setNotice("Notifications are blocked in browser settings"); return false; }
+    const permission = await Notification.requestPermission();
+    if(permission!=="granted"){ setNotice("Notification permission was not granted"); return false; }
+    return true;
+}function notifyTodayHearings(force=false){
+    const todays = getHearings().filter(h=>h.daysUntil===0);
+    if(!force){
+        if(!state.reminder.enabled) return;
+        if(nowHHMM() < state.reminder.time) return;
+        const sentKey = `widgetReminderSent_${today()}`;
+        if(localStorage.getItem(sentKey)==="1") return;
+        localStorage.setItem(sentKey,"1");
+    }
+    if(todays.length===0){ if(force) setNotice("No hearings today"); return; }
+    const body = todays.slice(0,5).map(h=>`${h.time||"TBD"} ${h.clientName||"Hearing"} ${[h.agency,h.courtroom].filter(Boolean).join(" ")}`).join("\n");
+    if(notificationAllowed()) new Notification(`Today hearings: ${todays.length}`,{body});
+    else setNotice(`Today hearings: ${todays.length} - ${todays.map(h=>`${h.time||"TBD"} ${h.clientName}`).join(", ")}`);
+}function startReminderTimer(){
+    if(reminderTimer) clearInterval(reminderTimer);
+    reminderTimer=setInterval(()=>notifyTodayHearings(false),60000);
+}
 
 // ── Auth ──
 onAuthStateChanged(auth, u=>{
     state.user=u;
     state.authChecked=true;
     if(u && !unsubCases){
+        unsubWidgetHearings = onSnapshot(doc(db,"widgetHearings","shared"), snap=>{
+            if(snap.exists()){
+                state.widgetHearings = snap.data().items||[];
+                saveLocal("widgetHearings",state.widgetHearings);
+                render();
+            }
+        },()=>{});
         unsubCases = onSnapshot(collection(db,"cases"), snap=>{
             state.cases = snap.docs.map(d=>({...d.data(),id:d.id}));
             // cache locally
@@ -239,7 +297,10 @@ onAuthStateChanged(auth, u=>{
             render();
         });
     }
+    if(!u && unsubWidgetHearings){ unsubWidgetHearings(); unsubWidgetHearings=null; }
     if(!u && unsubCases){ unsubCases(); unsubCases=null; }
+    startReminderTimer();
+    notifyTodayHearings(false);
     render();
 });
 
@@ -260,6 +321,22 @@ function getHearings(){
                 });
             }
         });
+    });
+    (state.widgetHearings||[]).forEach(h=>{
+        const d=daysUntil(h.date);
+        if(d>=0 && d<=DAYS_AHEAD){
+            result.push({
+                ...h,
+                source:"widget",
+                caseType:h.caseType||"代庭",
+                clientName:h.clientName||"代庭",
+                firmCaseNo:h.firmCaseNo||"WIDGET",
+                agency:h.agency||"",
+                courtroom:h.courtroom||"",
+                note:h.note||"",
+                daysUntil:d,
+            });
+        }
     });
     return result.sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
 }
@@ -341,6 +418,35 @@ function buildWidget(){
                 <div class="summary-num">${hearings.length}</div>
                 <div class="summary-lbl">合計場次</div>
             </div>
+        </div>
+
+                <div class="widget-tools">
+            <div class="tool-row">
+                <button class="btn-small gold" id="btn-toggle-hearing" type="button">+ Add hearing</button>
+                <label class="notice" style="display:flex;align-items:center;gap:6px">
+                    Reminder
+                    <input class="fi-sm" id="reminder-time" type="time" value="${esc(state.reminder.time||"08:00")}" style="width:110px">
+                </label>
+                <button class="btn-small" id="btn-enable-reminder" type="button">${state.reminder.enabled?"Notifications on":"Enable notifications"}</button>
+                <button class="btn-small" id="btn-test-reminder" type="button">Test</button>
+            </div>
+            ${state.notice?`<div class="notice">${esc(state.notice)}</div>`:""}
+            ${state.showAddHearing?`
+            <div id="hearing-form" style="display:flex;flex-direction:column;gap:8px">
+                <div class="form-row three">
+                    <input class="fi-sm" id="wh-client" placeholder="Case / client" autocomplete="off">
+                    <input class="fi-sm" id="wh-date" type="date" value="${today()}">
+                    <input class="fi-sm" id="wh-time" type="time">
+                </div>
+                <div class="form-row">
+                    <input class="fi-sm" id="wh-agency" placeholder="Court / agency" autocomplete="off">
+                    <input class="fi-sm" id="wh-room" placeholder="Room" autocomplete="off">
+                </div>
+                <div class="form-row">
+                    <input class="fi-sm" id="wh-note" placeholder="Note, e.g. coverage" autocomplete="off">
+                    <button class="btn-small gold" id="btn-save-widget-hearing" type="button">Save</button>
+                </div>
+            </div>`:""}
         </div>
 
         <!-- Today -->
@@ -431,9 +537,11 @@ function buildCard(h){
     }
 
     const caseNo=(h.courtCaseNos||[]).filter(Boolean)[0]||h.firmCaseNo||"";
+    const cardAction = h.caseId ? ` onclick="openCase('${h.caseId}')"` : "";
+    const deleteAction = h.source==="widget" ? `<button class="btn-small danger delete-hearing" data-delete-widget-hearing="${h.id}" type="button">Delete hearing</button>` : "";
 
     return `
-    <div class="${cardClass}" onclick="openCase('${h.caseId}')">
+    <div class="${cardClass}"${cardAction}>
         <div class="time-col">${timeCircle}</div>
         <div class="info-col">
             <div class="client-name">${esc(h.clientName)}</div>
@@ -445,6 +553,7 @@ function buildCard(h){
             ${h.agency||h.courtroom?`<div class="detail-row">🏛 ${esc([h.agency,h.courtroom].filter(Boolean).join(" · "))}</div>`:""}
             ${h.opposingParty?`<div class="detail-row">⚔ 對造：${esc(h.opposingParty)}</div>`:""}
             ${countdown}
+            ${deleteAction}
         </div>
     </div>`;
 }
@@ -493,6 +602,31 @@ function bindEvents(){
     // Theme switch: auto -> day/light -> night/dark
     document.getElementById("btn-theme")?.addEventListener("click",cycleTheme);
 
+    document.getElementById("btn-toggle-hearing")?.addEventListener("click",()=>{
+        state.showAddHearing=!state.showAddHearing;
+        state.notice="";
+        render();
+    });
+    document.getElementById("btn-save-widget-hearing")?.addEventListener("click",addWidgetHearingFromForm);
+    document.querySelectorAll("[data-delete-widget-hearing]").forEach(btn=>{
+        btn.addEventListener("click",e=>{
+            e.stopPropagation();
+            deleteWidgetHearing(btn.getAttribute("data-delete-widget-hearing"));
+        });
+    });
+    document.getElementById("reminder-time")?.addEventListener("change",e=>{
+        saveReminder({...state.reminder,time:e.target.value||"08:00"});
+    });
+    document.getElementById("btn-enable-reminder")?.addEventListener("click",async()=>{
+        const ok=await ensureNotificationPermission();
+        saveReminder({...state.reminder,enabled:ok});
+        state.notice=ok?"通知已啟用，會在設定時間提醒今天庭期":"通知尚未啟用";
+        render();
+    });
+    document.getElementById("btn-test-reminder")?.addEventListener("click",async()=>{
+        await ensureNotificationPermission();
+        notifyTodayHearings(true);
+    });
     // Clock
     if(clockTimer) clearInterval(clockTimer);
     if(state.user){
@@ -504,6 +638,24 @@ function bindEvents(){
 }
 
 function showErr(el,msg){ if(el){ el.textContent="⚠️ "+msg; el.style.display="block"; }}
+function addWidgetHearingFromForm(){
+    const clientName=document.getElementById("wh-client")?.value.trim();
+    const date=document.getElementById("wh-date")?.value;
+    const time=document.getElementById("wh-time")?.value;
+    const agency=document.getElementById("wh-agency")?.value.trim();
+    const courtroom=document.getElementById("wh-room")?.value.trim();
+    const note=document.getElementById("wh-note")?.value.trim();
+    if(!date){ setNotice("Please choose a date"); return; }
+    const item={id:uid(),clientName:clientName||"Coverage",date,time:time||"",agency,courtroom,note,caseType:"Coverage",createdAt:new Date().toISOString()};
+    saveWidgetHearings([...(state.widgetHearings||[]),item]);
+    state.showAddHearing=false;
+    state.notice="Hearing added";
+    render();
+}function deleteWidgetHearing(id){
+    saveWidgetHearings((state.widgetHearings||[]).filter(h=>h.id!==id));
+    state.notice="Hearing deleted";
+    render();
+}
 window.openCase=(id)=>{ window.location.href=`index.html`; };
 
 render();

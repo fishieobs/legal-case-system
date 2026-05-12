@@ -169,7 +169,7 @@ function loadWidgetHearings(){ return readJSON("widgetHearings",[]); }
 function loadReminder(){ return {...{enabled:false,time:"08:00"}, ...readJSON("widgetReminder",{})}; }
 function saveLocal(key,value){ try{ localStorage.setItem(key,JSON.stringify(value)); }catch(_){} }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
-let state = { user:null, authChecked:false, cases:[], widgetHearings:loadWidgetHearings(), showAddHearing:false, reminder:loadReminder(), refreshing:false, notice:"" };
+let state = { user:null, authChecked:false, cases:[], calTodos:[], widgetHearings:loadWidgetHearings(), showAddHearing:false, reminder:loadReminder(), refreshing:false, notice:"" };
 
 // ── Theme ──
 function getAutoTheme(){ const h=new Date().getHours(); return (h>=6&&h<20)?"light":"dark"; }
@@ -247,11 +247,11 @@ function saveWidgetHearings(items){
 function saveReminder(reminder){ state.reminder=reminder; saveLocal("widgetReminder",reminder); startReminderTimer(); render(); }
 function notificationAllowed(){ return "Notification" in window && Notification.permission==="granted"; }
 async function ensureNotificationPermission(){
-    if(!("Notification" in window)){ setNotice("This browser does not support notifications"); return false; }
+    if(!("Notification" in window)){ setNotice("此瀏覽器不支援通知功能"); return false; }
     if(Notification.permission==="granted") return true;
-    if(Notification.permission==="denied"){ setNotice("Notifications are blocked in browser settings"); return false; }
+    if(Notification.permission==="denied"){ setNotice("瀏覽器已封鎖通知，請至設定手動開啟"); return false; }
     const permission = await Notification.requestPermission();
-    if(permission!=="granted"){ setNotice("Notification permission was not granted"); return false; }
+    if(permission!=="granted"){ setNotice("通知授權未獲批准"); return false; }
     return true;
 }function notifyTodayHearings(force=false){
     const todays = getHearings().filter(h=>h.daysUntil===0);
@@ -262,10 +262,10 @@ async function ensureNotificationPermission(){
         if(localStorage.getItem(sentKey)==="1") return;
         localStorage.setItem(sentKey,"1");
     }
-    if(todays.length===0){ if(force) setNotice("No hearings today"); return; }
-    const body = todays.slice(0,5).map(h=>`${h.time||"TBD"} ${h.clientName||"Hearing"} ${[h.agency,h.courtroom].filter(Boolean).join(" ")}`).join("\n");
-    if(notificationAllowed()) new Notification(`Today hearings: ${todays.length}`,{body});
-    else setNotice(`Today hearings: ${todays.length} - ${todays.map(h=>`${h.time||"TBD"} ${h.clientName}`).join(", ")}`);
+    if(todays.length===0){ if(force) setNotice("今日無庭期"); return; }
+    const body = todays.slice(0,5).map(h=>`${h.time||"待定"} ${h.clientName||"Hearing"} ${[h.agency,h.courtroom].filter(Boolean).join(" ")}`).join("\n");
+    if(notificationAllowed()) new Notification(`今日開庭：${todays.length}場`,{body});
+    else setNotice(`今日開庭：${todays.length}場 - ${todays.map(h=>`${h.time||"待定"} ${h.clientName}`).join("、")}`);
 }function startReminderTimer(){
     if(reminderTimer) clearInterval(reminderTimer);
     reminderTimer=setInterval(()=>notifyTodayHearings(false),60000);
@@ -358,7 +358,7 @@ function buildLogin(){
         <div class="login-box">
             <div style="font-size:42px;text-align:center;margin-bottom:8px;filter:drop-shadow(0 0 14px #c8a96e55)">⚖</div>
             <div style="font-size:1.2rem;font-weight:700;color:var(--gold);text-align:center;margin-bottom:4px">今日庭期</div>
-            <div style="font-size:11px;color:var(--text4);text-align:center;letter-spacing:.06em;margin-bottom:28px">HEARING WIDGET</div>
+            <div style="font-size:11px;color:var(--text4);text-align:center;letter-spacing:.06em;margin-bottom:28px">庭期提醒小工具</div>
             <div id="login-err" style="display:none" class="err"></div>
             <div style="margin-bottom:12px">
                 <label style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">帳號</label>
@@ -421,30 +421,33 @@ function buildWidget(){
         </div>
 
                 <div class="widget-tools">
-            <div class="tool-row">
-                <button class="btn-small gold" id="btn-toggle-hearing" type="button">+ Add hearing</button>
-                <label class="notice" style="display:flex;align-items:center;gap:6px">
-                    Reminder
-                    <input class="fi-sm" id="reminder-time" type="time" value="${esc(state.reminder.time||"08:00")}" style="width:110px">
-                </label>
-                <button class="btn-small" id="btn-enable-reminder" type="button">${state.reminder.enabled?"Notifications on":"Enable notifications"}</button>
-                <button class="btn-small" id="btn-test-reminder" type="button">Test</button>
+            <div class="tool-row" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+                <button class="btn-small gold" id="btn-toggle-hearing" type="button">${state.showAddHearing?"✕ 取消":"＋ 新增臨時庭期"}</button>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <span style="font-size:11px;color:var(--text3)">提醒時間</span>
+                        <input class="fi-sm" id="reminder-time" type="time" value="${esc(state.reminder.time||"08:00")}" style="width:100px">
+                    </div>
+                    <button class="btn-small" id="btn-enable-reminder" type="button">${state.reminder.enabled?"🔔 通知已啟用":"🔔 啟用通知"}</button>
+                    <button class="btn-small" id="btn-test-reminder" type="button" title="測試今日庭期通知">測試</button>
+                </div>
             </div>
-            ${state.notice?`<div class="notice">${esc(state.notice)}</div>`:""}
+            ${state.notice?`<div class="notice" style="padding:7px 12px;background:var(--bg4);border-radius:7px;color:var(--text2);font-size:12px">${esc(state.notice)}</div>`:""}
             ${state.showAddHearing?`
-            <div id="hearing-form" style="display:flex;flex-direction:column;gap:8px">
+            <div id="hearing-form" style="display:flex;flex-direction:column;gap:10px;padding-top:10px;border-top:1px solid var(--border)">
+                <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase">新增臨時庭期</div>
                 <div class="form-row three">
-                    <input class="fi-sm" id="wh-client" placeholder="Case / client" autocomplete="off">
+                    <input class="fi-sm" id="wh-client" placeholder="案件 / 當事人姓名" autocomplete="off">
                     <input class="fi-sm" id="wh-date" type="date" value="${today()}">
                     <input class="fi-sm" id="wh-time" type="time">
                 </div>
                 <div class="form-row">
-                    <input class="fi-sm" id="wh-agency" placeholder="Court / agency" autocomplete="off">
-                    <input class="fi-sm" id="wh-room" placeholder="Room" autocomplete="off">
+                    <input class="fi-sm" id="wh-agency" placeholder="法院 / 機關名稱" autocomplete="off">
+                    <input class="fi-sm" id="wh-room" placeholder="法庭（如第5庭）" autocomplete="off">
                 </div>
                 <div class="form-row">
-                    <input class="fi-sm" id="wh-note" placeholder="Note, e.g. coverage" autocomplete="off">
-                    <button class="btn-small gold" id="btn-save-widget-hearing" type="button">Save</button>
+                    <input class="fi-sm" id="wh-note" placeholder="庭期備註（如準備程序、審理庭）" autocomplete="off">
+                    <button class="btn-small gold" id="btn-save-widget-hearing" type="button">💾 儲存</button>
                 </div>
             </div>`:""}
         </div>
@@ -479,7 +482,9 @@ function buildWidget(){
 
         <!-- Calendar Todos section -->
         ${(()=>{
-            const upcoming7=[];
+            const upcoming7=(state.calTodos||[]).filter(t=>{
+                const d=daysUntil(t.date); return d>=0&&d<=7;
+            }).sort((a,b)=>a.date.localeCompare(b.date));
             if(upcoming7.length===0) return "";
             // Group by date
             const byDate={};
@@ -538,7 +543,7 @@ function buildCard(h){
 
     const caseNo=(h.courtCaseNos||[]).filter(Boolean)[0]||h.firmCaseNo||"";
     const cardAction = h.caseId ? ` onclick="openCase('${h.caseId}')"` : "";
-    const deleteAction = h.source==="widget" ? `<button class="btn-small danger delete-hearing" data-delete-widget-hearing="${h.id}" type="button">Delete hearing</button>` : "";
+    const deleteAction = h.source==="widget" ? `<button class="btn-small danger delete-hearing" data-delete-widget-hearing="${h.id}" type="button">🗑 刪除</button>` : "";
 
     return `
     <div class="${cardClass}"${cardAction}>
@@ -645,15 +650,15 @@ function addWidgetHearingFromForm(){
     const agency=document.getElementById("wh-agency")?.value.trim();
     const courtroom=document.getElementById("wh-room")?.value.trim();
     const note=document.getElementById("wh-note")?.value.trim();
-    if(!date){ setNotice("Please choose a date"); return; }
-    const item={id:uid(),clientName:clientName||"Coverage",date,time:time||"",agency,courtroom,note,caseType:"Coverage",createdAt:new Date().toISOString()};
+    if(!date){ setNotice("請選擇日期"); return; }
+    const item={id:uid(),clientName:clientName||"臨時庭期",date,time:time||"",agency,courtroom,note,caseType:"臨時庭期",createdAt:new Date().toISOString()};
     saveWidgetHearings([...(state.widgetHearings||[]),item]);
     state.showAddHearing=false;
-    state.notice="Hearing added";
+    state.notice="✅ 庭期已新增";
     render();
 }function deleteWidgetHearing(id){
     saveWidgetHearings((state.widgetHearings||[]).filter(h=>h.id!==id));
-    state.notice="Hearing deleted";
+    state.notice="🗑 庭期已刪除";
     render();
 }
 window.openCase=(id)=>{ window.location.href=`index.html`; };

@@ -241,7 +241,14 @@ function saveWidgetHearings(items){
     state.widgetHearings = items.sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.time||"").localeCompare(b.time||""));
     saveLocal("widgetHearings",state.widgetHearings);
     if(state.user){
-        setDoc(doc(db,"widgetHearings","shared"),{items:state.widgetHearings,updatedAt:new Date().toISOString()}).catch(e=>console.warn("widgetHearings save failed",e));
+        setDoc(doc(db,"widgetHearings","shared"),{items:state.widgetHearings,updatedAt:new Date().toISOString()})
+            .catch(e=>{
+                console.warn("widgetHearings 儲存失敗：",e.code);
+                if(e.code==="permission-denied"){
+                    state.notice="⚠️ 跨裝置同步失敗：請至 Firebase 更新 Firestore 規則（詳見說明）";
+                    render();
+                }
+            });
     }
 }
 function saveReminder(reminder){ state.reminder=reminder; saveLocal("widgetReminder",reminder); startReminderTimer(); render(); }
@@ -276,13 +283,38 @@ onAuthStateChanged(auth, u=>{
     state.user=u;
     state.authChecked=true;
     if(u && !unsubCases){
-        unsubWidgetHearings = onSnapshot(doc(db,"widgetHearings","shared"), snap=>{
-            if(snap.exists()){
-                state.widgetHearings = snap.data().items||[];
-                saveLocal("widgetHearings",state.widgetHearings);
+        // ── widgetHearings 即時同步 ──
+        unsubWidgetHearings = onSnapshot(
+            doc(db,"widgetHearings","shared"),
+            snap=>{
+                if(snap.exists()){
+                    state.widgetHearings = snap.data().items||[];
+                    saveLocal("widgetHearings",state.widgetHearings);
+                    render();
+                }
+            },
+            err=>{
+                console.warn("widgetHearings 同步失敗：",err.code, "— 請確認 Firestore 規則已加入 widgetHearings");
+                // fallback to localStorage
+                try{ state.widgetHearings=JSON.parse(localStorage.getItem("widgetHearings")||"[]"); }catch(_){}
                 render();
             }
-        },()=>{});
+        );
+        // ── calTodos 即時同步 ──
+        onSnapshot(
+            doc(db,"calTodos","shared"),
+            snap=>{
+                state.calTodos = snap.exists() ? (snap.data().items||[]) : [];
+                try{ localStorage.setItem("calTodos",JSON.stringify(state.calTodos)); }catch(_){}
+                render();
+            },
+            err=>{
+                console.warn("calTodos 同步失敗：",err.code);
+                try{ state.calTodos=JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(_){}
+                render();
+            }
+        );
+        // ── cases 即時同步 ──
         unsubCases = onSnapshot(collection(db,"cases"), snap=>{
             state.cases = snap.docs.map(d=>({...d.data(),id:d.id}));
             // cache locally

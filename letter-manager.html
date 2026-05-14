@@ -7,6 +7,96 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="函件管理">
+  <link id="pwa-icon-180" rel="apple-touch-icon" sizes="180x180">
+  <link id="pwa-icon-192" rel="icon" type="image/png" sizes="192x192">
+  <script>
+    // 產生函件管理系統專屬 icon（深酒紅底 + 金色信封印章）
+    function generateLetterIcon(size) {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      const s = size / 192;
+
+      // 背景漸層：深酒紅
+      const bg = ctx.createLinearGradient(0, 0, size, size);
+      bg.addColorStop(0, '#5c1a2a');
+      bg.addColorStop(1, '#8b2335');
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, 38 * s);
+      ctx.fill();
+
+      // 外框光暈
+      ctx.strokeStyle = 'rgba(212,170,90,0.35)';
+      ctx.lineWidth = 4 * s;
+      ctx.beginPath();
+      ctx.roundRect(6*s, 6*s, size-12*s, size-12*s, 32*s);
+      ctx.stroke();
+
+      // 信封主體
+      const ex = 32*s, ey = 56*s, ew = 128*s, eh = 88*s, er = 8*s;
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.beginPath();
+      ctx.roundRect(ex, ey, ew, eh, er);
+      ctx.fill();
+
+      // 信封封口（V形）
+      ctx.strokeStyle = 'rgba(140,60,80,0.55)';
+      ctx.lineWidth = 2.5 * s;
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex + ew/2, ey + eh*0.46);
+      ctx.lineTo(ex + ew, ey);
+      ctx.stroke();
+
+      // 信封底部折線
+      ctx.beginPath();
+      ctx.moveTo(ex, ey + eh);
+      ctx.lineTo(ex + ew*0.38, ey + eh*0.56);
+      ctx.moveTo(ex + ew, ey + eh);
+      ctx.lineTo(ex + ew*0.62, ey + eh*0.56);
+      ctx.stroke();
+
+      // 金色印章圓形
+      const cx2 = size/2, cy2 = ey + eh*0.5;
+      const r = 18*s;
+      const sg = ctx.createRadialGradient(cx2-3*s, cy2-3*s, 1, cx2, cy2, r);
+      sg.addColorStop(0, '#f5d06a');
+      sg.addColorStop(1, '#c8910a');
+      ctx.fillStyle = sg;
+      ctx.beginPath();
+      ctx.arc(cx2, cy2, r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 1.5*s;
+      ctx.stroke();
+
+      // 印章「函」字
+      ctx.fillStyle = '#5c1a2a';
+      ctx.font = `bold ${22*s}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('函', cx2, cy2 + 1*s);
+
+      // 底部文字
+      ctx.fillStyle = 'rgba(255,220,150,0.85)';
+      ctx.font = `bold ${14*s}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.letterSpacing = '2px';
+      ctx.fillText('函件管理', size/2, size - 26*s);
+
+      return c.toDataURL('image/png');
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        const d192 = generateLetterIcon(192);
+        const d180 = generateLetterIcon(180);
+        document.getElementById('pwa-icon-192').href = d192;
+        document.getElementById('pwa-icon-180').href = d180;
+      } catch(e) { console.warn('Icon generation failed:', e); }
+    });
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 
@@ -623,7 +713,83 @@
     }
     .btn-del:hover { background: var(--red); color: white; }
 
-    /* ── Misc ── */
+    /* ── Year/Month Stats Panel ── */
+    .period-panel {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border-light);
+      padding: 16px 24px;
+    }
+    .period-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .period-title {
+      font-family: 'Noto Serif TC', serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: 1px;
+    }
+    .period-selectors { display: flex; gap: 8px; align-items: center; }
+    .period-select {
+      padding: 5px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 12px;
+      color: var(--text);
+      background: var(--surface-2);
+      cursor: pointer;
+    }
+    .period-select:focus { outline: none; border-color: var(--navy); }
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+    .month-cell {
+      background: var(--surface-2);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 8px 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .month-cell:hover    { border-color: var(--navy); background: var(--navy-pale); }
+    .month-cell.active   { background: var(--navy); border-color: var(--navy); }
+    .month-cell.active .mc-month { color: rgba(255,255,255,0.75); }
+    .month-cell.active .mc-count { color: white; }
+    .month-cell.active .mc-amt   { color: rgba(255,255,255,0.9); }
+    .month-cell.empty    { opacity: 0.45; cursor: default; }
+    .mc-month { font-size: 10px; color: var(--text-muted); margin-bottom: 3px; }
+    .mc-count { font-size: 15px; font-weight: 700; color: var(--navy); line-height: 1.2; }
+    .mc-amt   { font-size: 10px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .year-summary {
+      display: flex; gap: 16px; margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .ys-item { display: flex; align-items: center; gap: 6px; }
+    .ys-label { font-size: 11px; color: var(--text-muted); }
+    .ys-value { font-size: 13px; font-weight: 700; }
+    .ys-navy  { color: var(--navy); }
+    .ys-green { color: var(--green); }
+    .ys-red   { color: var(--red); }
+
+    @media (max-width: 640px) {
+      .month-grid { grid-template-columns: repeat(4, 1fr); }
+      .period-panel { padding: 14px 16px; }
+    }
+    @media (max-width: 400px) {
+      .month-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* ── Year/Month Stats Panel ── */
     .empty-state { text-align: center; padding: 64px 20px; color: var(--text-muted); }
     .empty-icon  { font-size: 40px; margin-bottom: 12px; }
     .empty-text  { font-size: 14px; }
@@ -1193,15 +1359,92 @@ function DetailModal({ rec, onClose, onEdit }) {
   );
 }
 
+// ─── Period Stats Panel ───────────────────────────────────────────────────────
+function PeriodPanel({ records, fYear, setFYear, fMonth, setFMonth }) {
+  // Derive available years from commissionDate
+  const years = [...new Set(
+    records.map(r => r.commissionDate ? r.commissionDate.slice(0,4) : null).filter(Boolean)
+  )].sort((a,b) => b-a);
+
+  const curYear = fYear || (years[0] || String(new Date().getFullYear()));
+
+  // Year-level stats
+  const yearRecs = records.filter(r => r.commissionDate?.startsWith(curYear));
+  const yTotal   = yearRecs.reduce((s,r) => s + Number(r.totalFee    || 0), 0);
+  const yRecv    = yearRecs.reduce((s,r) => s + Number(r.receivedFee || 0), 0);
+  const yOut     = yTotal - yRecv;
+
+  // Build 12-month grid
+  const months = Array.from({length:12}, (_,i) => {
+    const m   = String(i+1).padStart(2,'0');
+    const key = `${curYear}-${m}`;
+    const recs = records.filter(r => r.commissionDate?.startsWith(key));
+    return { m, label:`${i+1}月`, count: recs.length,
+      total: recs.reduce((s,r) => s + Number(r.totalFee    || 0), 0),
+      recv:  recs.reduce((s,r) => s + Number(r.receivedFee || 0), 0),
+    };
+  });
+
+  const fmtShort = n => n >= 10000 ? `${(n/10000).toFixed(1)}萬` : n > 0 ? `$${n.toLocaleString()}` : '—';
+
+  return (
+    <div className="period-panel">
+      <div className="period-panel-header">
+        <div>
+          <div className="period-title">年度 · 月份統計</div>
+        </div>
+        <div className="period-selectors">
+          <select className="period-select" value={curYear}
+            onChange={e => { setFYear(e.target.value); setFMonth(''); }}>
+            {years.map(y => <option key={y}>{y}</option>)}
+            {!years.includes(String(new Date().getFullYear())) &&
+              <option>{new Date().getFullYear()}</option>}
+          </select>
+          {fMonth && (
+            <button className="btn-icon" style={{fontSize:11}} onClick={() => setFMonth('')}>
+              清除月份
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Year summary row */}
+      <div className="year-summary">
+        <div className="ys-item"><span className="ys-label">件數</span><span className="ys-value ys-navy">{yearRecs.length} 件</span></div>
+        <div className="ys-item"><span className="ys-label">費用總額</span><span className="ys-value ys-navy">{fmtNTD(yTotal)}</span></div>
+        <div className="ys-item"><span className="ys-label">已收</span><span className="ys-value ys-green">{fmtNTD(yRecv)}</span></div>
+        <div className="ys-item"><span className="ys-label">未收</span><span className="ys-value ys-red">{fmtNTD(yOut)}</span></div>
+      </div>
+
+      {/* Month grid */}
+      <div className="month-grid">
+        {months.map(mo => (
+          <div key={mo.m}
+            className={`month-cell ${mo.count === 0 ? 'empty' : ''} ${fMonth === mo.m ? 'active' : ''}`}
+            onClick={() => mo.count > 0 && setFMonth(fMonth === mo.m ? '' : mo.m)}
+            title={mo.count > 0 ? `${mo.label}：${mo.count} 件 / 已收 ${fmtNTD(mo.recv)}` : ''}
+          >
+            <div className="mc-month">{mo.label}</div>
+            <div className="mc-count">{mo.count > 0 ? mo.count : '—'}</div>
+            <div className="mc-amt">{fmtShort(mo.total)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Records Tab ──────────────────────────────────────────────────────────────
 function RecordsTab() {
-  const [records, setRecords]     = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState('');
-  const [fType,  setFType]        = useState('全部');
-  const [fStatus, setFStatus]     = useState('全部');
-  const [modal, setModal]         = useState(null); // 'add' | 'edit' | 'view'
-  const [sel,   setSel]           = useState(null);
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search,  setSearch]  = useState('');
+  const [fType,   setFType]   = useState('全部');
+  const [fStatus, setFStatus] = useState('全部');
+  const [fYear,   setFYear]   = useState('');
+  const [fMonth,  setFMonth]  = useState('');
+  const [modal,   setModal]   = useState(null);
+  const [sel,     setSel]     = useState(null);
 
   useEffect(() => {
     return db.collection('letters')
@@ -1212,7 +1455,19 @@ function RecordsTab() {
       }, err => { console.error(err); setLoading(false); });
   }, []);
 
+  // Auto-select latest year once records load
+  useEffect(() => {
+    if (!fYear && records.length > 0) {
+      const years = [...new Set(records.map(r => r.commissionDate?.slice(0,4)).filter(Boolean))].sort((a,b)=>b-a);
+      if (years[0]) setFYear(years[0]);
+    }
+  }, [records]);
+
+  const curYear = fYear || String(new Date().getFullYear());
+
   const shown = records.filter(r => {
+    if (r.commissionDate?.slice(0,4) !== curYear) return false;
+    if (fMonth  && !r.commissionDate?.startsWith(`${curYear}-${fMonth}`)) return false;
     if (fType   !== '全部' && r.type   !== fType)   return false;
     if (fStatus !== '全部' && r.status !== fStatus) return false;
     if (search) {
@@ -1226,19 +1481,26 @@ function RecordsTab() {
 
   const handleDelete = async rec => {
     if (!confirm(`確定刪除「${rec.clientName}」的函件記錄？`)) return;
-    try {
-      await db.collection('letters').doc(rec.id).delete();
-      // Note: Storage file not auto-deleted to preserve accidental deletion recovery
-    } catch(e) { alert('刪除失敗：' + e.message); }
+    try { await db.collection('letters').doc(rec.id).delete(); }
+    catch(e) { alert('刪除失敗：' + e.message); }
   };
 
   const open  = (mode, rec = null) => { setSel(rec); setModal(mode); };
   const close = () => { setSel(null); setModal(null); };
 
+  const activeLabel = fMonth ? `${curYear} 年 ${parseInt(fMonth)} 月` : `${curYear} 年`;
+
   return (
     <>
       <StatsBar records={records} />
+      <PeriodPanel records={records}
+        fYear={curYear} setFYear={y => { setFYear(y); setFMonth(''); }}
+        fMonth={fMonth} setFMonth={setFMonth}
+      />
       <div className="toolbar">
+        <span style={{fontSize:12, color:'var(--text-muted)', whiteSpace:'nowrap'}}>
+          {activeLabel} · {shown.length} 件
+        </span>
         <input className="search-input" placeholder="搜尋委託人、事由、受信人..." value={search} onChange={e => setSearch(e.target.value)} />
         <select className="filter-select" value={fType} onChange={e => setFType(e.target.value)}>
           <option>全部</option>
@@ -1257,9 +1519,9 @@ function RecordsTab() {
           <div className="empty-state">
             <div className="empty-icon">📭</div>
             <div className="empty-text">
-              {(search || fType !== '全部' || fStatus !== '全部')
-                ? '找不到符合條件的記錄'
-                : '尚無函件記錄，點擊「新增函件」開始建立'}
+              {(search || fType !== '全部' || fStatus !== '全部' || fMonth)
+                ? `${activeLabel} 找不到符合條件的記錄`
+                : `${activeLabel} 尚無函件記錄`}
             </div>
           </div>
         ) : (
@@ -1275,7 +1537,7 @@ function RecordsTab() {
         )}
       </div>
 
-      {modal === 'add' && <RecordModal init={emptyRecord()} onClose={close} onSaved={() => {}} />}
+      {modal === 'add'  && <RecordModal init={emptyRecord()} onClose={close} onSaved={() => {}} />}
       {modal === 'edit' && sel && <RecordModal init={sel} onClose={close} onSaved={() => {}} />}
       {modal === 'view' && sel && (
         <DetailModal rec={sel} onClose={close} onEdit={r => { close(); setTimeout(() => open('edit', r), 50); }} />

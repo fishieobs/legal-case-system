@@ -14,7 +14,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <!-- Google Identity Services (Drive OAuth) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <!-- React + Babel -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -677,9 +678,82 @@ const firebaseConfig = {
   measurementId:     "G-N6VEE6ZCHF"
 };
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const auth    = firebase.auth();
-const db      = firebase.firestore();
-const storage = firebase.storage();
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ─── Google Drive Config ──────────────────────────────────────────────────────
+// 請填入：Google Cloud Console → 憑證 → OAuth 2.0 用戶端 ID
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID';
+// 請填入：目標 Google Drive 資料夾 ID（資料夾網址最後一段）
+const DRIVE_FOLDER_ID  = 'YOUR_DRIVE_FOLDER_ID';
+
+// ─── Drive OAuth Token Management ────────────────────────────────────────────
+let _driveToken  = '';
+let _tokenClient = null;
+
+const getDriveToken = () => new Promise((resolve, reject) => {
+  if (_driveToken) { resolve(_driveToken); return; }
+  const init = () => {
+    if (!window.google?.accounts?.oauth2) {
+      reject(new Error('Google Identity Services 尚未載入，請稍後再試'));
+      return;
+    }
+    if (!_tokenClient) {
+      _tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: () => {},
+      });
+    }
+    _tokenClient.callback = resp => {
+      if (resp.error) { reject(new Error(`Google 授權失敗：${resp.error}`)); return; }
+      _driveToken = resp.access_token;
+      // Token 約 1 小時後過期，提前清除
+      setTimeout(() => { _driveToken = ''; }, 55 * 60 * 1000);
+      resolve(_driveToken);
+    };
+    _tokenClient.requestAccessToken({ prompt: '' });
+  };
+  if (window.google?.accounts?.oauth2) init();
+  else { setTimeout(init, 1500); }
+});
+
+const clearDriveToken = () => { _driveToken = ''; };
+
+// ─── Drive API Helpers ────────────────────────────────────────────────────────
+const driveUpload = async (file, token) => {
+  const meta = { name: file.name, ...(DRIVE_FOLDER_ID !== 'YOUR_DRIVE_FOLDER_ID' && { parents: [DRIVE_FOLDER_ID] }) };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+  form.append('file', file);
+
+  const res = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+    { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form }
+  );
+  if (res.status === 401) { clearDriveToken(); throw Object.assign(new Error('Token 過期'), { code: 401 }); }
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error?.message || `Drive 上傳失敗 (${res.status})`);
+  }
+  const data = await res.json();
+
+  // 設定「任何人可檢視」，才能用連結開啟
+  await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: 'reader', type: 'anyone' })
+  });
+
+  return { driveFileId: data.id, fileUrl: data.webViewLink, fileName: file.name };
+};
+
+const driveDelete = async (fileId, token) => {
+  if (!fileId || !token) return;
+  await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+    method: 'DELETE', headers: { Authorization: `Bearer ${token}` }
+  });
+};
 
 // ─── Constants / Helpers ──────────────────────────────────────────────────────
 const TYPES   = ['存證信函', '律師函'];
@@ -836,46 +910,69 @@ function RecordCard({ rec, onView, onEdit, onDelete }) {
 // ─── Record Modal (Add / Edit) ────────────────────────────────────────────────
 function RecordModal({ init, onClose, onSaved }) {
   const isEdit = !!init.id;
-  const [form, setForm]       = useState({ ...emptyRecord(), ...init });
-  const [file, setFile]       = useState(null);
-  const [progress, setProgress] = useState(0);
-  const [busy, setBusy]       = useState(false);
+  const [form, setForm]     = useState({ ...emptyRecord(), ...init });
+  const [file, setFile]     = useState(null);
+  const [busy, setBusy]     = useState(false);
+  const [errMsg, setErrMsg] = useState('');
+  const [statusMsg, setStatusMsg] = useState('');
   const fileRef = useRef();
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const outstanding = Number(form.totalFee || 0) - Number(form.receivedFee || 0);
 
   const handleSave = async () => {
-    if (!form.clientName.trim())   { alert('請填寫委託人姓名'); return; }
-    if (!form.commissionDate)      { alert('請填寫委託日期'); return; }
-    setBusy(true);
+    if (!form.clientName.trim()) { setErrMsg('請填寫委託人姓名'); return; }
+    if (!form.commissionDate)    { setErrMsg('請填寫委託日期'); return; }
+    setBusy(true); setErrMsg('');
+
     try {
-      let fileUrl  = form.fileUrl;
-      let fileName = form.fileName;
+      let fileUrl      = form.fileUrl;
+      let fileName     = form.fileName;
+      let driveFileId  = form.driveFileId || '';
 
       if (file) {
-        // Use a pre-generated ID as storage folder name
-        const folderId = init.id || db.collection('letters').doc().id;
-        const ref  = storage.ref(`letters/${folderId}/${file.name}`);
-        const task = ref.put(file);
-        await new Promise((res, rej) => {
-          task.on('state_changed',
-            s  => setProgress(Math.round(s.bytesTransferred / s.totalBytes * 100)),
-            rej,
-            async () => {
-              fileUrl  = await task.snapshot.ref.getDownloadURL();
-              fileName = file.name;
-              res();
+        setStatusMsg('正在授權 Google Drive...');
+        let token;
+        try {
+          token = await getDriveToken();
+        } catch(e) {
+          setErrMsg('Google Drive 授權失敗：' + e.message);
+          setBusy(false); setStatusMsg(''); return;
+        }
+        setStatusMsg('上傳檔案至 Google Drive...');
+        try {
+          const result = await driveUpload(file, token);
+          fileUrl     = result.fileUrl;
+          fileName    = result.fileName;
+          driveFileId = result.driveFileId;
+        } catch(e) {
+          if (e.code === 401) {
+            // Token 過期，重新授權一次
+            setStatusMsg('重新授權中...');
+            try {
+              clearDriveToken();
+              token = await getDriveToken();
+              const result = await driveUpload(file, token);
+              fileUrl     = result.fileUrl;
+              fileName    = result.fileName;
+              driveFileId = result.driveFileId;
+            } catch(e2) {
+              setErrMsg('上傳失敗：' + e2.message);
+              setBusy(false); setStatusMsg(''); return;
             }
-          );
-        });
+          } else {
+            setErrMsg('上傳失敗：' + e.message);
+            setBusy(false); setStatusMsg(''); return;
+          }
+        }
       }
 
+      setStatusMsg('儲存記錄中...');
       const data = {
         ...form,
         totalFee:    Number(form.totalFee    || 0),
         receivedFee: Number(form.receivedFee || 0),
-        fileUrl, fileName,
+        fileUrl, fileName, driveFileId,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
 
@@ -888,8 +985,10 @@ function RecordModal({ init, onClose, onSaved }) {
       onSaved();
       onClose();
     } catch(e) {
-      alert('儲存失敗：' + e.message);
+      setErrMsg('儲存失敗：' + e.message);
       setBusy(false);
+    } finally {
+      setStatusMsg('');
     }
   };
 
@@ -977,26 +1076,28 @@ function RecordModal({ init, onClose, onSaved }) {
 
           {/* 函件附件 */}
           <div className="form-section">
-            <div className="form-section-title">函件附件</div>
+            <div className="form-section-title">函件附件（上傳至 Google Drive）</div>
+            {errMsg && (
+              <div style={{background:'var(--red-light)',color:'var(--red)',border:'1px solid #f0c0c8',borderRadius:'var(--radius)',padding:'10px 12px',fontSize:12,marginBottom:10}}>{errMsg}</div>
+            )}
             <div
-              className={`upload-zone ${file ? 'filled' : ''} ${busy && progress > 0 && progress < 100 ? 'busy' : ''}`}
+              className={`upload-zone ${file ? 'filled' : ''} ${busy ? 'busy' : ''}`}
               onClick={() => !busy && fileRef.current?.click()}
             >
               <input ref={fileRef} type="file" style={{display:'none'}} accept=".pdf,.doc,.docx"
-                onChange={e => e.target.files[0] && setFile(e.target.files[0])} />
+                onChange={e => { if (e.target.files[0]) { setFile(e.target.files[0]); setErrMsg(''); } }} />
               <div className="upload-icon">{file ? '✅' : form.fileName ? '📎' : '📄'}</div>
               <div className="upload-text">
-                {file
-                  ? <><strong>{file.name}</strong><br/><span style={{fontSize:11}}>點擊可重新選擇</span></>
-                  : form.fileName
-                    ? <><strong>{form.fileName}</strong><br/><span style={{fontSize:11}}>點擊可重新上傳</span></>
-                    : <><strong>點擊選擇函件檔案</strong><br/><span>PDF、Word 皆可</span></>
+                {busy && statusMsg
+                  ? <><span className="spinner dark" style={{width:14,height:14,marginRight:6}} /><strong>{statusMsg}</strong></>
+                  : file
+                    ? <><strong>{file.name}</strong><br/><span style={{fontSize:11}}>點擊可重新選擇</span></>
+                    : form.fileName
+                      ? <><strong>{form.fileName}</strong><br/><span style={{fontSize:11}}>點擊可重新上傳</span></>
+                      : <><strong>點擊選擇函件檔案</strong><br/><span>PDF、Word 皆可，將上傳至 Google Drive</span></>
                 }
               </div>
               <div className="upload-hint">支援 .pdf · .doc · .docx</div>
-              {busy && progress > 0 && progress < 100 && (
-                <div className="progress-bar"><div className="progress-fill" style={{width:`${progress}%`}} /></div>
-              )}
             </div>
           </div>
 
@@ -1008,9 +1109,9 @@ function RecordModal({ init, onClose, onSaved }) {
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn-cancel" onClick={onClose}>取消</button>
+          <button className="btn-cancel" onClick={onClose} disabled={busy}>取消</button>
           <button className="btn-save" onClick={handleSave} disabled={busy}>
-            {busy ? <><span className="spinner" /> {progress > 0 && progress < 100 ? `上傳中 ${progress}%` : '儲存中...'}</> : (isEdit ? '儲存變更' : '新增記錄')}
+            {busy ? <><span className="spinner" /> {statusMsg || '處理中...'}</> : (isEdit ? '儲存變更' : '新增記錄')}
           </button>
         </div>
       </div>
@@ -1185,70 +1286,101 @@ function RecordsTab() {
 
 // ─── Template Upload Modal ────────────────────────────────────────────────────
 function TemplateUploadModal({ onClose }) {
-  const [name,  setName]  = useState('');
-  const [type,  setType]  = useState('存證信函');
-  const [notes, setNotes] = useState('');
-  const [file,  setFile]  = useState(null);
-  const [progress, setProgress] = useState(0);
-  const [busy,  setBusy]  = useState(false);
+  const [name,      setName]      = useState('');
+  const [type,      setType]      = useState('存證信函');
+  const [notes,     setNotes]     = useState('');
+  const [file,      setFile]      = useState(null);
+  const [busy,      setBusy]      = useState(false);
+  const [errMsg,    setErrMsg]    = useState('');
+  const [statusMsg, setStatusMsg] = useState('');
   const fileRef = useRef();
 
   const handleSave = async () => {
-    if (!name.trim()) { alert('請填寫範本名稱'); return; }
-    if (!file)        { alert('請選擇範本檔案'); return; }
-    setBusy(true);
+    if (!name.trim()) { setErrMsg('請填寫範本名稱'); return; }
+    if (!file)        { setErrMsg('請選擇範本檔案'); return; }
+    setBusy(true); setErrMsg(''); setStatusMsg('');
+
     try {
+      // Step 1: Google Drive 授權
+      setStatusMsg('正在授權 Google Drive...');
+      let token;
+      try {
+        token = await getDriveToken();
+      } catch(e) {
+        setErrMsg('Google Drive 授權失敗：' + e.message);
+        setBusy(false); setStatusMsg(''); return;
+      }
+
+      // Step 2: 上傳至 Drive
+      setStatusMsg('上傳檔案至 Google Drive...');
+      let uploadResult;
+      try {
+        uploadResult = await driveUpload(file, token);
+      } catch(e) {
+        if (e.code === 401) {
+          setStatusMsg('重新授權中...');
+          clearDriveToken();
+          token = await getDriveToken();
+          uploadResult = await driveUpload(file, token);
+        } else throw e;
+      }
+
+      // Step 3: 儲存 metadata 至 Firestore
+      setStatusMsg('儲存記錄中...');
       const docId = db.collection('templates').doc().id;
-      const ref   = storage.ref(`templates/${type}/${docId}_${file.name}`);
-      const task  = ref.put(file);
-      await new Promise((res, rej) => {
-        task.on('state_changed',
-          s  => setProgress(Math.round(s.bytesTransferred / s.totalBytes * 100)),
-          rej,
-          async () => {
-            const url = await task.snapshot.ref.getDownloadURL();
-            await db.collection('templates').doc(docId).set({
-              name:       name.trim(),
-              type,
-              notes,
-              fileUrl:    url,
-              fileName:   file.name,
-              fileSize:   file.size,
-              uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            });
-            res();
-          }
-        );
+      await db.collection('templates').doc(docId).set({
+        name:        name.trim(),
+        type,
+        notes,
+        fileUrl:     uploadResult.fileUrl,
+        fileName:    uploadResult.fileName,
+        driveFileId: uploadResult.driveFileId,
+        fileSize:    file.size,
+        uploadedAt:  firebase.firestore.FieldValue.serverTimestamp(),
       });
+
       onClose();
     } catch(e) {
-      alert('上傳失敗：' + e.message);
+      console.error('上傳錯誤：', e);
+      setErrMsg('上傳失敗：' + e.message);
       setBusy(false);
+    } finally {
+      setStatusMsg('');
     }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={e => { if (!busy) onClose(); }}>
       <div className="modal" style={{maxWidth:480}} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title">上傳範本</div>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose} disabled={busy}>✕</button>
         </div>
         <div className="modal-body">
+
+          {errMsg && (
+            <div style={{
+              background:'var(--red-light)', color:'var(--red)',
+              border:'1px solid #f0c0c8', borderRadius:'var(--radius)',
+              padding:'12px 14px', fontSize:13, marginBottom:16,
+              whiteSpace:'pre-wrap', lineHeight:1.6
+            }}>{errMsg}</div>
+          )}
+
           <div className="form-grid">
             <div className="form-group full">
               <label className="form-label">範本名稱 <span className="req">*</span></label>
-              <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="例：租賃爭議存證信函範本" />
+              <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="例：租賃爭議存證信函範本" disabled={busy} />
             </div>
             <div className="form-group">
               <label className="form-label">函件類型</label>
-              <select className="form-select" value={type} onChange={e => setType(e.target.value)}>
+              <select className="form-select" value={type} onChange={e => setType(e.target.value)} disabled={busy}>
                 {TYPES.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div className="form-group full">
               <label className="form-label">備註說明</label>
-              <textarea className="form-textarea" rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="適用情境、使用說明..." />
+              <textarea className="form-textarea" rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="適用情境、使用說明..." disabled={busy} />
             </div>
             <div className="form-group full">
               <label className="form-label">範本檔案 <span className="req">*</span></label>
@@ -1257,23 +1389,28 @@ function TemplateUploadModal({ onClose }) {
                 onClick={() => !busy && fileRef.current?.click()}
               >
                 <input ref={fileRef} type="file" style={{display:'none'}} accept=".pdf,.doc,.docx"
-                  onChange={e => e.target.files[0] && setFile(e.target.files[0])} />
+                  onChange={e => { if (e.target.files[0]) { setFile(e.target.files[0]); setErrMsg(''); } }} />
                 <div className="upload-icon">{file ? '✅' : '📄'}</div>
                 <div className="upload-text">
-                  {file ? <strong>{file.name}</strong> : <><strong>點擊選擇範本檔案</strong><br/><span>PDF、Word 皆可</span></>}
+                  {busy && statusMsg
+                    ? <><span className="spinner dark" style={{width:14,height:14,marginRight:6,display:'inline-block'}} /><strong>{statusMsg}</strong></>
+                    : file
+                      ? <><strong>{file.name}</strong><br/><span style={{fontSize:11}}>點擊可重新選擇</span></>
+                      : <><strong>點擊選擇範本檔案</strong><br/><span>PDF、Word 皆可，將上傳至 Google Drive</span></>
+                  }
                 </div>
                 <div className="upload-hint">支援 .pdf · .doc · .docx</div>
-                {busy && progress > 0 && progress < 100 && (
-                  <div className="progress-bar"><div className="progress-fill" style={{width:`${progress}%`}} /></div>
-                )}
               </div>
             </div>
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn-cancel" onClick={onClose}>取消</button>
+          <button className="btn-cancel" onClick={onClose} disabled={busy}>取消</button>
           <button className="btn-save" onClick={handleSave} disabled={busy}>
-            {busy ? <><span className="spinner" /> {progress > 0 && progress < 100 ? `上傳中 ${progress}%` : '處理中...'}</> : '⬆ 上傳範本'}
+            {busy
+              ? <><span className="spinner" /> {statusMsg || '處理中...'}</>
+              : '⬆ 上傳範本'
+            }
           </button>
         </div>
       </div>
@@ -1300,10 +1437,13 @@ function TemplatesTab() {
   const shown = templates.filter(t => filter === '全部' || t.type === filter);
 
   const handleDelete = async t => {
-    if (!confirm(`確定刪除範本「${t.name}」？\n（Storage 中的檔案也會一併刪除）`)) return;
+    if (!confirm(`確定刪除範本「${t.name}」？\n（Google Drive 中的檔案也會一併刪除）`)) return;
     try {
-      if (t.fileUrl) {
-        try { await storage.refFromURL(t.fileUrl).delete(); } catch {}
+      if (t.driveFileId) {
+        try {
+          const token = await getDriveToken();
+          await driveDelete(t.driveFileId, token);
+        } catch(e) { console.warn('Drive 刪除失敗（Firestore 記錄仍會刪除）：', e.message); }
       }
       await db.collection('templates').doc(t.id).delete();
     } catch(e) { alert('刪除失敗：' + e.message); }

@@ -82,10 +82,6 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'N
 .refresh-btn{background:none;border:none;color:var(--text4);cursor:pointer;font-size:16px;padding:4px;border-radius:6px;transition:color .2s;}
 .refresh-btn:hover{color:var(--gold);}
 .refreshing{animation:spin .6s linear infinite;}
-.days-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
-.days-btn{flex:1;min-width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:8px 6px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;font-family:inherit;text-align:center;transition:all .2s;}
-.days-btn.active{background:linear-gradient(135deg,#1a0f6e,#301e90);border-color:#c8a06088;color:var(--gold);}
-.days-btn:hover:not(.active){border-color:var(--gold)44;color:var(--text2);}
 .checkin-btn{width:100%;background:linear-gradient(135deg,#1a0f6e,#301e90);border:1px solid #c8a06088;border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;transition:all .2s;margin-bottom:14px;}
 .checkin-btn:hover{border-color:var(--gold);transform:translateY(-1px);}
 .checkin-btn:active{transform:translateY(0);opacity:.9;}
@@ -158,8 +154,7 @@ const auth = getAuth(app);
 
 // ── Constants ──
 const TYPE_COLOR = {刑事:"#ef4444",民事:"#3b82f6",行政:"#8b5cf6",家事:"#ec4899",勞動:"#f97316",智財:"#14b8a6",非訟:"#06b6d4"};
-const DAYS_OPTIONS = [7, 15, 30, 60];
-let DAYS_AHEAD = parseInt(localStorage.getItem("widget_days_ahead")||"7");
+const DAYS_AHEAD = 7; // show hearings within next 7 days
 
 // ── Helpers ──
 function today(){
@@ -475,14 +470,6 @@ function buildWidget(){
         <div class="qr-hint">點擊任意處關閉</div>
     </div>`:""}
 
-    <!-- Days range selector -->
-    <div class="days-selector">
-        ${DAYS_OPTIONS.map(d=>`
-        <button class="days-btn${DAYS_AHEAD===d?" active":""}" data-days="${d}" type="button">
-            ${d}日內
-        </button>`).join("")}
-    </div>
-
     <!-- Summary bar -->
         <div class="summary-bar">
             <div class="summary-item">
@@ -491,7 +478,7 @@ function buildWidget(){
             </div>
             <div class="summary-item">
                 <div class="summary-num">${upcomingH.length}</div>
-                <div class="summary-lbl">近${DAYS_AHEAD}日</div>
+                <div class="summary-lbl">近7日</div>
             </div>
             <div class="summary-item">
                 <div class="summary-num">${hearings.length}</div>
@@ -562,7 +549,7 @@ function buildWidget(){
         <!-- Calendar Todos section -->
         ${(()=>{
             const upcoming7=(state.calTodos||[]).filter(t=>{
-                const d=daysUntil(t.date); return d>=0&&d<=DAYS_AHEAD;
+                const d=daysUntil(t.date); return d>=0&&d<=7;
             }).sort((a,b)=>a.date.localeCompare(b.date));
             if(upcoming7.length===0) return "";
             // Group by date
@@ -572,7 +559,7 @@ function buildWidget(){
             return `
             <div class="day-section" style="margin-top:4px">
                 <div class="day-label" style="color:${pendingCount>0?"#8b5cf6":"var(--text4)"}">
-                    ✅ 近${DAYS_AHEAD}日待辦事項${pendingCount>0?` <span style="color:#8b5cf6;font-weight:800">${pendingCount}項未完成</span>`:""}
+                    ✅ 近7日待辦事項${pendingCount>0?` <span style="color:#8b5cf6;font-weight:800">${pendingCount}項未完成</span>`:""}
                 </div>
                 ${Object.entries(byDate).map(([date,todos])=>{
                     const d=daysUntil(date);
@@ -669,15 +656,6 @@ function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;")
 
 // ── Event binding ──
 function bindEvents(){
-    // Days ahead selector
-    document.querySelectorAll("[data-days]").forEach(btn=>{
-        btn.addEventListener("click",()=>{
-            DAYS_AHEAD = parseInt(btn.dataset.days);
-            localStorage.setItem("widget_days_ahead", DAYS_AHEAD);
-            render();
-        });
-    });
-
     // QR check-in
     document.getElementById("btn-checkin")?.addEventListener("click",()=>{
         state.showQR=true; render();

@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="信函管理">
+<meta name="theme-color" content="#0a1628">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<title>⚖ 存證信函 & 律師函管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root{
+    --bg:#020817;--bg2:#0a1628;--bg3:#0f172a;--bg4:#1e293b;
+    --gold:#c8a96e;--gold2:#a07840;
+    --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--text4:#475569;
+    --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--purple:#8b5cf6;--blue:#3b82f6;--teal:#14b8a6;
+    --border:#1e293b;--shadow:0 2px 12px rgba(0,0,0,.4);
+}
+:root.light{
+    --bg:#f0f4f8;--bg2:#ffffff;--bg3:#ffffff;--bg4:#e2e8f0;
+    --gold:#9a6f2e;--gold2:#7a5520;
+    --text:#1a2744;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;
+    --green:#16a34a;--red:#dc2626;--yellow:#d97706;--purple:#7c3aed;--blue:#2563eb;--teal:#0d9488;
+    --border:#e2e8f0;--shadow:0 2px 8px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.5;transition:background .3s,color .3s;}
+.app{min-height:100vh;padding-bottom:80px;}
+/* ── HEADER ── */
+.header{background:var(--bg2);padding:12px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:200;gap:10px;flex-wrap:wrap;}
+.header-title{font-family:'Noto Serif TC',serif;font-size:1.05rem;color:var(--gold);display:flex;align-items:center;gap:8px;}
+/* ── BUTTONS ── */
+.btn{padding:9px 16px;border-radius:8px;font-weight:700;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-family:inherit;transition:opacity .15s;white-space:nowrap;}
+.btn:active{opacity:.8;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0a0a;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.4);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-xs{padding:4px 9px;font-size:11px;}
+/* ── TABS ── */
+.tab-bar{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:53px;z-index:100;overflow-x:auto;scrollbar-width:none;}
+.tab-bar::-webkit-scrollbar{display:none;}
+.tab{padding:11px 18px;border:none;background:transparent;color:var(--text3);font-weight:500;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;}
+.tab.active{color:var(--gold);font-weight:700;border-bottom-color:var(--gold);}
+/* ── CONTENT ── */
+.content{padding:16px;max-width:1000px;margin:0 auto;}
+/* ── CARDS ── */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);margin-bottom:12px;}
+.card-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:10px;}
+/* ── LIST CARDS ── */
+.letter-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;cursor:pointer;transition:border-color .2s;margin-bottom:10px;box-shadow:var(--shadow);}
+.letter-card:hover{border-color:var(--gold)44;}
+.letter-card:active{opacity:.9;}
+.letter-card.certified{border-left:4px solid var(--blue);}
+.letter-card.attorney{border-left:4px solid var(--gold);}
+.letter-card.demand{border-left:4px solid var(--red);}
+.lc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.lc-title{font-size:15px;font-weight:700;color:var(--text);}
+.lc-meta{font-size:11px;color:var(--text4);margin-top:3px;}
+.lc-badges{display:flex;gap:5px;flex-wrap:wrap;flex-shrink:0;}
+.lc-row{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--text3);margin-top:6px;}
+.fee-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-top:8px;}
+.fee-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),#16a34a);border-radius:3px;transition:width .5s;}
+/* ── BADGE ── */
+.badge{display:inline-block;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;}
+/* ── DETAIL ── */
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;gap:10px;border-bottom:1px solid #0a0f1e;}
+.info-lbl{font-size:11px;color:var(--text4);white-space:nowrap;min-width:85px;padding-top:1px;}
+.info-val{font-size:13px;color:var(--text);text-align:right;word-break:break-all;}
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:16px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fl{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+.fi{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;font-family:inherit;width:100%;}
+.fi:focus{border-color:var(--gold);}
+textarea.fi{resize:vertical;min-height:80px;}
+.section-hdr{font-size:11px;color:var(--gold);font-weight:700;border-left:3px solid var(--gold);padding-left:10px;margin:20px 0 12px;display:flex;justify-content:space-between;align-items:center;}
+.item-row{background:rgba(255,255,255,.03);padding:10px 14px;border-radius:8px;margin-bottom:8px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.add-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:flex-end;}
+.add-row .fi{flex:1;min-width:100px;}
+/* ── TEMPLATE ── */
+.tmpl-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .2s;margin-bottom:8px;}
+.tmpl-card:hover{border-color:var(--gold);transform:translateY(-1px);}
+.tmpl-card.selected{border-color:var(--gold);background:rgba(200,169,110,.06);}
+.tmpl-preview{font-size:12px;color:var(--text3);margin-top:6px;white-space:pre-wrap;max-height:80px;overflow:hidden;position:relative;}
+.tmpl-preview::after{content:"";position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(transparent,var(--bg3));}
+/* ── STATS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;box-shadow:var(--shadow);}
+.stat-val{font-size:22px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+.stat-lbl{font-size:10px;color:var(--text4);margin-top:4px;}
+/* ── SHIPPING ── */
+.ship-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.ship-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+/* ── BOTTOM NAV ── */
+.bnav{display:none;}
+@media(max-width:600px){
+    .bnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:100;}
+    .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;font-size:10px;color:var(--text3);cursor:pointer;gap:3px;border:none;background:transparent;font-family:inherit;}
+    .bnav-btn.active{color:var(--gold);}
+    .bnav-icon{font-size:18px;}
+    .app{padding-bottom:80px;}
+    .content{padding:12px;}
+}
+/* ── OVERLAY ── */
+.overlay{position:fixed;inset:0;background:#00000099;display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.dialog{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:400px;width:100%;}
+/* ── LOADING ── */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:var(--text3);}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px #000a;}
+.login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;}
+/* ── EMPTY ── */
+.empty{text-align:center;padding:50px 20px;color:var(--text4);}
+.empty-ico{font-size:42px;margin-bottom:12px;opacity:.5;}
+/* ── TOAST ── */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--gold);color:var(--gold);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;}
+/* ── PAY ── */
+.pay-badge{padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;}
+.pay-cash{background:rgba(34,197,94,.15);color:var(--green);}
+.pay-transfer{background:rgba(59,130,246,.15);color:var(--blue);}
+.fee-summary{background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px;}
+.fee-sum-row{display:flex;justify-content:space-between;padding:4px 0;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+a{color:var(--blue);}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+const cfg={apiKey:"AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",authDomain:"legalcasemanageer.firebaseapp.com",projectId:"legalcasemanageer",storageBucket:"legalcasemanageer.firebasestorage.app",messagingSenderId:"559838504556",appId:"1:559838504556:web:ba10c071a12650bbd85a49"};
+const app=initializeApp(cfg);
+const db=getFirestore(app);
+const auth=getAuth(app);
+window.db=db; window.auth=auth;
+window.fb={collection,onSnapshot,doc,setDoc,deleteDoc,updateDoc};
+window.fbAuth={signInWithEmailAndPassword,signOut,onAuthStateChanged};
+window.firebaseReady=true;
+</script>
+
+<script type="text/babel">
+const {useState,useEffect,useRef}=React;
+
+// ── Constants ──
+const LETTER_TYPES=[
+    {key:"certified",label:"存證信函",color:"#3b82f6",icon:"📮"},
+    {key:"attorney",label:"律師函",color:"#c8a96e",icon:"⚖"},
+    {key:"demand",label:"催告函",color:"#ef4444",icon:"⚡"},
+    {key:"warning",label:"警告函",color:"#f97316",icon:"⚠️"},
+    {key:"other",label:"其他",color:"#64748b",icon:"📄"},
+];
+const SEND_METHODS=["掛號郵寄","限時掛號","存證信函(郵局)","專人送達","電子郵件","傳真","其他"];
+const REPLY_STATUS=["未回覆","已回覆","無需回覆","已提訴訟"];
+const PAY_METHODS=["現金","匯款","票據","信用卡","其他"];
+
+const TYPE_MAP=Object.fromEntries(LETTER_TYPES.map(t=>[t.key,t]));
+
+// ── Helpers ──
+function today(){const tw=new Date(new Date().getTime()+8*60*60*1000);return tw.toISOString().split("T")[0];}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function fmt(n){return n?Number(n).toLocaleString("zh-TW")+" 元":"—";}
+function fmtDate(s){if(!s)return"—";const d=new Date(s+"T00:00:00+08:00");return`${d.getMonth()+1}/${d.getDate()}`;}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200);}
+function Badge({label,color}){return<span className="badge" style={{background:color+"22",color,border:`1px solid ${color}44`}}>{label}</span>;}
+
+const emptyLetter=()=>({
+    id:"",type:"attorney",subject:"",clientName:"",clientPhone:"",
+    opposingParty:"",opposingAddress:"",retainerDate:today(),
+    totalFee:0,payments:[],disbursements:0,
+    templateId:"",docLinks:[],shippings:[],
+    replyStatus:"未回覆",notes:"",tags:[],
+});
+const emptyTemplate=()=>({id:"",name:"",type:"attorney",content:"",tags:[]});
+
+// ── Theme ──
+function useTheme(){
+    const[mode,setMode]=useState(()=>localStorage.getItem("lettersTheme")||"auto");
+    function getAuto(){const h=new Date().getHours();return(h>=6&&h<20)?"light":"dark";}
+    const[auto,setAuto]=useState(getAuto);
+    useEffect(()=>{const t=setInterval(()=>setAuto(getAuto()),60000);return()=>clearInterval(t);},[]);
+    useEffect(()=>{
+        const eff=mode==="auto"?auto:mode;
+        if(eff==="light")document.documentElement.classList.add("light");
+        else document.documentElement.classList.remove("light");
+    },[mode,auto]);
+    useEffect(()=>{localStorage.setItem("lettersTheme",mode);},[mode]);
+    const cycle=()=>setMode(m=>m==="auto"?"light":m==="light"?"dark":"auto");
+    return{mode,cycle};
+}
+
+// ══════════════════════════════
+//  ROOT
+// ══════════════════════════════
+function Root(){
+    const[user,setUser]=useState(undefined);
+    useEffect(()=>{
+        const w=setInterval(()=>{
+            if(!window.auth)return;
+            clearInterval(w);
+            window.fbAuth.onAuthStateChanged(window.auth,u=>setUser(u||null));
+        },100);
+        return()=>clearInterval(w);
+    },[]);
+    if(user===undefined)return<div className="loading"><div className="spinner"/><div>載入中…</div></div>;
+    if(!user)return<Login/>;
+    return<App user={user}/>;
+}
+
+// ══════════════════════════════
+//  LOGIN
+// ══════════════════════════════
+function Login(){
+    const[email,setEmail]=useState("");
+    const[pw,setPw]=useState("");
+    const[err,setErr]=useState("");
+    const[loading,setLoading]=useState(false);
+    const[show,setShow]=useState(false);
+    const go=async()=>{
+        if(!email||!pw){setErr("請輸入帳號和密碼");return;}
+        setLoading(true);setErr("");
+        try{await window.fbAuth.signInWithEmailAndPassword(window.auth,email.trim(),pw);}
+        catch(e){
+            setErr({"auth/invalid-credential":"帳號或密碼錯誤","auth/too-many-requests":"嘗試次數過多，請稍後"}[e.code]||"登入失敗");
+            setLoading(false);
+        }
+    };
+    return(
+        <div className="login-wrap">
+            <div className="login-box">
+                <div style={{fontSize:46,textAlign:"center",marginBottom:8}}>📮</div>
+                <div style={{fontFamily:"'Noto Serif TC',serif",fontSize:"1.2rem",color:"var(--gold)",textAlign:"center",marginBottom:4}}>信函管理系統</div>
+                <div style={{fontSize:11,color:"var(--text4)",textAlign:"center",letterSpacing:".06em",marginBottom:28}}>LEGAL LETTERS MANAGER</div>
+                {err&&<div className="login-err">⚠️ {err}</div>}
+                <div className="fg" style={{marginBottom:14}}>
+                    <label className="fl">帳號（Email）</label>
+                    <input className="fi" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="office@yourfirm.com" onKeyDown={e=>e.key==="Enter"&&go()} disabled={loading}/>
+                </div>
+                <div className="fg" style={{marginBottom:24}}>
+                    <label className="fl">密碼</label>
+                    <div style={{position:"relative"}}>
+                        <input className="fi" type={show?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&go()} disabled={loading} style={{paddingRight:44}}/>
+                        <button onClick={()=>setShow(s=>!s)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"var(--text3)",cursor:"pointer",fontSize:16,padding:4}}>{show?"🙈":"👁"}</button>
+                    </div>
+                </div>
+                <button className="btn btn-gold" onClick={go} disabled={loading} style={{width:"100%",justifyContent:"center",fontSize:15,padding:12}}>
+                    {loading?"登入中…":"🔐 登入"}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ══════════════════════════════
+//  APP
+// ══════════════════════════════
+function App(){
+    const[letters,setLetters]=useState([]);
+    const[templates,setTemplates]=useState([]);
+    const[loading,setLoading]=useState(true);
+    const[tab,setTab]=useState("list"); // list|templates|stats
+    const[view,setView]=useState("list"); // list|detail|form|tmplForm
+    const[selectedId,setSelectedId]=useState(null);
+    const[editId,setEditId]=useState(null);
+    const[formData,setFormData]=useState(emptyLetter());
+    const[tmplForm,setTmplForm]=useState(emptyTemplate());
+    const[tmplEditId,setTmplEditId]=useState(null);
+    const[search,setSearch]=useState("");
+    const[filterType,setFilterType]=useState("全部");
+    const[filterStatus,setFilterStatus]=useState("全部");
+    const[delConfirm,setDelConfirm]=useState(null);
+    const[newPay,setNewPay]=useState({amount:"",date:today(),method:"匯款",note:""});
+    const[newDoc,setNewDoc]=useState({label:"",url:""});
+    const[newShip,setNewShip]=useState({date:today(),method:"掛號郵寄",trackNo:"",note:""});
+    const{mode,cycle}=useTheme();
+
+    // Firebase listeners
+    useEffect(()=>{
+        const wait=setInterval(()=>{
+            if(!window.db)return;
+            clearInterval(wait);
+            const{collection,onSnapshot}=window.fb;
+            // Load from cache immediately
+            try{const c=localStorage.getItem("letters_cache");if(c){setLetters(JSON.parse(c));setLoading(false);}}catch(_){}
+            onSnapshot(collection(window.db,"letters"),snap=>{
+                const data=snap.docs.map(d=>({...d.data(),id:d.id}));
+                setLetters(data);setLoading(false);
+                try{localStorage.setItem("letters_cache",JSON.stringify(data));}catch(_){}
+            },()=>setLoading(false));
+            onSnapshot(collection(window.db,"letterTemplates"),snap=>{
+                setTemplates(snap.docs.map(d=>({...d.data(),id:d.id})));
+            });
+        },200);
+        return()=>clearInterval(wait);
+    },[]);
+
+    const selected=letters.find(l=>l.id===selectedId);
+
+    // Filtered letters
+    const filtered=letters.filter(l=>{
+        const q=search.toLowerCase();
+        const ms=!q||[l.clientName,l.subject,l.opposingParty,l.notes,...(l.tags||[])].some(x=>(x||"").toLowerCase().includes(q));
+        const mt=filterType==="全部"||l.type===filterType;
+        const ms2=filterStatus==="全部"||l.replyStatus===filterStatus;
+        return ms&&mt&&ms2;
+    }).sort((a,b)=>(b.retainerDate||"").localeCompare(a.retainerDate||""));
+
+    // Fee helpers
+    const getRecv=l=>(l.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+    const getUnpaid=l=>Math.max(0,Number(l.totalFee||0)-getRecv(l));
+
+    // Save
+    const saveLetter=async()=>{
+        if(!formData.clientName.trim()){toast("⚠️ 請輸入委託人姓名");return;}
+        if(!formData.subject.trim()){toast("⚠️ 請填寫主旨");return;}
+        const id=editId||uid();
+        const data={...formData,id};
+        try{
+            await window.fb.setDoc(window.fb.doc(window.db,"letters",id),data);
+            toast("✅ 已儲存至雲端");
+            setSelectedId(id);setView("detail");
+        }catch(e){toast("❌ 儲存失敗："+e.message);}
+    };
+    const deleteLetter=async()=>{
+        try{
+            await window.fb.deleteDoc(window.fb.doc(window.db,"letters",selectedId));
+            toast("🗑 已刪除");setDelConfirm(null);setView("list");
+        }catch(e){toast("❌ 刪除失敗");}
+    };
+    const saveTemplate=async()=>{
+        if(!tmplForm.name.trim()){toast("⚠️ 請填範本名稱");return;}
+        const id=tmplEditId||uid();
+        await window.fb.setDoc(window.fb.doc(window.db,"letterTemplates",id),{...tmplForm,id});
+        toast("✅ 範本已儲存");setView("list");setTab("templates");
+    };
+    const deleteTemplate=async(id)=>{
+        await window.fb.deleteDoc(window.fb.doc(window.db,"letterTemplates",id));
+        toast("🗑 範本已刪除");
+    };
+
+    // Form helpers
+    const sf=(k,v)=>setFormData(f=>({...f,[k]:v}));
+    const addPay=()=>{
+        if(!newPay.amount){toast("請填金額");return;}
+        sf("payments",[...(formData.payments||[]),{...newPay,id:uid()}]);
+        setNewPay({amount:"",date:today(),method:"匯款",note:""});
+    };
+    const addDoc=()=>{
+        if(!newDoc.url.trim()){toast("請填連結");return;}
+        let url=newDoc.url.trim();
+        if(!/^https?:\/\//.test(url))url="https://"+url;
+        sf("docLinks",[...(formData.docLinks||[]),{...newDoc,url,id:uid()}]);
+        setNewDoc({label:"",url:""});
+    };
+    const addShip=()=>{
+        if(!newShip.date){toast("請選寄送日期");return;}
+        sf("shippings",[...(formData.shippings||[]),{...newShip,id:uid()}]);
+        setNewShip({date:today(),method:"掛號郵寄",trackNo:"",note:""});
+    };
+
+    const openAdd=()=>{setFormData(emptyLetter());setEditId(null);setView("form");};
+    const openEdit=l=>{setFormData(JSON.parse(JSON.stringify(l)));setEditId(l.id);setView("form");};
+    const openDetail=id=>{setSelectedId(id);setView("detail");};
+
+    // ── LOADING ──
+    if(loading)return<div className="loading"><div className="spinner"/><div>連線雲端中…</div></div>;
+
+    // ══ LIST VIEW ══
+    if(view==="list"||view==="listTab")return(
+        <div className="app">
+            <div className="header">
+                <div className="header-title">📮 信函管理系統</div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <button className="btn btn-outline btn-sm" onClick={cycle}>
+                        {mode==="auto"?"🕐":mode==="light"?"☀️":"🌙"}
+                    </button>
+                    <a href="index.html" className="btn btn-outline btn-sm">⚖ 案件系統</a>
+                    <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
+                    <button className="btn btn-outline btn-sm" onClick={()=>{if(confirm("確認登出？"))window.fbAuth.signOut(window.auth);}}>🚪</button>
+                </div>
+            </div>
+
+            <div className="tab-bar">
+                {[["list","📋 信函列表"],["templates","📑 範本庫"],["stats","📊 統計"]].map(([k,l])=>(
+                    <button key={k} className={`tab${tab===k?" active":""}`} onClick={()=>setTab(k)}>{l}</button>
+                ))}
+            </div>
+
+            {/* ── LIST TAB ── */}
+            {tab==="list"&&(
+                <div className="content">
+                    {/* Stats row */}
+                    <div className="stat-grid">
+                        {[
+                            ["信函總數",letters.length+"件","var(--gold)"],
+                            ["應收費用",letters.reduce((s,l)=>s+Number(l.totalFee||0),0).toLocaleString()+" 元","var(--text2)"],
+                            ["已收款",letters.reduce((s,l)=>s+getRecv(l),0).toLocaleString()+" 元","var(--green)"],
+                            ["未收款",letters.reduce((s,l)=>s+getUnpaid(l),0).toLocaleString()+" 元","var(--red)"],
+                            ["未回覆",letters.filter(l=>l.replyStatus==="未回覆").length+"件","var(--yellow)"],
+                        ].map(([l,v,c])=>(
+                            <div key={l} className="stat-card">
+                                <div className="stat-val" style={{color:c}}>{v}</div>
+                                <div className="stat-lbl">{l}</div>
+                            </div>
+                        ))}
+                    </div>
+                    {/* Filters */}
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14,alignItems:"center"}}>
+                        <input className="fi" style={{flex:"1 1 200px"}} placeholder="🔍 搜尋委託人、主旨、對造…" value={search} onChange={e=>setSearch(e.target.value)}/>
+                        <select className="fi" style={{flex:"0 0 120px"}} value={filterType} onChange={e=>setFilterType(e.target.value)}>
+                            <option value="全部">全部類型</option>
+                            {LETTER_TYPES.map(t=><option key={t.key} value={t.key}>{t.label}</option>)}
+                        </select>
+                        <select className="fi" style={{flex:"0 0 120px"}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+                            <option value="全部">全部狀態</option>
+                            {REPLY_STATUS.map(s=><option key={s}>{s}</option>)}
+                        </select>
+                        <span style={{fontSize:12,color:"var(--text4)",whiteSpace:"nowrap"}}>{filtered.length} 件</span>
+                    </div>
+                    {/* Letter cards */}
+                    {filtered.length===0&&<div className="empty"><div className="empty-ico">📮</div>查無信函記錄</div>}
+                    {filtered.map(l=>{
+                        const t=TYPE_MAP[l.type]||TYPE_MAP.other;
+                        const recv=getRecv(l);const unpaid=getUnpaid(l);
+                        const latestShip=(l.shippings||[]).sort((a,b)=>b.date.localeCompare(a.date))[0];
+                        return(
+                            <div key={l.id} className={`letter-card ${l.type}`} onClick={()=>openDetail(l.id)}>
+                                <div className="lc-top">
+                                    <div>
+                                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                                            <span style={{fontSize:16}}>{t.icon}</span>
+                                            <div className="lc-title">{l.subject||"（未填主旨）"}</div>
+                                        </div>
+                                        <div className="lc-meta">{l.clientName} → {l.opposingParty||"（未填對造）"} · {l.retainerDate}</div>
+                                    </div>
+                                    <div className="lc-badges">
+                                        <Badge label={t.label} color={t.color}/>
+                                        <Badge label={l.replyStatus} color={l.replyStatus==="未回覆"?"#f59e0b":l.replyStatus==="已提訴訟"?"#ef4444":"#22c55e"}/>
+                                    </div>
+                                </div>
+                                <div className="lc-row">
+                                    {l.totalFee>0&&<span style={{color:"var(--gold)"}}>應收 {Number(l.totalFee).toLocaleString()} 元</span>}
+                                    {recv>0&&<span style={{color:"var(--green)"}}>已收 {recv.toLocaleString()} 元</span>}
+                                    {unpaid>0&&<span style={{color:"var(--red)"}}>未收 {unpaid.toLocaleString()} 元</span>}
+                                    {latestShip&&<span>📬 {fmtDate(latestShip.date)} {latestShip.method}</span>}
+                                    {(l.docLinks||[]).length>0&&<span>📄 {l.docLinks.length}份文件</span>}
+                                </div>
+                                {Number(l.totalFee)>0&&(
+                                    <div className="fee-bar"><div className="fee-bar-fill" style={{width:`${Math.min(100,recv/Number(l.totalFee)*100).toFixed(1)}%`}}/></div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* ── TEMPLATES TAB ── */}
+            {tab==="templates"&&(
+                <div className="content">
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                        <div style={{fontSize:13,color:"var(--text3)"}}>儲存常用範本，新增信函時快速套用</div>
+                        <button className="btn btn-gold btn-sm" onClick={()=>{setTmplForm(emptyTemplate());setTmplEditId(null);setView("tmplForm");}}>＋ 新增範本</button>
+                    </div>
+                    {templates.length===0&&<div className="empty"><div className="empty-ico">📑</div><div>尚無範本</div><div style={{fontSize:12,marginTop:6}}>點右上角「＋ 新增範本」建立第一個範本</div></div>}
+                    {templates.map(t=>{
+                        const lt=TYPE_MAP[t.type]||TYPE_MAP.other;
+                        return(
+                            <div key={t.id} className="card" style={{cursor:"default"}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+                                    <div style={{flex:1}}>
+                                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                                            <span style={{fontSize:16}}>{lt.icon}</span>
+                                            <span style={{fontWeight:700,fontSize:14,color:"var(--text)"}}>{t.name}</span>
+                                            <Badge label={lt.label} color={lt.color}/>
+                                        </div>
+                                        <div className="tmpl-preview">{t.content||"（無內容）"}</div>
+                                    </div>
+                                    <div style={{display:"flex",gap:6,flexShrink:0}}>
+                                        <button className="btn btn-outline btn-xs" onClick={()=>{setTmplForm(JSON.parse(JSON.stringify(t)));setTmplEditId(t.id);setView("tmplForm");}}>✏️ 編輯</button>
+                                        <button className="btn btn-danger btn-xs" onClick={()=>deleteTemplate(t.id)}>🗑</button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* ── STATS TAB ── */}
+            {tab==="stats"&&(()=>{
+                const byType={};LETTER_TYPES.forEach(t=>byType[t.key]=0);
+                letters.forEach(l=>byType[l.type]=(byType[l.type]||0)+1);
+                const byStatus={};REPLY_STATUS.forEach(s=>byStatus[s]=0);
+                letters.forEach(l=>byStatus[l.replyStatus]=(byStatus[l.replyStatus]||0)+1);
+                const totalFee=letters.reduce((s,l)=>s+Number(l.totalFee||0),0);
+                const recv=letters.reduce((s,l)=>s+getRecv(l),0);
+                const pct=totalFee>0?Math.min(100,(recv/totalFee*100)).toFixed(1):0;
+                return(
+                    <div className="content">
+                        <div className="detail-grid">
+                            <div className="card">
+                                <div className="card-title">💰 費用總覽</div>
+                                {[["應收合計",fmt(totalFee),"var(--gold)"],["已收款",fmt(recv),"var(--green)"],["未收款",fmt(letters.reduce((s,l)=>s+getUnpaid(l),0)),"var(--red)"],["代墊款",fmt(letters.reduce((s,l)=>s+Number(l.disbursements||0),0)),"var(--purple)"]].map(([l,v,c])=>(
+                                    <div key={l} className="info-row"><div className="info-lbl">{l}</div><div className="info-val" style={{color:c,fontWeight:700}}>{v}</div></div>
+                                ))}
+                                {totalFee>0&&<>
+                                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"var(--text3)",margin:"12px 0 4px"}}><span>收款進度</span><span>{pct}%</span></div>
+                                    <div style={{background:"var(--bg4)",borderRadius:6,height:10,overflow:"hidden"}}><div style={{background:"var(--green)",height:"100%",width:`${pct}%`,borderRadius:6,transition:"width .6s"}}/></div>
+                                </>}
+                            </div>
+                            <div className="card">
+                                <div className="card-title">📊 信函類型</div>
+                                {LETTER_TYPES.filter(t=>byType[t.key]>0).map(t=>(
+                                    <div key={t.key} className="info-row">
+                                        <div><Badge label={t.label} color={t.color}/></div>
+                                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                            <div style={{background:"var(--bg4)",borderRadius:4,height:6,width:80,overflow:"hidden"}}>
+                                                <div style={{background:t.color,height:"100%",width:`${(byType[t.key]/letters.length*100).toFixed(0)}%`}}/>
+                                            </div>
+                                            <span style={{color:"var(--text)",fontWeight:700,minWidth:28,textAlign:"right"}}>{byType[t.key]}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="card">
+                                <div className="card-title">📈 回覆狀態</div>
+                                {REPLY_STATUS.filter(s=>byStatus[s]>0).map(s=>{
+                                    const c=s==="未回覆"?"#f59e0b":s==="已提訴訟"?"#ef4444":s==="已回覆"?"#22c55e":"#64748b";
+                                    return(
+                                        <div key={s} className="info-row">
+                                            <div><Badge label={s} color={c}/></div>
+                                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                                <div style={{background:"var(--bg4)",borderRadius:4,height:6,width:80,overflow:"hidden"}}>
+                                                    <div style={{background:c,height:"100%",width:`${(byStatus[s]/letters.length*100).toFixed(0)}%`}}/>
+                                                </div>
+                                                <span style={{color:"var(--text)",fontWeight:700,minWidth:28,textAlign:"right"}}>{byStatus[s]}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
+            <div className="bnav">
+                <button className={`bnav-btn${tab==="list"?" active":""}`} onClick={()=>setTab("list")}><span className="bnav-icon">📋</span>信函</button>
+                <button className="bnav-btn" onClick={openAdd}><span className="bnav-icon">➕</span>新增</button>
+                <button className={`bnav-btn${tab==="templates"?" active":""}`} onClick={()=>setTab("templates")}><span className="bnav-icon">📑</span>範本</button>
+                <button className={`bnav-btn${tab==="stats"?" active":""}`} onClick={()=>setTab("stats")}><span className="bnav-icon">📊</span>統計</button>
+            </div>
+        </div>
+    );
+
+    // ══ DETAIL VIEW ══
+    if(view==="detail"&&selected){
+        const l=selected;const t=TYPE_MAP[l.type]||TYPE_MAP.other;
+        const recv=getRecv(l);const unpaid=getUnpaid(l);
+        return(
+            <div className="app">
+                <div className="header">
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <button className="btn btn-outline btn-sm" onClick={()=>setView("list")}>← 返回</button>
+                        <div style={{fontSize:15,fontWeight:700,color:"var(--text)"}}>{t.icon} {l.subject||"（未填主旨）"}</div>
+                    </div>
+                    <div style={{display:"flex",gap:8}}>
+                        <button className="btn btn-outline btn-sm" onClick={()=>openEdit(l)}>✏️ 編輯</button>
+                        <button className="btn btn-danger btn-sm" onClick={()=>setDelConfirm(l.id)}>🗑</button>
+                    </div>
+                </div>
+
+                {delConfirm&&<div className="overlay"><div className="dialog">
+                    <div style={{fontWeight:700,fontSize:16,marginBottom:10}}>確認刪除此信函記錄？</div>
+                    <div style={{color:"var(--text2)",marginBottom:20}}>此操作無法復原。</div>
+                    <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+                        <button className="btn btn-outline btn-sm" onClick={()=>setDelConfirm(null)}>取消</button>
+                        <button className="btn btn-sm" style={{background:"var(--red)",color:"#fff"}} onClick={deleteLetter}>確認刪除</button>
+                    </div>
+                </div></div>}
+
+                <div className="content">
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+                        <Badge label={t.label} color={t.color}/>
+                        <Badge label={l.replyStatus} color={l.replyStatus==="未回覆"?"#f59e0b":l.replyStatus==="已提訴訟"?"#ef4444":"#22c55e"}/>
+                        {(l.tags||[]).map(tag=><Badge key={tag} label={tag} color="#64748b"/>)}
+                    </div>
+                    <div className="detail-grid">
+                        {/* 基本 */}
+                        <div className="card">
+                            <div className="card-title">📋 基本資料</div>
+                            {[["主旨",l.subject],["信函類型",t.label],["委託人",l.clientName],["委託人電話",l.clientPhone],["對造當事人",l.opposingParty],["對造地址",l.opposingAddress],["委託日期",l.retainerDate],["回覆狀態",l.replyStatus]].map(([k,v])=>(
+                                <div key={k} className="info-row"><div className="info-lbl">{k}</div><div className="info-val">{v||"—"}</div></div>
+                            ))}
+                        </div>
+                        {/* 費用 */}
+                        <div className="card">
+                            <div className="card-title">💰 費用管理</div>
+                            <div className="fee-summary">
+                                <div className="fee-sum-row"><span style={{fontSize:12,color:"var(--text3)"}}>本件費用</span><span style={{fontWeight:800,color:"var(--gold)"}}>{fmt(l.totalFee)}</span></div>
+                                <div className="fee-sum-row"><span style={{fontSize:12,color:"var(--text3)"}}>已收款</span><span style={{fontWeight:700,color:"var(--green)"}}>{fmt(recv)}</span></div>
+                                <div className="fee-sum-row"><span style={{fontSize:12,color:"var(--text3)"}}>未收款</span><span style={{fontWeight:700,color:unpaid>0?"var(--red)":"var(--text3)"}}>{fmt(unpaid)}</span></div>
+                                {Number(l.totalFee)>0&&(
+                                    <div className="fee-bar" style={{marginTop:8}}><div className="fee-bar-fill" style={{width:`${Math.min(100,recv/Number(l.totalFee)*100).toFixed(1)}%`}}/></div>
+                                )}
+                            </div>
+                            {(l.payments||[]).length>0&&(
+                                <div>
+                                    <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>收款記錄</div>
+                                    {(l.payments||[]).map((p,i)=>(
+                                        <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
+                                            <span style={{fontWeight:800,color:"var(--green)"}}>{Number(p.amount).toLocaleString()} 元</span>
+                                            <span className={`pay-badge ${p.method==="現金"?"pay-cash":"pay-transfer"}`}>{p.method}</span>
+                                            <span style={{fontSize:11,color:"var(--text3)",marginLeft:"auto"}}>{p.date}{p.note&&` · ${p.note}`}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {l.disbursements>0&&<div className="info-row" style={{marginTop:8}}><div className="info-lbl">代墊款項</div><div className="info-val" style={{color:"var(--purple)",fontWeight:700}}>{fmt(l.disbursements)}</div></div>}
+                        </div>
+                        {/* 寄送記錄 */}
+                        <div className="card">
+                            <div className="card-title">📬 寄送記錄（{(l.shippings||[]).length}筆）</div>
+                            {(l.shippings||[]).length===0&&<div style={{color:"var(--text4)",fontSize:13,padding:"10px 0"}}>尚無寄送記錄</div>}
+                            {(l.shippings||[]).sort((a,b)=>b.date.localeCompare(a.date)).map((s,i)=>(
+                                <div key={i} className="ship-row">
+                                    <div className="ship-icon" style={{background:"rgba(59,130,246,.15)"}}>📬</div>
+                                    <div style={{flex:1}}>
+                                        <div style={{fontWeight:700,color:"var(--text)",fontSize:13}}>{s.method}</div>
+                                        <div style={{fontSize:11,color:"var(--text3)"}}>{s.date}{s.trackNo&&` · 掛號：${s.trackNo}`}{s.note&&` · ${s.note}`}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {/* 文件 */}
+                        <div className="card">
+                            <div className="card-title">📄 信函文件（{(l.docLinks||[]).length}份）</div>
+                            {(l.docLinks||[]).length===0&&<div style={{color:"var(--text4)",fontSize:13,padding:"10px 0"}}>尚無文件連結</div>}
+                            {(l.docLinks||[]).map((d,i)=>(
+                                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
+                                    <span style={{fontSize:18}}>📄</span>
+                                    <a href={d.url} target="_blank" rel="noreferrer" style={{flex:1,color:"var(--blue)",fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.label||d.url}</a>
+                                </div>
+                            ))}
+                            {/* Template content */}
+                            {l.templateId&&(()=>{const tmpl=templates.find(t=>t.id===l.templateId);return tmpl?<div style={{marginTop:12}}><div style={{fontSize:10,color:"var(--text4)",fontWeight:700,textTransform:"uppercase",marginBottom:6}}>使用範本：{tmpl.name}</div></div>:null;})()}
+                        </div>
+                        {/* 備註 */}
+                        {l.notes&&<div className="card">
+                            <div className="card-title">📝 備註</div>
+                            <div style={{fontSize:13,color:"var(--text2)",whiteSpace:"pre-wrap",lineHeight:1.75}}>{l.notes}</div>
+                        </div>}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ══ TEMPLATE FORM ══
+    if(view==="tmplForm")return(
+        <div className="app">
+            <div className="header">
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <button className="btn btn-outline btn-sm" onClick={()=>{setView("list");setTab("templates");}}>← 取消</button>
+                    <div style={{fontWeight:700,fontSize:14}}>{tmplEditId?"編輯範本":"新增範本"}</div>
+                </div>
+                <button className="btn btn-gold" onClick={saveTemplate}>💾 儲存範本</button>
+            </div>
+            <div className="content">
+                <div className="form-grid">
+                    <div className="fg">
+                        <label className="fl">範本名稱</label>
+                        <input className="fi" value={tmplForm.name} onChange={e=>setTmplForm(f=>({...f,name:e.target.value}))} placeholder="例：催款函範本"/>
+                    </div>
+                    <div className="fg">
+                        <label className="fl">信函類型</label>
+                        <select className="fi" value={tmplForm.type} onChange={e=>setTmplForm(f=>({...f,type:e.target.value}))}>
+                            {LETTER_TYPES.map(t=><option key={t.key} value={t.key}>{t.label}</option>)}
+                        </select>
+                    </div>
+                </div>
+                <div className="fg">
+                    <label className="fl">範本內容（可記錄格式、要點或範例文字）</label>
+                    <textarea className="fi" style={{minHeight:300}} value={tmplForm.content} onChange={e=>setTmplForm(f=>({...f,content:e.target.value}))} placeholder="在此輸入範本內容…&#10;&#10;例：&#10;主旨：催告清償債務&#10;&#10;一、緣委託人與台端間…"/>
+                </div>
+            </div>
+        </div>
+    );
+
+    // ══ FORM VIEW ══
+    const F=formData;
+    return(
+        <div className="app">
+            <div className="header">
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <button className="btn btn-outline btn-sm" onClick={()=>setView(editId?"detail":"list")}>← 取消</button>
+                    <div style={{fontWeight:700,fontSize:14}}>{editId?"編輯信函記錄":"新增信函記錄"}</div>
+                </div>
+                <button className="btn btn-gold" onClick={saveLetter}>☁️ 儲存</button>
+            </div>
+            <div className="content">
+
+                {/* 基本資料 */}
+                <div className="section-hdr">📋 基本資料</div>
+                <div className="form-grid">
+                    <div className="fg" style={{gridColumn:"span 2"}}>
+                        <label className="fl">主旨</label>
+                        <input className="fi" value={F.subject||""} onChange={e=>sf("subject",e.target.value)} placeholder="例：催告清償借款、侵害著作權警告…"/>
+                    </div>
+                    <div className="fg">
+                        <label className="fl">信函類型</label>
+                        <select className="fi" value={F.type} onChange={e=>sf("type",e.target.value)}>
+                            {LETTER_TYPES.map(t=><option key={t.key} value={t.key}>{t.icon} {t.label}</option>)}
+                        </select>
+                    </div>
+                    <div className="fg">
+                        <label className="fl">回覆狀態</label>
+                        <select className="fi" value={F.replyStatus||"未回覆"} onChange={e=>sf("replyStatus",e.target.value)}>
+                            {REPLY_STATUS.map(s=><option key={s}>{s}</option>)}
+                        </select>
+                    </div>
+                    <div className="fg">
+                        <label className="fl">委託人姓名</label>
+                        <input className="fi" value={F.clientName||""} onChange={e=>sf("clientName",e.target.value)} placeholder=""/>
+                    </div>
+                    <div className="fg">
+                        <label className="fl">委託人電話</label>
+                        <input className="fi" type="tel" value={F.clientPhone||""} onChange={e=>sf("clientPhone",e.target.value)} placeholder="0912-345-678"/>
+                    </div>
+                    <div className="fg">
+                        <label className="fl">對造當事人</label>
+                        <input className="fi" value={F.opposingParty||""} onChange={e=>sf("opposingParty",e.target.value)}/>
+                    </div>
+                    <div className="fg">
+                        <label className="fl">委託日期</label>
+                        <input className="fi" type="date" value={F.retainerDate||""} onChange={e=>sf("retainerDate",e.target.value)}/>
+                    </div>
+                    <div className="fg" style={{gridColumn:"span 2"}}>
+                        <label className="fl">對造地址（寄送用）</label>
+                        <input className="fi" value={F.opposingAddress||""} onChange={e=>sf("opposingAddress",e.target.value)} placeholder=""/>
+                    </div>
+                </div>
+
+                {/* 套用範本 */}
+                {templates.length>0&&<>
+                    <div className="section-hdr">📑 套用範本（選填）</div>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                        <button className={`btn btn-sm ${!F.templateId?"btn-outline":""}`} style={!F.templateId?{borderColor:"var(--gold)",color:"var(--gold)"}:{background:"var(--bg4)",color:"var(--text3)"}} onClick={()=>sf("templateId","")}> 不套用</button>
+                        {templates.map(t=>(
+                            <button key={t.id} className="btn btn-sm" onClick={()=>sf("templateId",t.id)}
+                                style={{background:F.templateId===t.id?"rgba(200,169,110,.15)":"transparent",border:`1px solid ${F.templateId===t.id?"var(--gold)":"var(--border)"}`,color:F.templateId===t.id?"var(--gold)":"var(--text3)"}}>
+                                {TYPE_MAP[t.type]?.icon} {t.name}
+                            </button>
+                        ))}
+                    </div>
+                    {F.templateId&&(()=>{
+                        const t=templates.find(x=>x.id===F.templateId);
+                        return t?<div style={{background:"var(--bg)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"var(--text3)",whiteSpace:"pre-wrap",maxHeight:120,overflow:"hidden",marginTop:8,borderLeft:"3px solid var(--gold)"}}>{t.content}</div>:null;
+                    })()}
+                </>}
+
+                {/* 費用 */}
+                <div className="section-hdr">💰 費用管理</div>
+                <div className="form-grid" style={{marginBottom:16}}>
+                    <div className="fg">
+                        <label className="fl">本件費用（元）</label>
+                        <input className="fi" type="number" min="0" value={F.totalFee||""} onChange={e=>sf("totalFee",e.target.value)} placeholder="應收費用總額"/>
+                    </div>
+                    <div className="fg">
+                        <label className="fl">代墊款項（元）</label>
+                        <input className="fi" type="number" min="0" value={F.disbursements||""} onChange={e=>sf("disbursements",e.target.value)}/>
+                    </div>
+                </div>
+                {Number(F.totalFee)>0&&(
+                    <div className="fee-summary" style={{marginBottom:16}}>
+                        {[["本件費用",Number(F.totalFee).toLocaleString()+" 元","var(--gold)"],["已收款合計",(F.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0).toLocaleString()+" 元","var(--green)"],["自動計算未收款",Math.max(0,Number(F.totalFee)-(F.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0)).toLocaleString()+" 元","var(--red)"]].map(([l,v,c])=>(
+                            <div key={l} className="fee-sum-row"><span style={{fontSize:12,color:"var(--text3)"}}>{l}</span><span style={{fontWeight:700,color:c}}>{v}</span></div>
+                        ))}
+                    </div>
+                )}
+                {/* Payment records */}
+                {(F.payments||[]).map((p,i)=>(
+                    <div key={i} className="item-row">
+                        <div style={{flex:1}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                                <span style={{fontWeight:800,color:"var(--green)"}}>{Number(p.amount).toLocaleString()} 元</span>
+                                <span className={`pay-badge ${p.method==="現金"?"pay-cash":"pay-transfer"}`}>{p.method}</span>
+                            </div>
+                            <div style={{fontSize:11,color:"var(--text3)"}}>{p.date}{p.note&&` · ${p.note}`}</div>
+                        </div>
+                        <button className="btn btn-danger btn-xs" onClick={()=>sf("payments",(F.payments||[]).filter((_,idx)=>idx!==i))}>✕</button>
+                    </div>
+                ))}
+                <div className="add-row" style={{alignItems:"flex-end"}}>
+                    <div className="fg" style={{flex:"1 1 100px"}}><label className="fl">金額</label><input className="fi" type="number" min="0" value={newPay.amount} onChange={e=>setNewPay(p=>({...p,amount:e.target.value}))} placeholder="0"/></div>
+                    <div className="fg" style={{flex:"1 1 130px"}}><label className="fl">收款日期</label><input className="fi" type="date" value={newPay.date} onChange={e=>setNewPay(p=>({...p,date:e.target.value}))}/></div>
+                    <div className="fg" style={{flex:"0 0 100px"}}><label className="fl">方式</label><select className="fi" value={newPay.method} onChange={e=>setNewPay(p=>({...p,method:e.target.value}))}>{PAY_METHODS.map(m=><option key={m}>{m}</option>)}</select></div>
+                    <div className="fg" style={{flex:"1 1 100px"}}><label className="fl">備註</label><input className="fi" value={newPay.note} onChange={e=>setNewPay(p=>({...p,note:e.target.value}))} placeholder="例：第一期"/></div>
+                    <button className="btn btn-gold btn-sm" onClick={addPay}>＋</button>
+                </div>
+
+                {/* 寄送記錄 */}
+                <div className="section-hdr">📬 寄送記錄</div>
+                {(F.shippings||[]).map((s,i)=>(
+                    <div key={i} className="item-row">
+                        <div style={{flex:1}}>
+                            <div style={{fontWeight:700,color:"var(--text)",fontSize:13}}>{s.method}</div>
+                            <div style={{fontSize:11,color:"var(--text3)"}}>{s.date}{s.trackNo&&` · 掛號：${s.trackNo}`}{s.note&&` · ${s.note}`}</div>
+                        </div>
+                        <button className="btn btn-danger btn-xs" onClick={()=>sf("shippings",(F.shippings||[]).filter((_,idx)=>idx!==i))}>✕</button>
+                    </div>
+                ))}
+                <div className="add-row" style={{alignItems:"flex-end"}}>
+                    <div className="fg" style={{flex:"1 1 130px"}}><label className="fl">寄送日期</label><input className="fi" type="date" value={newShip.date} onChange={e=>setNewShip(s=>({...s,date:e.target.value}))}/></div>
+                    <div className="fg" style={{flex:"1 1 130px"}}><label className="fl">寄送方式</label><select className="fi" value={newShip.method} onChange={e=>setNewShip(s=>({...s,method:e.target.value}))}>{SEND_METHODS.map(m=><option key={m}>{m}</option>)}</select></div>
+                    <div className="fg" style={{flex:"1 1 120px"}}><label className="fl">掛號號碼</label><input className="fi" value={newShip.trackNo} onChange={e=>setNewShip(s=>({...s,trackNo:e.target.value}))} placeholder="RR123456789TW"/></div>
+                    <div className="fg" style={{flex:"1 1 100px"}}><label className="fl">備註</label><input className="fi" value={newShip.note} onChange={e=>setNewShip(s=>({...s,note:e.target.value}))}/></div>
+                    <button className="btn btn-gold btn-sm" onClick={addShip}>＋</button>
+                </div>
+
+                {/* 文件連結 */}
+                <div className="section-hdr">📄 信函文件連結</div>
+                {(F.docLinks||[]).map((d,i)=>(
+                    <div key={i} className="item-row">
+                        <div style={{flex:1}}>
+                            <div style={{fontSize:13,color:"var(--text)"}}>{d.label||"（未命名）"}</div>
+                            <div style={{fontSize:11,color:"var(--text3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.url}</div>
+                        </div>
+                        <button className="btn btn-danger btn-xs" onClick={()=>sf("docLinks",(F.docLinks||[]).filter((_,idx)=>idx!==i))}>✕</button>
+                    </div>
+                ))}
+                <div className="add-row" style={{alignItems:"flex-end"}}>
+                    <div className="fg" style={{flex:"1 1 160px"}}><label className="fl">文件名稱</label><input className="fi" value={newDoc.label} onChange={e=>setNewDoc(d=>({...d,label:e.target.value}))} placeholder="例：存證信函正本、回執"/></div>
+                    <div className="fg" style={{flex:"2 1 200px"}}><label className="fl">Google Drive / 雲端連結</label><input className="fi" type="url" value={newDoc.url} onChange={e=>setNewDoc(d=>({...d,url:e.target.value}))} placeholder="https://drive.google.com/…"/></div>
+                    <button className="btn btn-gold btn-sm" onClick={addDoc}>＋</button>
+                </div>
+
+                {/* 備註 */}
+                <div className="section-hdr">📝 備註</div>
+                <textarea className="fi" style={{width:"100%",minHeight:100}} value={F.notes||""} onChange={e=>sf("notes",e.target.value)} placeholder="案件備忘、注意事項…"/>
+
+                <div style={{height:20}}/>
+            </div>
+            <div className="bnav">
+                <button className="bnav-btn" onClick={()=>setView("list")}><span className="bnav-icon">📋</span>列表</button>
+                <button className="bnav-btn active"><span className="bnav-icon">➕</span>新增</button>
+                <button className="bnav-btn" onClick={()=>{setView("list");setTab("templates");}}><span className="bnav-icon">📑</span>範本</button>
+                <button className="bnav-btn" onClick={()=>{setView("list");setTab("stats");}}><span className="bnav-icon">📊</span>統計</button>
+            </div>
+        </div>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Root/>);
+</script>
+</body>
+</html>

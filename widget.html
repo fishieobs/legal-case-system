@@ -1061,22 +1061,35 @@ function bindEvents(){
             render();
         }
     };
+    const closeDayModal = ()=>{
+        state.selectedDate=null;
+        state.dayDetail=null;
+        render();
+    };
 
     // Calendar cell click
     document.querySelectorAll("[data-date]").forEach(cell=>{
         const date=cell.dataset.date;
         if(date){
             cell.addEventListener("click",()=>{
-                state.selectedDate=date;
+                state.selectedDate=null;
+                state.dayDetail=date;
                 render();
             });
         }
     });
 
     // Day modal close
-    document.getElementById("day-modal")?.addEventListener("click",()=>{
-        state.selectedDate=null;
-        render();
+    document.querySelectorAll(".day-modal").forEach(modal=>{
+        modal.addEventListener("click",e=>{
+            if(e.target===modal) closeDayModal();
+        });
+    });
+    document.querySelectorAll(".day-close").forEach(btn=>{
+        btn.addEventListener("click",e=>{
+            e.stopPropagation();
+            closeDayModal();
+        });
     });
 
     // QR check-in
@@ -1098,6 +1111,8 @@ function bindEvents(){
     // Calendar day click
     document.querySelectorAll("[data-date]").forEach(cell=>{
         cell.addEventListener("click",()=>{
+            if(!cell.dataset.date) return;
+            state.selectedDate=null;
             state.dayDetail=cell.dataset.date;
             render();
         });

@@ -24,7 +24,7 @@
     --green:#16a34a;--red:#dc2626;--yellow:#d97706;--blue:#2563eb;--border:#e2e8f0;
     --shadow:0 2px 8px rgba(0,0,0,.08);
 }
-html,body{transition:background .3s,color .3s;}
+html,body{padding-top:40px;transition:background .3s,color .3s;}
 html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',system-ui,sans-serif;}
 
 /* ── HEADER ── */
@@ -186,6 +186,56 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'N
 </style>
 </head>
 <body>
+<!-- ══ 系統導覽列 ══ -->
+
+<style id="sys-nav-css">
+.sys-nav{
+    position:fixed;top:0;left:0;right:0;z-index:9999;
+    background:rgba(5,10,24,.96);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(200,169,110,.25);
+    display:flex;align-items:center;gap:2px;
+    padding:6px 12px;
+    overflow-x:auto;scrollbar-width:none;
+}
+.sys-nav::-webkit-scrollbar{display:none;}
+.sys-nav-item{
+    display:inline-flex;align-items:center;
+    padding:6px 14px;border-radius:7px;
+    font-size:12px;font-weight:700;
+    white-space:nowrap;font-family:'Noto Sans TC',sans-serif;
+    transition:all .15s;text-decoration:none;
+    border:1px solid transparent;
+}
+.sys-nav-item.active{
+    background:rgba(200,169,110,.15);
+    color:#c8a96e;border-color:rgba(200,169,110,.3);
+    cursor:default;
+}
+a.sys-nav-item{color:#64748b;}
+a.sys-nav-item:hover{
+    background:rgba(200,169,110,.08);
+    color:#c8a96e;border-color:rgba(200,169,110,.2);
+}
+.sys-nav-logo{
+    font-size:14px;color:rgba(200,169,110,.5);
+    margin-right:6px;flex-shrink:0;
+    border-right:1px solid rgba(200,169,110,.2);
+    padding-right:10px;
+}
+.sys-nav-spacer{flex:1;}
+</style>
+
+<div class="sys-nav">
+    <span class="sys-nav-logo">⚖</span>
+    <a class="sys-nav-item" href="index.html">⚖ 案件系統</a>
+<span class="sys-nav-item active">📅 庭期 Widget</span>
+<a class="sys-nav-item" href="letters.html">📮 信函管理</a>
+<a class="sys-nav-item" href="templates.html">📚 文書範本</a>
+    <span class="sys-nav-spacer"></span>
+</div>
+<!-- ══ /系統導覽列 ══ -->
+
 <div id="root"></div>
 
 <script type="module">
@@ -222,9 +272,7 @@ function toggleTodo(id){
     if(idx===-1)return;
     state.calTodos[idx].done=!state.calTodos[idx].done;
     saveCalTodos(state.calTodos);
-    render();
 }
-window.toggleTodo = toggleTodo;
 
 function daysUntil(d){
     // 兩端都用台灣時間的「當日零時」比較，避免時區造成的差一天問題
@@ -689,8 +737,8 @@ function buildWidget(){
                 `:""} 
                 ${todos.length>0?`
                 <div style="font-size:11px;color:var(--text4);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:12px 0 8px">✅ 待辦事項（${todos.length}項）</div>
-                ${todos.map(t=>`<div onclick="toggleTodo('${t.id}')" style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;cursor:pointer">
-                    <div onclick="event.stopPropagation();toggleTodo('${t.id}')" style="width:16px;height:16px;border-radius:4px;border:2px solid #8b5cf6;background:${t.done?"#8b5cf6":"transparent"};flex-shrink:0;display:flex;align-items:center;justify-content:center">${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}</div>
+                ${todos.map(t=>`<div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
+                    <div style="width:16px;height:16px;border-radius:4px;border:2px solid #8b5cf6;background:${t.done?"#8b5cf6":"transparent"};flex-shrink:0;display:flex;align-items:center;justify-content:center">${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}</div>
                     <div style="flex:1;color:var(--text);font-size:13px;text-decoration:${t.done?"line-through":"none"}">${t.text}</div>
                 </div>`).join("")}
                 `:""} 
@@ -742,8 +790,8 @@ function buildWidget(){
                         <span>${dd.getMonth()+1}/${dd.getDate()}（${wd}）</span>
                         <span style="color:#8b5cf6;font-weight:800">${dLabel}</span>
                     </div>
-                    ${todos.map(t=>`<div onclick="toggleTodo('${t.id}')" style="background:var(--bg3);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;opacity:${t.done?.5:1};cursor:pointer">
-                        <div onclick="event.stopPropagation();toggleTodo('${t.id}')" style="width:18px;height:18px;border-radius:4px;border:2px solid #8b5cf6;background:${t.done?"#8b5cf6":"transparent"};flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center">${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}</div>
+                    ${todos.map(t=>`<div style="background:var(--bg3);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;opacity:${t.done?.5:1}">
+                        <div style="width:18px;height:18px;border-radius:4px;border:2px solid #8b5cf6;background:${t.done?"#8b5cf6":"transparent"};flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center">${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}</div>
                         <div style="flex:1;color:var(--text);font-size:14px;text-decoration:${t.done?"line-through":"none"}">${t.text}</div>
                     </div>`).join("")}
                 </div>`;
@@ -889,7 +937,7 @@ function buildWidget(){
                     ${todos.length>0?`
                     <div class="day-section">
                         <div class="day-section-title">✅ 待辦事項（${todos.length}項）</div>
-                        ${todos.map(t=>`<div class="day-item" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer" onclick="toggleTodo('${t.id}')">
+                        ${todos.map(t=>`<div class="day-item" style="display:flex;align-items:flex-start;gap:10px">
                             <div class="todo-check-box${t.done?" done":""}" onclick="event.stopPropagation();toggleTodo('${t.id}')">
                                 ${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}
                             </div>
@@ -931,8 +979,8 @@ function buildWidget(){
                             <span style="color:#8b5cf6;font-weight:700">${dLabel}</span>
                         </div>
                         ${todos.map(t=>`
-                        <div class="todo-item${t.done?" done":""}" onclick="toggleTodo('${t.id}')">
-                            <div class="todo-check-box${t.done?" done":""}" onclick="event.stopPropagation();toggleTodo('${t.id}')">${t.done?"<span style=\"color:#fff;font-size:10px;font-weight:900\">&#10003;</span>":""}</div>
+                        <div class="todo-item${t.done?" done":""}">
+                            <div class="todo-check-box${t.done?" done":""}" onclick="toggleTodo('${t.id}')">${t.done?"<span style=\"color:#fff;font-size:10px;font-weight:900\">✓</span>":""}</div>
                             <div style="flex:1;font-size:13px;color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
                         </div>`).join("")}
                     </div>`;

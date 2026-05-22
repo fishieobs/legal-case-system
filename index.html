@@ -37,7 +37,7 @@
     --shadow:0 2px 8px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.5;transition:background .3s,color .3s;}
+html,body{padding-top:40px;height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.5;transition:background .3s,color .3s;}
 
 /* ── LAYOUT ── */
 .app{min-height:100vh;padding-bottom:80px;}
@@ -328,13 +328,63 @@ a{color:var(--blue);}
 </style>
 </head>
 <body>
+<!-- ══ 系統導覽列 ══ -->
+
+<style id="sys-nav-css">
+.sys-nav{
+    position:fixed;top:0;left:0;right:0;z-index:9999;
+    background:rgba(5,10,24,.96);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(200,169,110,.25);
+    display:flex;align-items:center;gap:2px;
+    padding:6px 12px;
+    overflow-x:auto;scrollbar-width:none;
+}
+.sys-nav::-webkit-scrollbar{display:none;}
+.sys-nav-item{
+    display:inline-flex;align-items:center;
+    padding:6px 14px;border-radius:7px;
+    font-size:12px;font-weight:700;
+    white-space:nowrap;font-family:'Noto Sans TC',sans-serif;
+    transition:all .15s;text-decoration:none;
+    border:1px solid transparent;
+}
+.sys-nav-item.active{
+    background:rgba(200,169,110,.15);
+    color:#c8a96e;border-color:rgba(200,169,110,.3);
+    cursor:default;
+}
+a.sys-nav-item{color:#64748b;}
+a.sys-nav-item:hover{
+    background:rgba(200,169,110,.08);
+    color:#c8a96e;border-color:rgba(200,169,110,.2);
+}
+.sys-nav-logo{
+    font-size:14px;color:rgba(200,169,110,.5);
+    margin-right:6px;flex-shrink:0;
+    border-right:1px solid rgba(200,169,110,.2);
+    padding-right:10px;
+}
+.sys-nav-spacer{flex:1;}
+</style>
+
+<div class="sys-nav">
+    <span class="sys-nav-logo">⚖</span>
+    <span class="sys-nav-item active">⚖ 案件系統</span>
+<a class="sys-nav-item" href="widget.html">📅 庭期 Widget</a>
+<a class="sys-nav-item" href="letters.html">📮 信函管理</a>
+<a class="sys-nav-item" href="templates.html">📚 文書範本</a>
+    <span class="sys-nav-spacer"></span>
+</div>
+<!-- ══ /系統導覽列 ══ -->
+
 <div id="root"></div>
 <div id="toast"></div>
 
 <!-- Firebase -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     const firebaseConfig = {
         apiKey: "AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",
@@ -349,7 +399,7 @@ a{color:var(--blue);}
     const auth = getAuth(app);
     window.db = db;
     window.auth = auth;
-    window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc };
+    window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc };
     window.fbAuth = { signInWithEmailAndPassword, signOut, onAuthStateChanged };
     window.firebaseReady = true;
 </script>
@@ -580,33 +630,6 @@ function useTheme(){
 // ══════════════════════════════════════════
 //  APP
 // ══════════════════════════════════════════
-async function syncCaseTodosToCalendar(caseData){
-    if(!window.db || !window.fbMethods?.getDoc) return;
-    const caseId = caseData.id;
-    const calRef = window.fbMethods.doc(window.db,"calTodos","shared");
-    const snap = await window.fbMethods.getDoc(calRef);
-    const existing = snap.exists() ? (snap.data().items||[]) : [];
-    const kept = existing.filter(t=>!(t.source==="caseTodo" && t.caseId===caseId));
-    const linked = (caseData.todos||[])
-        .filter(t=>t.due)
-        .map(t=>({
-            id:`caseTodo_${caseId}_${t.id}`,
-            source:"caseTodo",
-            caseId,
-            todoId:t.id,
-            date:t.due,
-            text:[caseData.clientName||caseData.firmCaseNo, t.text].filter(Boolean).join("｜"),
-            done:!!t.done,
-            createdAt:t.createdAt||new Date().toISOString()
-        }));
-    const updated = [...kept, ...linked];
-    await window.fbMethods.setDoc(calRef,{items:updated, updatedAt:new Date().toISOString()});
-    try{
-        localStorage.setItem("calTodos", JSON.stringify(updated));
-        localStorage.setItem("calTodos_updatedAt", String(Date.now()));
-    }catch(_){}
-}
-
 function App({user}){
     const [cases, setCases] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -649,36 +672,6 @@ function App({user}){
     const [editingToolId, setEditingToolId] = useState(null);
     const { mode, effective, cycleMode } = useTheme();
 
-    const applyCalTodos = useCallback((items)=>{
-        const safeItems = Array.isArray(items) ? items : [];
-        setCalTodos(safeItems);
-        try{
-            localStorage.setItem("calTodos", JSON.stringify(safeItems));
-            localStorage.setItem("calTodos_updatedAt", String(Date.now()));
-        }catch(_){}
-    },[]);
-
-    const refreshCalTodos = useCallback(async()=>{
-        if(!window.db || !window.fbMethods?.getDoc) return;
-        try{
-            const snap = await window.fbMethods.getDoc(window.fbMethods.doc(window.db,"calTodos","shared"));
-            if(snap.exists()) applyCalTodos(snap.data().items||[]);
-        }catch(e){
-            console.warn("calTodos refresh failed:", e);
-        }
-    },[applyCalTodos]);
-
-    const loadLatestCalTodos = useCallback(async()=>{
-        if(!window.db || !window.fbMethods?.getDoc) return calTodos;
-        try{
-            const snap = await window.fbMethods.getDoc(window.fbMethods.doc(window.db,"calTodos","shared"));
-            return snap.exists() ? (snap.data().items||[]) : [];
-        }catch(e){
-            console.warn("calTodos load latest failed:", e);
-            return calTodos;
-        }
-    },[calTodos]);
-
     // ── Firebase listener ──
     useEffect(()=>{
         // 先從 localStorage 快取立即顯示，避免白畫面
@@ -687,36 +680,19 @@ function App({user}){
             if(cached){ setCases(JSON.parse(cached)); setLoading(false); }
         }catch(e){}
 
-        let unsubCases=null, unsubCalTodos=null;
-        const syncFromCache = ()=>{
-            try{
-                const cached = localStorage.getItem("calTodos");
-                if(cached) setCalTodos(JSON.parse(cached));
-            }catch(_){}
-        };
-        const wakeSync = ()=>{
-            if(document.visibilityState && document.visibilityState !== "visible") return;
-            refreshCalTodos();
-        };
-        window.addEventListener("storage", syncFromCache);
-        window.addEventListener("focus", wakeSync);
-        window.addEventListener("online", wakeSync);
-        window.addEventListener("pageshow", wakeSync);
-        document.addEventListener("visibilitychange", wakeSync);
-
         const wait = setInterval(()=>{
             if(!window.db) return;
             clearInterval(wait);
-            const {collection,onSnapshot,doc} = window.fbMethods;
+            const {collection,onSnapshot,doc,getDoc} = window.fbMethods;
             // Load calTodos from Firebase (realtime)
-            unsubCalTodos = onSnapshot(window.fbMethods.doc(window.db,"calTodos","shared"), snap=>{
+            onSnapshot(window.fbMethods.doc(window.db,"calTodos","shared"), snap=>{
                 if(snap.exists()){
                     const items=snap.data().items||[];
-                    applyCalTodos(items);
+                    setCalTodos(items);
+                    try{ localStorage.setItem("calTodos",JSON.stringify(items)); }catch(_){}
                 }
             }, e=>console.warn("calTodos listen failed:",e));
-            refreshCalTodos();
-            unsubCases = onSnapshot(
+            onSnapshot(
                 collection(window.db,"cases"),
                 snap=>{
                     const data = snap.docs.map(d=>({...d.data(),id:d.id}));
@@ -740,17 +716,8 @@ function App({user}){
             setLoading(f=>{ if(f) toast("⚠️ 連線逾時，請確認 Firestore 規則"); return false; });
         },6000);
 
-        return ()=>{
-            clearInterval(wait); clearTimeout(timeout);
-            if(unsubCalTodos) unsubCalTodos();
-            if(unsubCases) unsubCases();
-            window.removeEventListener("storage", syncFromCache);
-            window.removeEventListener("focus", wakeSync);
-            window.removeEventListener("online", wakeSync);
-            window.removeEventListener("pageshow", wakeSync);
-            document.removeEventListener("visibilitychange", wakeSync);
-        };
-    },[applyCalTodos, refreshCalTodos]);
+        return ()=>{ clearInterval(wait); clearTimeout(timeout); };
+    },[]);
 
     const selected = cases.find(c=>c.id===selectedId);
 
@@ -861,29 +828,26 @@ function App({user}){
 
     // ── Calendar Todos ──
     const saveCalTodos=(updated)=>{
-        applyCalTodos(updated);
+        setCalTodos(updated);
+        try{ localStorage.setItem("calTodos",JSON.stringify(updated)); }catch(_){}
         // Also sync to Firebase as a single doc
         window.fbMethods.setDoc(
             window.fbMethods.doc(window.db,"calTodos","shared"),
             {items:updated, updatedAt:new Date().toISOString()}
         ).catch(e=>console.warn("calTodos save failed:",e));
     };
-    const addCalTodo=async(dateStr)=>{
-        const text = calTodoInput.trim();
-        if(!text) return;
-        const latest = await loadLatestCalTodos();
-        const updated=[...latest,{id:uid(),date:dateStr,text,done:false,createdAt:new Date().toISOString()}];
+    const addCalTodo=(dateStr)=>{
+        if(!calTodoInput.trim()) return;
+        const updated=[...calTodos,{id:uid(),date:dateStr,text:calTodoInput.trim(),done:false,createdAt:new Date().toISOString()}];
         saveCalTodos(updated);
         setCalTodoInput("");
     };
-    const toggleCalTodo=async(id)=>{
-        const latest = await loadLatestCalTodos();
-        const updated=latest.map(t=>t.id===id?{...t,done:!t.done}:t);
+    const toggleCalTodo=(id)=>{
+        const updated=calTodos.map(t=>t.id===id?{...t,done:!t.done}:t);
         saveCalTodos(updated);
     };
-    const deleteCalTodo=async(id)=>{
-        const latest = await loadLatestCalTodos();
-        const updated=latest.filter(t=>t.id!==id);
+    const deleteCalTodo=(id)=>{
+        const updated=calTodos.filter(t=>t.id!==id);
         saveCalTodos(updated);
     };
 
@@ -1364,8 +1328,10 @@ function App({user}){
                                         isSat?"is-sat":"",
                                         isHoliday?"is-holiday":"",
                                     ].filter(Boolean).join(" ");
+                                    const dateTodos=dateStr?calTodos.filter(t=>t.date===dateStr):[];
                                     return(
-                                        <div key={i} className={cls} style={{cursor:"default"}}>
+                                        <div key={i} className={cls} style={{cursor:cell.cur?"pointer":"default"}}
+                                            onClick={()=>cell.cur&&setCalTodoModal(dateStr)}>
                                             <div className="cal-day-num">{cell.day}</div>
                                             {holidayName && cell.cur && (
                                                 <div className="cal-holiday-label" title={holidayName}>
@@ -1381,6 +1347,13 @@ function App({user}){
                                                 </div>
                                             ))}
                                             {events.length>2 && <div style={{fontSize:9,color:"var(--text4)",paddingLeft:3}}>+{events.length-2}庭</div>}
+                                            {dateTodos.slice(0,2).map((t,ti)=>(
+                                                <div key={ti} className={`cal-todo-dot${t.done?" done":""}`}
+                                                    onClick={e=>{e.stopPropagation();toggleCalTodo(t.id);}}>
+                                                    {t.done?"✓":""} {t.text}
+                                                </div>
+                                            ))}
+                                            {dateTodos.length>2 && <div style={{fontSize:9,color:"#8b5cf6",paddingLeft:3}}>+{dateTodos.length-2}項</div>}
                                         </div>
                                     );
                                 })}
@@ -1388,14 +1361,17 @@ function App({user}){
                             <div className="cal-legend">
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#ef4444"}}/><span style={{color:"#ef4444",fontWeight:700}}>日/假日</span></div>
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#3b82f6"}}/><span style={{color:"#3b82f6",fontWeight:700}}>六</span></div>
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:4,background:"rgba(139,92,246,.4)"}}/><span style={{color:"#8b5cf6",fontWeight:700}}>待辦</span></div>
+                                <div style={{width:1,height:14,background:"var(--border)",margin:"0 4px"}}/>
                                 {CASE_TYPES.map(t=><div key={t} className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:TYPE_COLOR[t]||"#64748b"}}/>{t}</div>)}
                             </div>
+                            <div style={{fontSize:10,color:"var(--text4)",padding:"6px 18px 0",textAlign:"right"}}>點選日期可新增待辦事項</div>
                         </div>
                     );
                 })()}
 
                 {/* Calendar Todo Modal */}
-                {false && calTodoModal && (()=>{
+                {calTodoModal && (()=>{
                     const ds=calTodoModal;
                     const d=new Date(ds+"T00:00:00+08:00");
                     const wd=["日","一","二","三","四","五","六"][d.getDay()];

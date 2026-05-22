@@ -30,7 +30,7 @@
     --border:#e2e8f0;--shadow:0 2px 8px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.5;transition:background .3s,color .3s;}
+html,body{padding-top:40px;height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.5;transition:background .3s,color .3s;}
 .app{min-height:100vh;padding-bottom:80px;}
 /* ── HEADER ── */
 .header{background:var(--bg2);padding:12px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:200;gap:10px;flex-wrap:wrap;}
@@ -139,6 +139,56 @@ a{color:var(--blue);}
 </style>
 </head>
 <body>
+<!-- ══ 系統導覽列 ══ -->
+
+<style id="sys-nav-css">
+.sys-nav{
+    position:fixed;top:0;left:0;right:0;z-index:9999;
+    background:rgba(5,10,24,.96);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(200,169,110,.25);
+    display:flex;align-items:center;gap:2px;
+    padding:6px 12px;
+    overflow-x:auto;scrollbar-width:none;
+}
+.sys-nav::-webkit-scrollbar{display:none;}
+.sys-nav-item{
+    display:inline-flex;align-items:center;
+    padding:6px 14px;border-radius:7px;
+    font-size:12px;font-weight:700;
+    white-space:nowrap;font-family:'Noto Sans TC',sans-serif;
+    transition:all .15s;text-decoration:none;
+    border:1px solid transparent;
+}
+.sys-nav-item.active{
+    background:rgba(200,169,110,.15);
+    color:#c8a96e;border-color:rgba(200,169,110,.3);
+    cursor:default;
+}
+a.sys-nav-item{color:#64748b;}
+a.sys-nav-item:hover{
+    background:rgba(200,169,110,.08);
+    color:#c8a96e;border-color:rgba(200,169,110,.2);
+}
+.sys-nav-logo{
+    font-size:14px;color:rgba(200,169,110,.5);
+    margin-right:6px;flex-shrink:0;
+    border-right:1px solid rgba(200,169,110,.2);
+    padding-right:10px;
+}
+.sys-nav-spacer{flex:1;}
+</style>
+
+<div class="sys-nav">
+    <span class="sys-nav-logo">⚖</span>
+    <a class="sys-nav-item" href="index.html">⚖ 案件系統</a>
+<a class="sys-nav-item" href="widget.html">📅 庭期 Widget</a>
+<span class="sys-nav-item active">📮 信函管理</span>
+<a class="sys-nav-item" href="templates.html">📚 文書範本</a>
+    <span class="sys-nav-spacer"></span>
+</div>
+<!-- ══ /系統導覽列 ══ -->
+
 <div id="root"></div>
 <div id="toast"></div>
 

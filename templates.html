@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="文書範本">
+<meta name="theme-color" content="#0a0f1e">
+<title>⚖ 法律文書範本庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════ ROOT ══════════════════ */
+:root{
+  --bg:#050a18;--bg2:#0a1020;--bg3:#0f1628;--bg4:#162035;--bg5:#1e2d45;
+  --gold:#c8a96e;--gold2:#a07840;--gold3:#e8c98e;
+  --text:#dce8f4;--text2:#8ca0b8;--text3:#566880;--text4:#374860;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--purple:#8b5cf6;--blue:#38bdf8;
+  --border:#162035;--border2:#1e2d45;
+  --shadow:0 4px 20px rgba(0,0,0,.5);
+  --civil:#38bdf8;--criminal:#ef4444;--admin:#f59e0b;--family:#ec4899;--labor:#22c55e;--nonlit:#8b5cf6;--letter:#c8a96e;
+}
+:root.light{
+  --bg:#f4f6fa;--bg2:#ffffff;--bg3:#ffffff;--bg4:#eef1f8;--bg5:#e4e8f4;
+  --gold:#8a5c1a;--gold2:#6a4210;--gold3:#b07c30;
+  --text:#162035;--text2:#374860;--text3:#566880;--text4:#8ca0b8;
+  --border:#dde3ef;--border2:#c8d0e0;--shadow:0 2px 12px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.6;transition:background .3s,color .3s;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px;}
+/* ══════════════════ HEADER ══════════════════ */
+.hdr{position:sticky;top:0;z-index:300;background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.hdr-brand{display:flex;align-items:center;gap:10px;}
+.hdr-logo{font-size:20px;}
+.hdr-title{font-family:'Noto Serif TC',serif;font-size:1.1rem;color:var(--gold);letter-spacing:.03em;}
+.hdr-sub{font-size:9px;color:var(--text3);letter-spacing:.14em;text-transform:uppercase;margin-top:1px;}
+.hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+/* ══════════════════ LAYOUT ══════════════════ */
+.app-wrap{display:flex;min-height:calc(100vh - 57px);}
+.sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:16px 12px;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;}
+@media(max-width:768px){.sidebar{display:none;}.app-wrap{flex-direction:column;}}
+.main{flex:1;overflow:hidden;padding-bottom:80px;}
+/* ══════════════════ SIDEBAR ══════════════════ */
+.sb-section{margin-bottom:20px;}
+.sb-title{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;padding:4px 8px 8px;border-bottom:1px solid var(--border);margin-bottom:6px;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;font-size:13px;color:var(--text2);border:none;background:transparent;width:100%;text-align:left;font-family:inherit;}
+.sb-item:hover{background:var(--bg4);color:var(--text);}
+.sb-item.active{background:rgba(200,169,110,.12);color:var(--gold);font-weight:700;}
+.sb-item .cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sb-count{margin-left:auto;font-size:10px;color:var(--text4);background:var(--bg4);border-radius:4px;padding:1px 6px;}
+/* ══════════════════ BUTTONS ══════════════════ */
+.btn{padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-family:inherit;transition:all .15s;white-space:nowrap;}
+.btn:active{opacity:.85;transform:translateY(1px);}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0a0a;}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.btn-ghost{background:transparent;color:var(--text3);border:none;padding:8px 10px;}
+.btn-ghost:hover{color:var(--text);background:var(--bg4);}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.btn-sm{padding:6px 12px;font-size:11px;}
+.btn-xs{padding:4px 8px;font-size:10px;}
+.btn-icon{padding:7px;border-radius:7px;}
+/* ══════════════════ SEARCH/FILTER BAR ══════════════════ */
+.filter-bar{display:flex;gap:8px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap;align-items:center;position:sticky;top:57px;z-index:200;}
+.search-wrap{flex:1;min-width:200px;position:relative;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none;}
+.fi{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;font-family:inherit;transition:border-color .2s;}
+.fi:focus{border-color:var(--gold);}
+.search-input{padding-left:36px;}
+/* ══════════════════ TEMPLATE GRID ══════════════════ */
+.tmpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;padding:20px;}
+.tmpl-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow);transition:all .2s;cursor:pointer;}
+.tmpl-card:hover{transform:translateY(-2px);border-color:var(--gold)44;box-shadow:0 8px 30px rgba(0,0,0,.4);}
+.tmpl-card-hdr{padding:16px 18px 12px;border-bottom:1px solid var(--border);}
+.tmpl-card-meta{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;}
+.tmpl-card-title{font-size:15px;font-weight:700;color:var(--text);line-height:1.4;}
+.tmpl-card-body{padding:14px 18px;flex:1;display:flex;flex-direction:column;gap:10px;}
+.tmpl-preview{font-size:11px;color:var(--text3);font-family:'Courier Prime',monospace;line-height:1.7;max-height:90px;overflow:hidden;position:relative;}
+.tmpl-preview::after{content:"";position:absolute;bottom:0;left:0;right:0;height:28px;background:linear-gradient(transparent,var(--bg3));}
+.tmpl-card-footer{padding:10px 18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.tmpl-tags{display:flex;flex-wrap:wrap;gap:4px;}
+/* ══════════════════ BADGES ══════════════════ */
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;border:1px solid transparent;}
+/* ══════════════════ DETAIL / EDITOR ══════════════════ */
+.editor-wrap{height:calc(100vh - 57px);display:flex;flex-direction:column;}
+.editor-toolbar{padding:12px 20px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.editor-toolbar-left{display:flex;align-items:center;gap:8px;flex:1;}
+.editor-body{flex:1;display:flex;overflow:hidden;}
+.editor-form{width:320px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;padding:20px;background:var(--bg2);}
+@media(max-width:900px){.editor-form{width:100%;border-right:none;border-bottom:1px solid var(--border);}}
+.editor-preview{flex:1;overflow-y:auto;padding:40px;background:var(--bg);}
+.doc-paper{max-width:680px;margin:0 auto;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:52px 60px;box-shadow:var(--shadow);font-family:'Noto Sans TC',sans-serif;min-height:900px;}
+@media(max-width:600px){.doc-paper{padding:28px 24px;}}
+.doc-title{font-family:'Noto Serif TC',serif;font-size:22px;font-weight:700;text-align:center;color:var(--text);margin-bottom:6px;letter-spacing:.04em;}
+.doc-subtitle{font-size:12px;text-align:center;color:var(--text3);margin-bottom:30px;letter-spacing:.08em;}
+.doc-meta{border:1px solid var(--border);border-radius:6px;padding:14px 18px;margin-bottom:24px;font-size:12px;}
+.doc-meta-row{display:grid;grid-template-columns:80px 1fr;gap:4px;padding:3px 0;border-bottom:1px solid var(--border);}
+.doc-meta-row:last-child{border-bottom:none;}
+.doc-meta-lbl{color:var(--text3);font-weight:700;}
+.doc-meta-val{color:var(--text);}
+.doc-body{font-size:14px;line-height:2;color:var(--text2);white-space:pre-wrap;font-family:'Noto Sans TC',sans-serif;}
+.doc-body .filled{color:var(--gold);font-weight:700;border-bottom:1px dashed var(--gold)55;}
+.doc-signature{margin-top:40px;text-align:right;font-size:13px;color:var(--text2);}
+/* ══════════════════ FORM ELEMENTS ══════════════════ */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.fl{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
+.fi-full{width:100%;}
+textarea.fi{resize:vertical;font-family:'Courier Prime',monospace;font-size:12px;line-height:1.7;}
+.section-hdr{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;border-left:3px solid var(--gold);padding-left:10px;margin:18px 0 12px;display:flex;align-items:center;justify-content:space-between;}
+/* ══════════════════ OVERLAY ══════════════════ */
+.overlay{position:fixed;inset:0;background:#00000088;z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
+.dialog{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:420px;width:100%;}
+.dialog-title{font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text);}
+.dialog-sub{font-size:13px;color:var(--text3);margin-bottom:20px;line-height:1.6;}
+.dialog-actions{display:flex;gap:8px;justify-content:flex-end;}
+/* ══════════════════ TOAST ══════════════════ */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--gold);color:var(--gold);padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;}
+/* ══════════════════ LOADING / LOGIN / EMPTY ══════════════════ */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px;color:var(--text3);}
+.spinner{width:36px;height:36px;border:3px solid var(--bg5);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:60px 20px;color:var(--text4);}
+.empty-ico{font-size:48px;margin-bottom:14px;opacity:.4;}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
+/* ══════════════════ BOTTOM NAV ══════════════════ */
+.bnav{display:none;}
+@media(max-width:768px){
+  .bnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:200;}
+  .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;font-size:9px;color:var(--text3);cursor:pointer;gap:2px;border:none;background:transparent;font-family:inherit;}
+  .bnav-btn.active{color:var(--gold);}
+  .bnav-icon{font-size:18px;}
+  .main{padding-bottom:80px;}
+  .filter-bar{top:57px;}
+  .tmpl-grid{padding:12px;}
+}
+/* ══════════════════ CHIP ══════════════════ */
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--bg4);color:var(--text3);transition:all .15s;}
+.chip.active{background:rgba(200,169,110,.15);border-color:var(--gold);color:var(--gold);}
+/* ══════════════════ AUTOFILL FIELDS ══════════════════ */
+.fill-field{background:rgba(200,169,110,.06);border:1px dashed var(--gold)44;border-radius:6px;padding:7px 10px;font-size:12px;color:var(--text);cursor:text;font-family:'Courier Prime',monospace;}
+.fill-field-lbl{font-size:9px;color:var(--gold)88;margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em;}
+/* ══════════════════ STATS BAR ══════════════════ */
+.stats-bar{display:flex;gap:16px;padding:14px 20px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.stats-item{display:flex;flex-direction:column;gap:2px;}
+.stats-num{font-size:20px;font-weight:800;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums;}
+.stats-lbl{font-size:9px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;}
+/* tag pill input */
+.tag-input-wrap{display:flex;flex-wrap:wrap;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:text;}
+.tag-input-wrap:focus-within{border-color:var(--gold);}
+.tag-pill{background:var(--bg5);color:var(--text2);border-radius:4px;padding:2px 8px;font-size:11px;display:flex;align-items:center;gap:4px;}
+.tag-pill-del{cursor:pointer;color:var(--text4);font-size:12px;line-height:1;}
+.tag-input-wrap input{border:none;background:transparent;color:var(--text);font-size:12px;outline:none;font-family:inherit;min-width:80px;flex:1;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast"></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getFirestore,collection,onSnapshot,doc,setDoc,deleteDoc,getDocs}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+const cfg={apiKey:"AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",authDomain:"legalcasemanageer.firebaseapp.com",projectId:"legalcasemanageer",storageBucket:"legalcasemanageer.firebasestorage.app",messagingSenderId:"559838504556",appId:"1:559838504556:web:ba10c071a12650bbd85a49"};
+const app=initializeApp(cfg);
+window._db=getFirestore(app);
+window._auth=getAuth(app);
+window._fb={collection,onSnapshot,doc,setDoc,deleteDoc,getDocs};
+window._fbAuth={signInWithEmailAndPassword,signOut,onAuthStateChanged};
+window._firebaseReady=true;
+</script>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════
+const CATS=[
+  {key:"civil",    label:"民事訴訟",icon:"⚖",  color:"#38bdf8"},
+  {key:"criminal", label:"刑事訴訟",icon:"🔒",  color:"#ef4444"},
+  {key:"admin",    label:"行政訴訟",icon:"🏛",  color:"#f59e0b"},
+  {key:"family",   label:"家事事件",icon:"👨‍👩‍👧", color:"#ec4899"},
+  {key:"labor",    label:"勞動事件",icon:"⚙️",  color:"#22c55e"},
+  {key:"nonlit",   label:"非訟事件",icon:"📋",  color:"#8b5cf6"},
+  {key:"letter",   label:"存證信函",icon:"📮",  color:"#c8a96e"},
+  {key:"other",    label:"其他",    icon:"📄",  color:"#64748b"},
+];
+const CAT_MAP=Object.fromEntries(CATS.map(c=>[c.key,c]));
+
+const DOC_TYPES={
+  civil:["起訴狀","答辯狀","準備狀","陳報狀","調解聲請書","保全聲請狀","上訴狀","抗告狀","聲請狀","閱卷聲請書"],
+  criminal:["辯護意旨狀","具保聲請狀","羈押異議狀","停止羈押聲請","上訴理由書","不服處分書","閱卷申請書","聲請調查證據"],
+  admin:["訴願書","行政訴訟起訴狀","聲請停止執行","行政上訴狀","陳述意見書"],
+  family:["離婚訴訟狀","監護聲請書","扶養費聲請","財產分配聲請","繼承拋棄聲明書"],
+  labor:["勞資爭議調解申請","解僱無效之訴狀","薪資請求狀","職業災害求償狀"],
+  nonlit:["繼承聲報狀","宣告死亡聲請","禁治產聲請","公示催告聲請"],
+  letter:["催告函","解除契約通知","侵權警告函","請求損害賠償函","停止使用聲明"],
+  other:["委任狀","閱卷聲請","法律意見書","和解協議書","切結書"],
+};
+
+const FIELDS=[
+  {key:"court",    label:"法院",      ex:"臺灣臺北地方法院"},
+  {key:"caseNo",   label:"案號",      ex:"111年度訴字第1234號"},
+  {key:"client",   label:"委託人",    ex:"王小明"},
+  {key:"opposing", label:"對造",      ex:"李大華"},
+  {key:"lawyer",   label:"律師",      ex:"陳律師"},
+  {key:"date",     label:"書狀日期",  ex:"中華民國113年1月1日"},
+  {key:"subject",  label:"案由",      ex:"請求損害賠償"},
+  {key:"amount",   label:"請求金額",  ex:"新臺幣100萬元整"},
+  {key:"firm",     label:"事務所",    ex:"東方法律事務所"},
+];
+
+// ══════════════════════════════════════════════════════════
+// STARTER TEMPLATES
+// ══════════════════════════════════════════════════════════
+const STARTER_TEMPLATES=[
+{id:"starter_1",category:"civil",docType:"起訴狀",title:"損害賠償起訴狀",tags:["侵權","損害賠償"],
+content:`民事起訴狀
+
+案    號：{caseNo}
+承辦法院：{court}
+
+原      告：{client}
+被      告：{opposing}
+
+為請求損害賠償事件，依法提起訴訟，謹陳述如下：
+
+訴之聲明
+
+一、被告應給付原告{amount}，及自起訴狀繕本送達翌日起至清償日止，按年息百分之五計算之利息。
+二、訴訟費用由被告負擔。
+三、原告願供擔保，請准宣告假執行。
+
+事實及理由
+
+一、（事實經過）
+    按民法第184條第1項前段規定，因故意或過失，不法侵害他人之權利者，負損害賠償責任。
+
+二、（損害範圍）
+    依前揭規定，被告應負賠償責任，原告爰依法提起本訴。
+
+三、（聲明理由）
+    為此，狀請　鈞院鑑核，賜判決如訴之聲明，以維權益。
+
+此致
+{court} 公鑒
+
+具狀人：{client}
+代理律師：{lawyer}（{firm}）
+
+中華民國  {date}`,
+fields:["court","caseNo","client","opposing","lawyer","date","amount","firm"]},
+
+{id:"starter_2",category:"civil",docType:"答辯狀",title:"民事答辯狀",tags:["答辯","民事"],
+content:`民事答辯狀
+
+案    號：{caseNo}
+承辦法院：{court}
+
+被      告：{client}
+原      告：{opposing}
+
+為答辯事件，謹陳答辯意見如下：
+
+答辯聲明
+
+一、原告之訴及假執行之聲請均駁回。
+二、訴訟費用由原告負擔。
+三、如受不利判決，被告願供擔保，請准宣告免為假執行。
+
+答辯理由
+
+一、原告主張之事實，被告否認如下：
+    （一）
+    （二）
+
+二、按法律規定，
+    依前揭規定，原告之主張顯無理由。
+
+三、綜上，原告之訴應予駁回。
+
+此致
+{court} 公鑒
+
+具狀人：{client}
+代理律師：{lawyer}（{firm}）
+
+中華民國  {date}`,
+fields:["court","caseNo","client","opposing","lawyer","date","firm"]},
+
+{id:"starter_3",category:"criminal",docType:"辯護意旨狀",title:"刑事辯護意旨狀",tags:["辯護","刑事"],
+content:`刑事辯護意旨狀
+
+案    號：{caseNo}
+承辦法院：{court}
+
+被    告：{client}
+辯護律師：{lawyer}（{firm}）
+
+為 {subject} 案件，依法提出辯護意見如下：
+
+辯護聲明
+
+被告之行為不構成犯罪，應為無罪之判決。
+
+辯護理由
+
+一、就犯罪事實部分：
+    （一）主觀犯意之欠缺
+          被告並無犯罪之故意，理由如下：
+
+    （二）客觀構成要件之不該當
+          被告之行為不符合罪名之構成要件，蓋：
+
+二、就證據部分：
+    （一）偵查中所取得之證據，具有以下瑕疵：
+
+    （二）有利於被告之證據如下：
+
+三、結語
+    綜上所陳，被告所為不構成犯罪，懇請　鈞院明察，賜為無罪之判決，以符法制。
+
+此致
+{court} 公鑒
+
+辯護人：{lawyer}
+（{firm}）
+
+中華民國  {date}`,
+fields:["court","caseNo","client","lawyer","date","subject","firm"]},
+
+{id:"starter_4",category:"letter",docType:"催告函",title:"催告清償債務律師函",tags:["催告","債務"],
+content:`律師函
+
+受文者：{opposing}
+地    址：（受文者地址）
+
+主    旨：催告清償債務
+
+台端與本函委託人 {client} 間，有以下債務尚未清償：
+
+一、債務說明：
+    本委託人 {client} 前依兩造間之合意，有{amount}之債權，迄今台端仍未履行。
+
+二、催告內容：
+    依民法第229條規定，特以本函催告台端，請於收受本函後  7  日內，給付上開款項至本委託人指定帳戶，逾期本委託人將依法提起民事訴訟及聲請假扣押，一切法律責任請台端自負。
+
+三、匯款帳號：
+    銀    行：
+    帳    號：
+    戶    名：{client}
+
+敬請重視本函，並依限履行，以免訟累。
+
+{lawyer} 律師 謹啟
+{firm}
+
+中華民國  {date}`,
+fields:["client","opposing","lawyer","date","amount","firm"]},
+
+{id:"starter_5",category:"letter",docType:"侵權警告函",title:"侵害著作權警告函",tags:["著作權","侵權"],
+content:`警告函
+
+受文者：{opposing}
+
+主    旨：停止侵害著作權並請求損害賠償
+
+本函委託人 {client} 為以下著作之著作權人：
+著作名稱：
+著作類型：
+
+一、侵害事實：
+    台端未經本委託人授權，擅自重製、公開傳輸上開著作，已構成著作權法第91條及第92條所定之侵害著作財產權行為。
+
+二、請求事項：
+    （一）立即停止一切侵害行為，包含但不限於下架、刪除相關內容；
+    （二）給付損害賠償金{amount}；
+    （三）公開道歉啟事。
+
+三、期限：
+    請於收受本函後  10  日內，以書面回覆並確認已停止侵害，並提出賠償方案，逾期本委託人將依著作權法第96條之1規定訴請刑事追訴及民事賠償，請台端審慎考量。
+
+{lawyer} 律師 謹啟
+{firm}
+
+中華民國  {date}`,
+fields:["client","opposing","lawyer","date","amount","firm"]},
+
+{id:"starter_6",category:"admin",docType:"訴願書",title:"行政訴願書",tags:["訴願","行政"],
+content:`訴　願　書
+
+案    號：{caseNo}
+受理機關：（訴願管轄機關）
+
+訴願人：{client}
+         （地址、電話）
+代理律師：{lawyer}（{firm}）
+
+原處分機關：（機關名稱）
+
+訴願聲明
+
+原處分撤銷，由原處分機關另為適法之處分。
+
+事實及理由
+
+一、事實說明：
+    訴願人前於民國___年___月___日，收受原處分機關之處分書（案號：      ），該處分主要內容如下：
+
+二、訴願理由：
+    （一）程序瑕疵：
+
+    （二）實體違法：
+          按（法律條文），本件處分有以下違法之處：
+
+三、結論：
+    原處分違反上開規定，懇請訴願管轄機關撤銷原處分，以維訴願人之合法權益。
+
+    謹 狀
+
+訴    願    人：{client}
+代理律師：{lawyer}（{firm}）
+
+中華民國  {date}`,
+fields:["court","caseNo","client","lawyer","date","firm"]},
+
+{id:"starter_7",category:"family",docType:"離婚訴訟狀",title:"請求離婚訴狀（重大事由）",tags:["離婚","家事"],
+content:`民事起訴狀
+
+承辦法院：{court} 家事法庭
+
+原      告：{client}
+被      告：{opposing}
+
+為請求離婚事件，依法提起訴訟，謹陳述如下：
+
+訴之聲明
+
+一、准原告與被告離婚。
+二、訴訟費用由被告負擔。
+
+事實及理由
+
+一、兩造婚姻關係：
+    原告與被告於民國___年___月___日結婚，現婚姻關係存續中，現有子女___人。
+
+二、離婚事由：
+    按民法第1052條第1項各款或第2項規定，兩造婚姻有以下情事：
+
+    （一）
+
+    （二）
+
+三、綜上，兩造婚姻已發生重大事由，難以維持，原告依法請求離婚。
+
+此致
+{court} 家事法庭 公鑒
+
+具狀人：{client}
+代理律師：{lawyer}（{firm}）
+
+中華民國  {date}`,
+fields:["court","client","opposing","lawyer","date","firm"]},
+
+{id:"starter_8",category:"civil",docType:"聲請狀",title:"假扣押聲請狀",tags:["保全","假扣押"],
+content:`民事聲請假扣押狀
+
+承辦法院：{court}
+
+聲請人：{client}
+相對人：{opposing}
+
+為聲請假扣押保全強制執行事件，謹陳述如下：
+
+聲請意旨
+
+請准對相對人之財產，在{amount}範圍內，予以假扣押。
+
+聲請理由
+
+一、本案請求之原因：
+    聲請人對相對人有{amount}之金錢債權，理由如下：
+
+二、假扣押之原因：
+    相對人有以下情事，顯有日後不能強制執行或甚難執行之虞：
+    （一）
+    （二）
+
+三、擔保金額：
+    聲請人願依鈞院所定擔保金額，提供擔保，以代釋明。
+
+此致
+{court} 公鑒
+
+具狀人：{client}
+代理律師：{lawyer}（{firm}）
+
+中華民國  {date}`,
+fields:["court","client","opposing","lawyer","date","amount","firm"]},
+];
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let S={
+  user:null, authChecked:false,
+  templates:[], loading:true,
+  view:"list",           // list | editor
+  editId:null,           // null = new
+  cat:"全部",
+  search:"",
+  docType:"全部",
+  form:{
+    title:"",category:"civil",docType:"",
+    content:"",tags:[],fields:[],
+    fillValues:{},       // {field_key: filled_value}
+  },
+  tagInput:"",
+  showDeleteConfirm:null,
+  showPreview:false,
+  themeMode:localStorage.getItem("tmplTheme")||"dark",
+};
+
+// ══════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400);}
+function applyTheme(m){if(m==="auto"){const h=new Date().getHours();m=(h>=6&&h<20)?"light":"dark";}document.documentElement.classList.toggle("light",m==="light");}
+applyTheme(S.themeMode);
+
+function fillContent(content,values){
+  return content.replace(/\{(\w+)\}/g,(_,k)=>{
+    const v=values[k]||(FIELDS.find(f=>f.key===k)?.ex||`{${k}}`);
+    return values[k]?`<span class="filled">${v}</span>`:`<span style="color:var(--text4)">{${k}}</span>`;
+  });
+}
+
+function renderBadge(cat){
+  const c=CAT_MAP[cat]||CAT_MAP.other;
+  return `<span class="badge" style="background:${c.color}22;color:${c.color};border-color:${c.color}44">${c.icon} ${c.label}</span>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════════════════════
+function waitFirebase(cb){
+  const t=setInterval(()=>{if(window._firebaseReady){clearInterval(t);cb();}},100);
+}
+
+function initFirebase(){
+  // Try cache
+  try{const c=localStorage.getItem("docTemplates_cache");if(c){S.templates=JSON.parse(c);S.loading=false;render();}}catch(_){}
+
+  window._fb.onSnapshot(window._fb.collection(window._db,"docTemplates"),snap=>{
+    S.templates=snap.docs.map(d=>({...d.data(),id:d.id}));
+    S.loading=false;
+    try{localStorage.setItem("docTemplates_cache",JSON.stringify(S.templates));}catch(_){}
+    render();
+  },()=>{S.loading=false;render();});
+}
+
+async function saveTemplate(){
+  const f=S.form;
+  if(!f.title.trim()){toast("⚠️ 請填寫範本名稱");return;}
+  if(!f.content.trim()){toast("⚠️ 請填寫範本內容");return;}
+  const id=S.editId||uid();
+  const data={...f,id,updatedAt:new Date().toISOString()};
+  delete data.fillValues;
+  try{
+    await window._fb.setDoc(window._fb.doc(window._db,"docTemplates",id),data);
+    toast("✅ 範本已儲存");
+    S.view="list";S.editId=null;render();
+  }catch(e){toast("❌ 儲存失敗："+e.code);}
+}
+
+async function deleteTemplate(id){
+  try{
+    await window._fb.deleteDoc(window._fb.doc(window._db,"docTemplates",id));
+    toast("🗑 範本已刪除");
+    S.showDeleteConfirm=null;S.view="list";render();
+  }catch(e){toast("❌ 刪除失敗");}
+}
+
+async function seedStarters(){
+  const existing=S.templates.map(t=>t.id);
+  const toAdd=STARTER_TEMPLATES.filter(t=>!existing.includes(t.id));
+  for(const t of toAdd){
+    await window._fb.setDoc(window._fb.doc(window._db,"docTemplates",t.id),{...t,updatedAt:new Date().toISOString()});
+  }
+  toast(`✅ 已新增 ${toAdd.length} 個起始範本`);
+}
+
+// ══════════════════════════════════════════════════════════
+// FORM HELPERS
+// ══════════════════════════════════════════════════════════
+function sf(k,v){S.form={...S.form,[k]:v};render();}
+function sfv(k,v){S.form={...S.form,fillValues:{...S.form.fillValues,[k]:v}};render();}
+
+function openNew(){
+  S.form={title:"",category:"civil",docType:"",content:"",tags:[],fields:[],fillValues:{}};
+  S.editId=null;S.tagInput="";S.view="editor";render();
+}
+function openEdit(t){
+  S.form={...JSON.parse(JSON.stringify(t)),fillValues:{}};
+  S.editId=t.id;S.tagInput="";S.view="editor";render();
+}
+function openDetail(t){
+  // Open editor in preview/fill mode
+  S.form={...JSON.parse(JSON.stringify(t)),fillValues:{}};
+  S.editId=t.id;S.tagInput="";S.showPreview=true;S.view="editor";render();
+}
+
+// Auto-detect fields from content
+function detectFields(content){
+  const matches=[...content.matchAll(/\{(\w+)\}/g)].map(m=>m[1]);
+  return [...new Set(matches)].filter(k=>FIELDS.find(f=>f.key===k));
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER ENGINE
+// ══════════════════════════════════════════════════════════
+function render(){
+  const root=document.getElementById("root");
+  if(!root)return;
+  if(!S.authChecked){root.innerHTML=`<div class="loading"><div class="spinner"></div><div>連線中…</div></div>`;return;}
+  if(!S.user){root.innerHTML=renderLogin();bindLoginEvents();return;}
+  if(S.view==="editor"){root.innerHTML=renderEditor();bindEditorEvents();return;}
+  root.innerHTML=renderListView();
+  bindListEvents();
+}
+
+// ══════════════════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════════════════
+function renderLogin(){
+  return`<div class="login-wrap"><div class="login-box">
+    <div style="font-size:48px;text-align:center;margin-bottom:8px">📚</div>
+    <div style="font-family:'Noto Serif TC',serif;font-size:1.2rem;color:var(--gold);text-align:center;margin-bottom:2px">法律文書範本庫</div>
+    <div style="font-size:10px;color:var(--text3);text-align:center;letter-spacing:.1em;margin-bottom:26px">LEGAL DOCUMENT TEMPLATES</div>
+    <div id="login-err" style="display:none" class="login-err"></div>
+    <div class="fg"><label class="fl">帳號</label><input class="fi fi-full" id="li-email" type="email" placeholder="office@yourfirm.com" autocomplete="email"></div>
+    <div class="fg" style="margin-bottom:22px"><label class="fl">密碼</label>
+      <div style="position:relative">
+        <input class="fi fi-full" id="li-pw" type="password" placeholder="••••••••" autocomplete="current-password" style="padding-right:42px">
+        <button id="btn-showpw" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px">👁</button>
+      </div>
+    </div>
+    <button id="btn-login" class="btn btn-gold" style="width:100%;justify-content:center;font-size:14px;padding:12px">🔐 登入</button>
+  </div></div>`;
+}
+function bindLoginEvents(){
+  const doLogin=async()=>{
+    const email=document.getElementById("li-email")?.value.trim();
+    const pw=document.getElementById("li-pw")?.value;
+    const errEl=document.getElementById("login-err");
+    if(!email||!pw){if(errEl){errEl.style.display="block";errEl.textContent="請輸入帳號和密碼";}return;}
+    document.getElementById("btn-login").textContent="登入中…";
+    try{await window._fbAuth.signInWithEmailAndPassword(window._auth,email,pw);}
+    catch(e){
+      const msgs={"auth/invalid-credential":"帳號或密碼錯誤","auth/too-many-requests":"嘗試次數過多，請稍後再試"};
+      if(errEl){errEl.style.display="block";errEl.textContent=msgs[e.code]||"登入失敗："+e.code;}
+      document.getElementById("btn-login").textContent="🔐 登入";
+    }
+  };
+  document.getElementById("btn-login")?.addEventListener("click",doLogin);
+  document.getElementById("li-pw")?.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+  document.getElementById("btn-showpw")?.addEventListener("click",()=>{
+    const inp=document.getElementById("li-pw");
+    inp.type=inp.type==="password"?"text":"password";
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// LIST VIEW
+// ══════════════════════════════════════════════════════════
+function renderListView(){
+  const allTemplates=[...S.templates].sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+
+  // Filter
+  let filtered=allTemplates;
+  if(S.cat!=="全部")filtered=filtered.filter(t=>t.category===S.cat);
+  if(S.search.trim()){
+    const q=S.search.toLowerCase();
+    filtered=filtered.filter(t=>[t.title,t.content,...(t.tags||[])].some(x=>(x||"").toLowerCase().includes(q)));
+  }
+  if(S.docType!=="全部")filtered=filtered.filter(t=>t.docType===S.docType);
+
+  // Count by cat
+  const catCounts={};CATS.forEach(c=>catCounts[c.key]=(allTemplates.filter(t=>t.category===c.key).length));
+
+  // Unique doctypes from filtered
+  const allDocTypes=["全部",...new Set(allTemplates.map(t=>t.docType).filter(Boolean))];
+
+  const themeIcon=S.themeMode==="dark"?"🌙":S.themeMode==="light"?"☀️":"🕐";
+
+  return`
+  <div style="min-height:100vh">
+    <!-- Header -->
+    <div class="hdr">
+      <div class="hdr-brand">
+        <div class="hdr-logo">📚</div>
+        <div><div class="hdr-title">法律文書範本庫</div><div class="hdr-sub">Legal Document Templates</div></div>
+      </div>
+      <div class="hdr-actions">
+        <button class="btn btn-ghost btn-icon" id="btn-theme" title="切換主題">${themeIcon}</button>
+        <a href="index.html" class="btn btn-outline btn-sm">⚖ 案件</a>
+        <a href="widget.html" class="btn btn-outline btn-sm">📅 Widget</a>
+        <a href="letters.html" class="btn btn-outline btn-sm">📮 信函</a>
+        <button class="btn btn-ghost btn-sm" id="btn-seed" title="匯入預設範本">📥 預設</button>
+        <button class="btn btn-gold" id="btn-new">＋ 新增範本</button>
+        <button class="btn btn-ghost btn-icon" id="btn-logout" title="登出">🚪</button>
+      </div>
+    </div>
+
+    <div class="app-wrap">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sb-section">
+          <div class="sb-title">文書類別</div>
+          <button class="sb-item${S.cat==="全部"?" active":""}" data-cat="全部">
+            <span style="font-size:16px">📂</span> 全部範本
+            <span class="sb-count">${allTemplates.length}</span>
+          </button>
+          ${CATS.map(c=>`
+          <button class="sb-item${S.cat===c.key?" active":""}" data-cat="${c.key}">
+            <span class="cat-dot" style="background:${c.color}"></span>
+            ${c.label}
+            <span class="sb-count">${catCounts[c.key]||0}</span>
+          </button>`).join("")}
+        </div>
+        <div class="sb-section">
+          <div class="sb-title">快速操作</div>
+          <button class="sb-item" id="sb-new">
+            <span style="font-size:16px">✏️</span> 新增範本
+          </button>
+          <button class="sb-item" id="sb-seed">
+            <span style="font-size:16px">📥</span> 匯入預設範本
+          </button>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div class="main">
+        <!-- Stats bar -->
+        <div class="stats-bar">
+          ${[
+            ["全部範本",allTemplates.length+"個"],
+            ["民事",catCounts.civil+"個"],
+            ["刑事",catCounts.criminal+"個"],
+            ["信函",(catCounts.letter||0)+"個"],
+          ].map(([l,v])=>`<div class="stats-item"><div class="stats-num">${v}</div><div class="stats-lbl">${l}</div></div>`).join("")}
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar" style="top:109px">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input class="fi fi-full search-input" id="search-inp" value="${S.search}" placeholder="搜尋範本名稱、內容…">
+          </div>
+          <select class="fi" id="filter-doctype" style="min-width:130px">
+            ${allDocTypes.map(d=>`<option${S.docType===d?" selected":""}>${d}</option>`).join("")}
+          </select>
+          <span style="font-size:11px;color:var(--text3);white-space:nowrap">${filtered.length} 個</span>
+        </div>
+
+        <!-- Grid -->
+        <div class="tmpl-grid">
+          ${filtered.length===0?`<div class="empty" style="grid-column:1/-1"><div class="empty-ico">📭</div><div style="font-size:15px;margin-bottom:6px">查無範本</div><div style="font-size:12px">點「＋ 新增範本」建立第一個，或點「📥 預設」匯入預設範本</div></div>`:""}
+          ${filtered.map(t=>{
+            const cat=CAT_MAP[t.category]||CAT_MAP.other;
+            const preview=(t.content||"").replace(/\{[^}]+\}/g,"___").substring(0,200);
+            return`
+            <div class="tmpl-card" data-open="${t.id}" style="border-top:3px solid ${cat.color}">
+              <div class="tmpl-card-hdr">
+                <div class="tmpl-card-meta">
+                  <div class="tmpl-card-title">${t.title}</div>
+                  <div style="display:flex;gap:5px;flex-shrink:0">
+                    ${renderBadge(t.category)}
+                  </div>
+                </div>
+                ${t.docType?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${t.docType}</div>`:""}
+              </div>
+              <div class="tmpl-card-body">
+                <div class="tmpl-preview">${preview}</div>
+                <div class="tmpl-tags">
+                  ${(t.tags||[]).map(tag=>`<span class="badge" style="background:var(--bg5);color:var(--text3);border-color:var(--border2)">${tag}</span>`).join("")}
+                </div>
+              </div>
+              <div class="tmpl-card-footer">
+                <div style="font-size:10px;color:var(--text4)">${t.updatedAt?t.updatedAt.slice(0,10):""}</div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-outline btn-xs" data-use="${t.id}">📝 套用</button>
+                  <button class="btn btn-outline btn-xs" data-edit="${t.id}">✏️ 編輯</button>
+                  <button class="btn btn-danger btn-xs" data-del="${t.id}">🗑</button>
+                </div>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom nav (mobile) -->
+    <div class="bnav">
+      <button class="bnav-btn active"><span class="bnav-icon">📚</span>範本</button>
+      <button class="bnav-btn" id="bnav-new"><span class="bnav-icon">➕</span>新增</button>
+      <button class="bnav-btn" id="bnav-seed"><span class="bnav-icon">📥</span>預設</button>
+    </div>
+
+    <!-- Delete confirm -->
+    ${S.showDeleteConfirm?`
+    <div class="overlay">
+      <div class="dialog">
+        <div class="dialog-title">確認刪除此範本？</div>
+        <div class="dialog-sub">刪除後無法復原。</div>
+        <div class="dialog-actions">
+          <button class="btn btn-outline btn-sm" id="btn-cancel-del">取消</button>
+          <button class="btn btn-sm" style="background:var(--red);color:#fff" id="btn-confirm-del">確認刪除</button>
+        </div>
+      </div>
+    </div>`:""}
+  </div>`;
+}
+
+function bindListEvents(){
+  // Theme
+  document.getElementById("btn-theme")?.addEventListener("click",()=>{
+    S.themeMode=S.themeMode==="dark"?"light":S.themeMode==="light"?"auto":"dark";
+    localStorage.setItem("tmplTheme",S.themeMode);
+    applyTheme(S.themeMode);
+    render();
+  });
+  // New
+  document.getElementById("btn-new")?.addEventListener("click",openNew);
+  document.getElementById("sb-new")?.addEventListener("click",openNew);
+  document.getElementById("bnav-new")?.addEventListener("click",openNew);
+  // Seed
+  document.getElementById("btn-seed")?.addEventListener("click",seedStarters);
+  document.getElementById("sb-seed")?.addEventListener("click",seedStarters);
+  document.getElementById("bnav-seed")?.addEventListener("click",seedStarters);
+  // Logout
+  document.getElementById("btn-logout")?.addEventListener("click",async()=>{if(confirm("確認登出？"))await window._fbAuth.signOut(window._auth);});
+  // Search
+  document.getElementById("search-inp")?.addEventListener("input",e=>{S.search=e.target.value;render();});
+  // DocType filter
+  document.getElementById("filter-doctype")?.addEventListener("change",e=>{S.docType=e.target.value;render();});
+  // Category sidebar
+  document.querySelectorAll("[data-cat]").forEach(btn=>{
+    btn.addEventListener("click",()=>{S.cat=btn.dataset.cat;render();});
+  });
+  // Card open
+  document.querySelectorAll("[data-open]").forEach(card=>{
+    card.addEventListener("click",e=>{
+      if(e.target.closest("[data-edit],[data-del],[data-use]"))return;
+      const t=S.templates.find(x=>x.id===card.dataset.open);
+      if(t)openDetail(t);
+    });
+  });
+  // Edit
+  document.querySelectorAll("[data-edit]").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      e.stopPropagation();
+      const t=S.templates.find(x=>x.id===btn.dataset.edit);
+      if(t)openEdit(t);
+    });
+  });
+  // Use (open in fill mode)
+  document.querySelectorAll("[data-use]").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      e.stopPropagation();
+      const t=S.templates.find(x=>x.id===btn.dataset.use);
+      if(t)openDetail(t);
+    });
+  });
+  // Delete
+  document.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      e.stopPropagation();
+      S.showDeleteConfirm=btn.dataset.del;render();
+    });
+  });
+  document.getElementById("btn-cancel-del")?.addEventListener("click",()=>{S.showDeleteConfirm=null;render();});
+  document.getElementById("btn-confirm-del")?.addEventListener("click",()=>deleteTemplate(S.showDeleteConfirm));
+}
+
+// ══════════════════════════════════════════════════════════
+// EDITOR VIEW
+// ══════════════════════════════════════════════════════════
+function renderEditor(){
+  const f=S.form;
+  const detectedFields=detectFields(f.content||"");
+  const cat=CAT_MAP[f.category]||CAT_MAP.other;
+  const docTypes=DOC_TYPES[f.category]||DOC_TYPES.other;
+  const isNew=!S.editId;
+  const previewHtml=fillContent(f.content||"",f.fillValues||{});
+
+  return`
+  <div class="editor-wrap">
+    <!-- Toolbar -->
+    <div class="editor-toolbar">
+      <div class="editor-toolbar-left">
+        <button class="btn btn-outline btn-sm" id="btn-back">← 返回</button>
+        <div style="font-size:14px;font-weight:700;color:var(--text)">${isNew?"新增範本":f.title||"編輯範本"}</div>
+        ${renderBadge(f.category)}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="toggle-preview"${S.showPreview?" checked":""}> 預覽模式
+        </label>
+        <button class="btn btn-outline btn-sm" id="btn-copy-doc">📋 複製全文</button>
+        ${S.editId?`<button class="btn btn-outline btn-sm" id="btn-dup">🔁 複製範本</button>`:""}
+        <button class="btn btn-gold" id="btn-save">💾 儲存範本</button>
+      </div>
+    </div>
+
+    <!-- Body: Form | Preview -->
+    <div class="editor-body">
+      <!-- Left: form -->
+      <div class="editor-form">
+        <div class="section-hdr">📋 基本資訊</div>
+        <div class="fg">
+          <label class="fl">範本名稱</label>
+          <input class="fi fi-full" id="f-title" value="${(f.title||"").replace(/"/g,"&quot;")}" placeholder="例：損害賠償起訴狀">
+        </div>
+        <div class="fg">
+          <label class="fl">文書類別</label>
+          <select class="fi fi-full" id="f-cat">
+            ${CATS.map(c=>`<option value="${c.key}"${f.category===c.key?" selected":""}>${c.icon} ${c.label}</option>`).join("")}
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">文書類型</label>
+          <select class="fi fi-full" id="f-doctype">
+            <option value="">─ 選擇類型 ─</option>
+            ${docTypes.map(d=>`<option${f.docType===d?" selected":""}>${d}</option>`).join("")}
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">標籤</label>
+          <div class="tag-input-wrap">
+            ${(f.tags||[]).map(tag=>`<span class="tag-pill">${tag}<span class="tag-pill-del" data-del-tag="${tag}">✕</span></span>`).join("")}
+            <input id="f-tag-input" placeholder="輸入標籤後按 Enter" value="${S.tagInput}">
+          </div>
+        </div>
+
+        ${S.showPreview&&detectedFields.length>0?`
+        <div class="section-hdr">✏️ 填入資料（套用範本）</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px">填入後可在右側預覽效果，複製全文即可使用</div>
+        ${detectedFields.map(key=>{
+          const fd=FIELDS.find(f=>f.key===key);
+          if(!fd)return"";
+          return`<div class="fg">
+            <div class="fill-field-lbl">${fd.label}</div>
+            <input class="fi fi-full fill-field" id="fv-${key}" value="${(f.fillValues?.[key]||"").replace(/"/g,"&quot;")}" placeholder="${fd.ex}">
+          </div>`;
+        }).join("")}`:""}
+
+        <div class="section-hdr" style="margin-top:${S.showPreview?"18":"0"}px">📝 範本內容</div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:8px">使用 {欄位名稱} 插入動態欄位，例如：{court}、{client}、{date}</div>
+        <div style="font-size:10px;color:var(--text4);margin-bottom:10px;display:flex;flex-wrap:wrap;gap:4px">
+          ${FIELDS.map(f=>`<span style="cursor:pointer;padding:2px 7px;background:var(--bg4);border-radius:4px;font-family:monospace" data-ins-field="{${f.key}}" title="${f.label}（點擊插入）">{${f.key}}</span>`).join("")}
+        </div>
+        <textarea class="fi fi-full" id="f-content" style="min-height:500px">${(f.content||"").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</textarea>
+      </div>
+
+      <!-- Right: preview -->
+      <div class="editor-preview">
+        <div class="doc-paper">
+          ${f.title?`<div class="doc-title">${f.title}</div>`:""}
+          <div class="doc-subtitle">${cat.icon} ${cat.label}${f.docType?" · "+f.docType:""}</div>
+          ${f.tags&&f.tags.length?`<div style="text-align:center;margin-bottom:16px">${f.tags.map(t=>`<span class="badge" style="background:var(--bg4);color:var(--text3);margin:0 3px">${t}</span>`).join("")}</div>`:""}
+          <div class="doc-body">${previewHtml}</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function bindEditorEvents(){
+  document.getElementById("btn-back")?.addEventListener("click",()=>{S.view="list";S.showPreview=false;render();});
+  document.getElementById("toggle-preview")?.addEventListener("change",e=>{S.showPreview=e.target.checked;render();});
+  document.getElementById("btn-save")?.addEventListener("click",()=>{
+    S.form.title=document.getElementById("f-title")?.value||S.form.title;
+    S.form.content=document.getElementById("f-content")?.value||S.form.content;
+    saveTemplate();
+  });
+
+  // Live update fields
+  ["f-title","f-content"].forEach(id=>{
+    document.getElementById(id)?.addEventListener("input",e=>{
+      const key=id.replace("f-","");
+      if(key==="title")S.form.title=e.target.value;
+      if(key==="content"){S.form.content=e.target.value;S.form.fields=detectFields(e.target.value);}
+      render();
+    });
+  });
+
+  document.getElementById("f-cat")?.addEventListener("change",e=>{S.form.category=e.target.value;S.form.docType="";render();});
+  document.getElementById("f-doctype")?.addEventListener("change",e=>{S.form.docType=e.target.value;render();});
+
+  // Tag input
+  document.getElementById("f-tag-input")?.addEventListener("keydown",e=>{
+    if(e.key==="Enter"||e.key===","){
+      e.preventDefault();
+      const v=e.target.value.trim().replace(/,$/,"");
+      if(v&&!(S.form.tags||[]).includes(v)){S.form.tags=[...(S.form.tags||[]),v];}
+      S.tagInput="";render();
+    } else {S.tagInput=e.target.value;}
+  });
+  document.querySelectorAll("[data-del-tag]").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      e.stopPropagation();
+      S.form.tags=(S.form.tags||[]).filter(t=>t!==btn.dataset.delTag);render();
+    });
+  });
+
+  // Fill values
+  document.querySelectorAll("[id^='fv-']").forEach(inp=>{
+    inp.addEventListener("input",e=>{
+      const key=inp.id.replace("fv-","");
+      sfv(key,e.target.value);
+    });
+  });
+
+  // Insert field
+  document.querySelectorAll("[data-ins-field]").forEach(span=>{
+    span.addEventListener("click",()=>{
+      const ta=document.getElementById("f-content");
+      if(!ta)return;
+      const s=ta.selectionStart,e=ta.selectionEnd;
+      const v=span.dataset.insField;
+      ta.value=ta.value.slice(0,s)+v+ta.value.slice(e);
+      S.form.content=ta.value;
+      ta.selectionStart=ta.selectionEnd=s+v.length;
+      ta.focus();
+      render();
+    });
+  });
+
+  // Copy full text
+  document.getElementById("btn-copy-doc")?.addEventListener("click",()=>{
+    const content=(S.form.content||"").replace(/\{(\w+)\}/g,(_,k)=>S.form.fillValues?.[k]||(FIELDS.find(f=>f.key===k)?.ex||`{${k}}`));
+    navigator.clipboard.writeText(content).then(()=>toast("📋 全文已複製到剪貼簿！")).catch(()=>toast("⚠️ 請手動複製"));
+  });
+
+  // Duplicate
+  document.getElementById("btn-dup")?.addEventListener("click",()=>{
+    S.form.title=(S.form.title||"")+"（複本）";
+    S.editId=null;saveTemplate();
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════════
+render(); // Show spinner
+
+waitFirebase(()=>{
+  window._fbAuth.onAuthStateChanged(window._auth,user=>{
+    S.user=user;S.authChecked=true;
+    if(user){initFirebase();}
+    else{S.loading=false;render();}
+  });
+});
+</script>
+</body>
+</html>

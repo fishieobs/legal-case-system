@@ -111,11 +111,6 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'N
 .theme-btn{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:4px 10px;cursor:pointer;font-size:12px;color:var(--text3);font-family:inherit;}
 .theme-btn:hover{border-color:var(--gold);color:var(--gold);}
 .todo-item{background:var(--bg3);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;}
-.todo-item.overdue{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.04);}
-.todo-edit-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:2px 6px;border-radius:4px;font-size:12px;flex-shrink:0;transition:all .15s;}
-.todo-edit-btn:hover{color:var(--gold);background:rgba(200,169,110,.12);}
-.todo-edit-form{display:flex;gap:6px;flex:1;align-items:center;}
-.todo-edit-input{flex:1;background:var(--bg);border:1px solid var(--gold);border-radius:6px;padding:5px 9px;color:var(--text);font-size:12px;outline:none;font-family:inherit;}
 .todo-item.done{opacity:.5;}
 .todo-check{width:18px;height:18px;border-radius:4px;border:2px solid rgba(139,92,246,.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
 .todo-check.done{background:#8b5cf6;border-color:#8b5cf6;}
@@ -188,6 +183,18 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'N
 .day-item:hover{border-color:var(--gold)44;}
 .todo-check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;cursor:pointer;}
 .todo-check-box.done{background:var(--green);border-color:var(--green);}
+
+.todo-collapse-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;border-radius:12px;border:1px solid rgba(139,92,246,.3);background:var(--bg3);margin-top:8px;transition:all .2s;user-select:none;}
+.todo-collapse-hdr:hover{border-color:rgba(139,92,246,.6);background:rgba(139,92,246,.06);}
+.todo-collapse-hdr.open{border-radius:12px 12px 0 0;border-bottom-color:transparent;}
+.todo-collapse-body{border:1px solid rgba(139,92,246,.3);border-top:none;border-radius:0 0 12px 12px;padding:10px 14px;background:var(--bg3);margin-bottom:4px;}
+.todo-chevron{font-size:12px;color:var(--text3);transition:transform .25s;}
+.todo-chevron.open{transform:rotate(180deg);}
+.todo-item.overdue{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.04);}
+.todo-edit-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:2px 6px;border-radius:4px;font-size:12px;flex-shrink:0;transition:all .15s;}
+.todo-edit-btn:hover{color:var(--gold);background:rgba(200,169,110,.12);}
+.todo-edit-form{display:flex;gap:6px;flex:1;align-items:center;}
+.todo-edit-input{flex:1;background:var(--bg);border:1px solid var(--gold);border-radius:6px;padding:5px 9px;color:var(--text);font-size:12px;outline:none;font-family:inherit;}
 </style>
 </head>
 <body>
@@ -227,32 +234,36 @@ function toggleTodo(id){
     if(idx===-1)return;
     state.calTodos[idx].done=!state.calTodos[idx].done;
     saveCalTodos(state.calTodos);
+    render();
 }
 window.toggleTodo = toggleTodo;
-function startEditTodo(id, text){
-    state.editingTodoId = id;
-    state.editTodoText = text;
+
+function toggleTodosPanel(){
+    state.showTodos=!state.showTodos;
     render();
-    setTimeout(()=>{ document.getElementById("edit-todo-inp-"+id)?.focus(); }, 50);
+}
+window.toggleTodosPanel = toggleTodosPanel;
+
+function startEditTodo(id, text){
+    state.editingTodoId=id;
+    state.editTodoText=text;
+    render();
+    setTimeout(()=>document.getElementById("etid-"+id)?.focus(), 50);
 }
 function saveEditTodo(id){
-    const inp = document.getElementById("edit-todo-inp-"+id);
-    const newText = inp ? inp.value.trim() : state.editTodoText;
-    if(!newText){ cancelEditTodo(); return; }
-    const updated = (state.calTodos||[]).map(t => t.id===id ? {...t, text:newText} : t);
-    state.editingTodoId = null;
-    state.editTodoText = "";
-    saveCalTodos(updated);
-    render();
+    const inp=document.getElementById("etid-"+id);
+    const newText=inp?inp.value.trim():state.editTodoText;
+    if(!newText){cancelEditTodo();return;}
+    const updated=(state.calTodos||[]).map(t=>t.id===id?{...t,text:newText}:t);
+    state.editingTodoId=null; state.editTodoText="";
+    saveCalTodos(updated); render();
 }
 function cancelEditTodo(){
-    state.editingTodoId = null;
-    state.editTodoText = "";
-    render();
+    state.editingTodoId=null; state.editTodoText=""; render();
 }
-window.startEditTodo = startEditTodo;
-window.saveEditTodo = saveEditTodo;
-window.cancelEditTodo = cancelEditTodo;
+window.startEditTodo=startEditTodo;
+window.saveEditTodo=saveEditTodo;
+window.cancelEditTodo=cancelEditTodo;
 
 function daysUntil(d){
     // 兩端都用台灣時間的「當日零時」比較，避免時區造成的差一天問題
@@ -283,7 +294,7 @@ const INVOICE_BARCODE_URI = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/
 let state = { 
     user:null, authChecked:false, cases:[], calTodos:[], 
     widgetHearings:loadWidgetHearings(), showAddHearing:false, showAddTodo:false, 
-    showQR:false, showInvoice:false, dayDetail:null, editingHearingId:null, editingTodoId:null, editTodoText:"", 
+    showQR:false, showInvoice:false, dayDetail:null, editingHearingId:null, editingTodoId:null, editTodoText:"", showTodos:false, 
     reminder:loadReminder(), refreshing:false, notice:"",
     viewMode:localStorage.getItem("widget_view_mode")||"list",
     calDate:new Date(), selectedDate:null
@@ -935,26 +946,33 @@ function buildWidget(){
 
         <!-- Calendar Todos section -->
         ${(()=>{
-            // 顯示所有待辦（含逾期），不過濾掉
             const allTodos=(state.calTodos||[]).sort((a,b)=>a.date.localeCompare(b.date));
             if(allTodos.length===0) return "";
-            // 分組
-            const byDate={};
-            allTodos.forEach(t=>{ if(!byDate[t.date])byDate[t.date]=[]; byDate[t.date].push(t); });
             const pendingCount=allTodos.filter(t=>!t.done).length;
             const overdueCount=allTodos.filter(t=>!t.done&&daysUntil(t.date)<0).length;
+            const byDate={};
+            allTodos.forEach(t=>{ if(!byDate[t.date])byDate[t.date]=[]; byDate[t.date].push(t); });
+            const isOpen=state.showTodos;
             return `
-            <div class="day-section" style="margin-top:4px">
-                <div class="day-label" style="color:${pendingCount>0?"#8b5cf6":"var(--text4)"}">
-                    ✅ 全部待辦事項
-                    ${pendingCount>0?`<span style="color:#8b5cf6;font-weight:800">${pendingCount}項未完成</span>`:""}
-                    ${overdueCount>0?`<span style="color:#f59e0b;font-weight:800">⚠️${overdueCount}項逾期</span>`:""}
+            <!-- 收合標題列 -->
+            <div class="todo-collapse-hdr${isOpen?" open":""}" onclick="window.toggleTodosPanel()">
+                <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:15px">✅</span>
+                    <span style="font-size:13px;font-weight:700;color:${pendingCount>0?"#8b5cf6":"var(--text3)"}">待辦事項</span>
+                    ${pendingCount>0?`<span style="background:rgba(139,92,246,.18);color:#8b5cf6;border-radius:20px;padding:1px 9px;font-size:11px;font-weight:800">${pendingCount}項未完成</span>`:""}
+                    ${overdueCount>0?`<span style="background:rgba(245,158,11,.15);color:#f59e0b;border-radius:20px;padding:1px 9px;font-size:11px;font-weight:800">⚠️${overdueCount}逾期</span>`:""}
                 </div>
+                <span class="todo-chevron${isOpen?" open":""}">▼</span>
+            </div>
+
+            <!-- 展開內容 -->
+            ${isOpen?`
+            <div class="todo-collapse-body">
                 ${Object.entries(byDate).map(([date,todos])=>{
                     const d=daysUntil(date);
-                    const isOverdue=d<0&&todos.some(t=>!t.done);
+                    const isOverdue=d<0;
                     const dLabel=d===0?"今天":d===1?"明天":d>0?`${d}天後`:`${Math.abs(d)}天前（逾期）`;
-                    const dColor=d<0?"#f59e0b":d===0?"var(--green)":"#8b5cf6";
+                    const dColor=isOverdue?"#f59e0b":d===0?"var(--green)":"#8b5cf6";
                     const dd=new Date(date+"T00:00:00+08:00");
                     const wd=["日","一","二","三","四","五","六"][dd.getDay()];
                     return `<div style="margin-bottom:12px">
@@ -966,20 +984,21 @@ function buildWidget(){
                             const isEditing=state.editingTodoId===t.id;
                             return `
                         <div class="todo-item${t.done?" done":""}${isOverdue&&!t.done?" overdue":""}">
-                            <div class="todo-check-box${t.done?" done":""}" onclick="toggleTodo('${t.id}')">${t.done?"<span style=\"color:#fff;font-size:10px;font-weight:900\">✓</span>":""}</div>
+                            <div class="todo-check-box${t.done?" done":""}" onclick="window.toggleTodo('${t.id}')">${t.done?"<span style=\"color:#fff;font-size:10px;font-weight:900\">✓</span>":""}</div>
                             ${isEditing?`
                             <div class="todo-edit-form">
-                                <input class="todo-edit-input" id="edit-todo-inp-${t.id}" value="${esc(state.editTodoText)}" onkeydown="if(event.key==='Enter')saveEditTodo('${t.id}');if(event.key==='Escape')cancelEditTodo();">
-                                <button class="todo-edit-btn" onclick="saveEditTodo('${t.id}')" style="color:var(--green)">✓</button>
-                                <button class="todo-edit-btn" onclick="cancelEditTodo()">✕</button>
+                                <input class="todo-edit-input" id="etid-${t.id}" value="${esc(state.editTodoText)}" onkeydown="if(event.key==='Enter')window.saveEditTodo('${t.id}');if(event.key==='Escape')window.cancelEditTodo();">
+                                <button class="todo-edit-btn" onclick="window.saveEditTodo('${t.id}')" style="color:var(--green)">✓</button>
+                                <button class="todo-edit-btn" onclick="window.cancelEditTodo()">✕</button>
                             </div>`:`
                             <div style="flex:1;font-size:13px;color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
-                            <button class="todo-edit-btn" onclick="startEditTodo('${t.id}','${esc(t.text)}')">✏️</button>
-                            `}
+                            <button class="todo-edit-btn" onclick="window.startEditTodo('${t.id}','${esc(t.text).replace(/'/g,"\\'")}')">✏️</button>`}
                         </div>`}).join("")}
                     </div>`;
                 }).join("")}
-            </div>`;
+            </div>`:""}
+            `;
+        })()}
         })()}
     </div>`;
 }

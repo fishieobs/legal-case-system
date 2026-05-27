@@ -1,10 +1,26 @@
-const CACHE = "case-mgr-v2";
+const CACHE = "case-mgr-v5";
 
 const PRECACHE = [
   "./",
+  "./shared/sys-nav.js",
   "./index.html",
-  "./icon.png",
+  "./letters.html",
+  "./templates.html",
+  "./judgments.html",
+  "./widget.html",
   "./manifest.json",
+  "./manifest-letters.json",
+  "./manifest-templates.json",
+  "./manifest-judgments.json",
+  "./manifest-widget.json",
+  "./icons/icon-cases.png",
+  "./icons/icon-letters.png",
+  "./icons/icon-templates.png",
+  "./icons/icon-judgments.png",
+  "./icons/icon-widget.png",
+  "./assets/img-0adfa7b3d292.png",
+  "./assets/img-2b4029bc7779.jpg",
+  "./assets/img-d1456ca19b20.jpg",
 ];
 
 self.addEventListener("install", e => {

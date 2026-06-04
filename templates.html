@@ -668,7 +668,7 @@ function bindLoginEvents(){
     document.getElementById("btn-login").textContent="登入中…";
     try{await window._fbAuth.signInWithEmailAndPassword(window._auth,email,pw);}
     catch(e){
-      const msgs={"auth/invalid-credential":"帳號或密碼錯誤","auth/too-many-requests":"嘗試次數過多，請稍後再試"};
+      const msgs={"auth/invalid-credential":"帳號或密碼錯誤","auth/too-many-requests":"嘗試次數過多，請稍後再試","auth/user-disabled":"此帳號已停用","auth/unauthorized-domain":"此網域未獲 Firebase 授權","auth/network-request-failed":"網路連線問題，請確認網路後再試"};
       if(errEl){errEl.style.display="block";errEl.textContent=msgs[e.code]||"登入失敗："+e.code;}
       document.getElementById("btn-login").textContent="🔐 登入";
     }

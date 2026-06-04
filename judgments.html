@@ -234,7 +234,7 @@ let S={
   newLink:{label:"",url:""},
   newTag:"",
   delConfirm:null,
-  aiLoading:false, aiResult:"", aiKeyEditing:false,
+  aiLoading:false, aiResult:"", aiKeyEditing:false, aiMode:"analyze",
   themeMode:localStorage.getItem("jTheme")||"dark",
 };
 
@@ -318,84 +318,155 @@ async function deleteJudgment(){
 }
 
 // ══════════════════════════════════════════
-// AI ANALYSIS (Gemini API — 與案件管理共用 aiApiKey)
+// AI ANALYSIS (Claude API — Anthropic)
 // ══════════════════════════════════════════
-function getAiApiKey(){return(localStorage.getItem("aiApiKey")||"").trim();}
+function getClaudeApiKey(){return(localStorage.getItem("claudeApiKey")||"").trim();}
 
 function renderAiKeySection(){
-  const key=getAiApiKey();
-  const masked=key?key.slice(0,4)+"…"+key.slice(-4):"";
+  const key=getClaudeApiKey();
+  const masked=key?key.slice(0,10)+"…"+key.slice(-4):"";
   if(S.aiKeyEditing||!key){
     return`
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">使用 Google Gemini（與「案件管理」系統共用 API Key，僅存於本機瀏覽器）</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">使用 Claude API（Anthropic），API Key 僅存於本機瀏覽器</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <input class="fi" id="ai-key-input" type="password" placeholder="貼上 Gemini API Key" autocomplete="off" style="flex:1;min-width:200px;font-size:12px">
+        <input class="fi" id="ai-key-input" type="password" placeholder="貼上 Anthropic API Key（sk-ant-…）" autocomplete="off" style="flex:1;min-width:200px;font-size:12px">
         <button class="btn btn-gold btn-sm" id="btn-save-ai-key">儲存</button>
         ${key?`<button class="btn btn-outline btn-sm" id="btn-clear-ai-key">清除</button>`:""}
         ${S.aiKeyEditing&&key?`<button class="btn btn-outline btn-sm" id="btn-cancel-ai-key">取消</button>`:""}
       </div>
       <div style="font-size:11px;color:var(--text4);margin-top:6px">
-        至 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style="color:var(--gold)">Google AI Studio</a> 免費申請 API Key
+        至 <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" style="color:var(--gold)">Anthropic Console</a> 取得 API Key
       </div>
     </div>`;
   }
   return`<div style="margin-top:8px;font-size:11px;color:var(--text4)">API Key：${esc(masked)} <button type="button" class="btn btn-outline btn-xs" id="btn-edit-ai-key" style="margin-left:6px">變更</button></div>`;
 }
 
+async function callClaude(prompt, maxTokens=2000){
+  const apiKey=getClaudeApiKey();
+  const res=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{
+      "x-api-key":apiKey,
+      "anthropic-version":"2023-06-01",
+      "anthropic-dangerous-direct-browser-access":"true",
+      "content-type":"application/json"
+    },
+    body:JSON.stringify({
+      model:"claude-opus-4-8",
+      max_tokens:maxTokens,
+      messages:[{role:"user",content:prompt}]
+    })
+  });
+  if(!res.ok){
+    let err={};try{err=await res.json();}catch(_){}
+    const msg=err?.error?.message||"";
+    if(res.status===401)throw new Error("API Key 無效，請至 Anthropic Console 確認");
+    if(res.status===403)throw new Error("API Key 權限不足或帳號未啟用");
+    if(res.status===429)throw new Error("超過使用限制，請稍後再試");
+    if(res.status>=500)throw new Error("Claude 伺服器暫時無法回應，請稍後再試");
+    throw new Error(msg||`HTTP ${res.status}`);
+  }
+  const data=await res.json();
+  return data.content?.[0]?.text||"（無回應）";
+}
+
 async function aiAnalyze(judgment){
-  const apiKey=getAiApiKey();
+  const apiKey=getClaudeApiKey();
   if(!apiKey){
     S.aiKeyEditing=true;
-    toast("請先設定 Gemini API Key");
+    toast("請先設定 Claude API Key");
     render();
     return;
   }
   S.aiLoading=true; S.aiResult=""; render();
-  const prompt=`你是一位專業的台灣法律助理。以下是一份判決書的基本資料（非全文），請以繁體中文分析並提供：
-1. 判決要旨（2-3句）
-2. 重要法律爭點（條列3-5點）
-3. 對未來類似案件的實務啟示
-
-案件名稱：${judgment.title}
+  const ct=CTMAP[judgment.caseType]||CTMAP.other;
+  const rr=RMAP[judgment.result]||RMAP.pending;
+  const caseInfo=`案件名稱：${judgment.title}
 案號：${judgment.caseNo}
-法院：${judgment.court}
-類型：${CTMAP[judgment.caseType]?.label||""}
-結果：${RMAP[judgment.result]?.label||""} ${judgment.resultNote||""}
-當事人：${judgment.parties?.plaintiff||""}（原告）vs ${judgment.parties?.defendant||""}（被告）
-本方角色：${judgment.parties?.clientRole||""}
+法院：${judgment.court||"未填寫"}
+審級：${judgment.instance||"地院"}
+類型：${ct.label}
+判決日期：${judgment.judgmentDate||"未填寫"}
+結果：${rr.label}${judgment.resultNote?" — "+judgment.resultNote:""}
+原告：${judgment.parties?.plaintiff||"未填寫"}
+被告：${judgment.parties?.defendant||"未填寫"}
+本方角色：${judgment.parties?.clientRole||"未填寫"}
 已記錄爭點：${(judgment.keyPoints||[]).join("；")||"無"}
 備註：${judgment.notes||"無"}`;
 
+  let prompt="";
+  if(S.aiMode==="analyze"){
+    prompt=`你是一位台灣資深法律顧問，精通民事、刑事、行政、家事、勞動及智財訴訟。
+請依據以下判決書摘要（非判決書全文），以繁體中文進行專業分析，按下列架構回覆：
+
+## 一、判決要旨
+（以2-3句話精確描述判決核心內容與法院立場）
+
+## 二、重要法律爭點
+（條列3-5個核心法律爭點，格式：爭點 → 法院見解）
+
+## 三、勝負關鍵因素
+（分析本案獲得此判決結果的關鍵原因，含有利／不利因素）
+
+## 四、實務啟示
+（對未來處理類似案件的具體建議：舉證重點、訴訟策略、應注意事項）
+
+---
+【案件資料】
+${caseInfo}`;
+  } else if(S.aiMode==="compare"){
+    const similar=S.judgments.filter(j=>j.id!==judgment.id&&j.caseType===judgment.caseType).slice(0,8);
+    const simText=similar.length===0
+      ?"（資料庫中目前無其他同類型案件可供比對）"
+      :similar.map((j,i)=>{
+        const r=RMAP[j.result]||RMAP.pending;
+        return`${i+1}. ${j.title}｜${r.label}｜${j.court||""}｜${j.judgmentDate||""}
+   爭點：${(j.keyPoints||[]).slice(0,2).join("；")||"無"}`;
+      }).join("\n");
+    prompt=`你是一位台灣資深法律顧問。請就「目前案件」與資料庫中同類型（${ct.label}）案件進行比較分析，以繁體中文回覆：
+
+## 一、與資料庫案件的共同模式
+## 二、本案的特殊性（與其他案件的差異）
+## 三、資料庫勝訴案件的共同關鍵因素
+## 四、可借鑑的訴訟策略與建議
+
+---
+【目前分析案件】
+${caseInfo}
+
+---
+【資料庫同類型案件（共${similar.length}件）】
+${simText}`;
+  } else {
+    prompt=`你是一位台灣資深訴訟律師。請就以下${ct.label}案件（本方為${judgment.parties?.clientRole||"原告"}，結果：${rr.label}），提供具體訴訟策略建議，以繁體中文回覆：
+
+## 一、關鍵證據清單
+（本類型案件必備的關鍵證據，依重要性排序）
+
+## 二、對造常見抗辯與應對方式
+（預測對方可能提出的抗辯及有效回應）
+
+## 三、適用法條與重要判例方向
+（本案類型常援引的法條及近期法院見解趨勢）
+
+## 四、庭期策略建議
+（開庭順序、聲請調查證據時機、攻防節奏）
+
+## 五、和解評估
+（本案是否適合和解、和解時機、建議條件方向）
+
+---
+【案件資料】
+${caseInfo}`;
+  }
+
   try{
-    const model="gemini-2.0-flash";
-    const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const res=await fetch(url,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        contents:[{role:"user",parts:[{text:prompt}]}],
-        generationConfig:{maxOutputTokens:1500,temperature:0.5}
-      })
-    });
-    if(!res.ok){
-      let errBody={};
-      try{errBody=await res.json();}catch(_){}
-      const msg=errBody?.error?.message||"";
-      if(res.status===400)throw new Error("請求格式錯誤："+(msg||"請確認 API Key"));
-      if(res.status===401||res.status===403)throw new Error("API Key 無效，請至 Google AI Studio 確認");
-      if(res.status===429)throw new Error("Gemini 免費額度達上限，請稍後再試");
-      if(res.status===500||res.status===503)throw new Error("Gemini 伺服器暫時無法回應");
-      throw new Error(msg||`HTTP ${res.status}`);
-    }
-    const data=await res.json();
-    const candidate=data.candidates?.[0];
-    if(!candidate)throw new Error("Gemini 未回傳結果");
-    if(candidate.finishReason==="SAFETY")throw new Error("觸發安全過濾，請調整資料後再試");
-    S.aiResult=candidate.content?.parts?.[0]?.text||"（無回應）";
+    S.aiResult=await callClaude(prompt, 2000);
   }catch(e){
     S.aiResult="⚠️ "+e.message;
-    if(/API Key|無效|403|401/.test(e.message))S.aiKeyEditing=true;
+    if(/API Key|無效|401|403/.test(e.message))S.aiKeyEditing=true;
   }
   S.aiLoading=false;
   render();
@@ -737,14 +808,19 @@ function renderDetail(){
 
     <!-- AI Analysis -->
     <div class="ai-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${S.aiLoading||S.aiResult?"12":"0"}px">
-        <div style="font-size:12px;font-weight:700;color:var(--gold)">✨ AI 判決分析（Gemini）</div>
-        ${!S.aiLoading&&getAiApiKey()?`<button class="btn btn-outline btn-sm" id="btn-ai">🤖 ${S.aiResult?"重新分析":"開始分析"}</button>`:""}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:var(--gold)">✨ AI 判決分析（Claude）</div>
+        ${!S.aiLoading&&getClaudeApiKey()?`<button class="btn btn-outline btn-sm" id="btn-ai">🤖 ${S.aiResult?"重新分析":"開始分析"}</button>`:""}
       </div>
+      ${getClaudeApiKey()?`
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        ${[["analyze","🔍 深度分析"],["compare","⚖ 案例比對"],["strategy","🎯 策略建議"]].map(([m,l])=>`
+        <button class="btn btn-sm${S.aiMode===m?" btn-gold":" btn-outline"}" id="ai-mode-${m}">${l}</button>`).join("")}
+      </div>`:""}
       ${renderAiKeySection()}
-      ${S.aiLoading?`<div class="ai-loading" style="margin-top:12px"><div class="ai-spinner"></div><div>Gemini 分析中…</div></div>`:""}
+      ${S.aiLoading?`<div class="ai-loading" style="margin-top:12px"><div class="ai-spinner"></div><div>Claude 分析中…</div></div>`:""}
       ${S.aiResult&&!S.aiLoading?`<div class="ai-result" style="margin-top:12px">${esc(S.aiResult)}</div>`:""}
-      ${!S.aiLoading&&!S.aiResult&&getAiApiKey()?`<div style="font-size:12px;color:var(--text4);margin-top:12px">點擊「開始分析」，由 AI 依案件摘要提供判決要旨與法律爭點（非判決書全文）</div>`:""}
+      ${!S.aiLoading&&!S.aiResult&&getClaudeApiKey()?`<div style="font-size:12px;color:var(--text4);margin-top:10px">選擇分析模式後點擊「開始分析」，由 Claude AI 提供深度法律分析（依案件摘要，非判決書全文）</div>`:""}
     </div>
 
     <div class="detail-grid">
@@ -803,19 +879,22 @@ function bindDetail(){
   document.getElementById("del-cancel")?.addEventListener("click",()=>{S.delConfirm=null;render();});
   document.getElementById("del-confirm")?.addEventListener("click",deleteJudgment);
   document.getElementById("btn-ai")?.addEventListener("click",()=>{if(j)aiAnalyze(j);});
+  document.querySelectorAll("[id^='ai-mode-']").forEach(b=>{
+    b.addEventListener("click",()=>{S.aiMode=b.id.replace("ai-mode-","");S.aiResult="";render();});
+  });
   document.getElementById("btn-save-ai-key")?.addEventListener("click",()=>{
     const k=document.getElementById("ai-key-input")?.value.trim();
     if(!k){toast("請輸入 API Key");return;}
-    localStorage.setItem("aiApiKey",k);
+    localStorage.setItem("claudeApiKey",k);
     S.aiKeyEditing=false;
-    toast("✅ API Key 已儲存");
+    toast("✅ Claude API Key 已儲存");
     render();
   });
   document.getElementById("btn-clear-ai-key")?.addEventListener("click",()=>{
-    localStorage.removeItem("aiApiKey");
+    localStorage.removeItem("claudeApiKey");
     S.aiKeyEditing=true;
     S.aiResult="";
-    toast("已清除 API Key");
+    toast("已清除 Claude API Key");
     render();
   });
   document.getElementById("btn-edit-ai-key")?.addEventListener("click",()=>{S.aiKeyEditing=true;render();});

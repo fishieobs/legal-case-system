@@ -1,11 +1,13 @@
 (function () {
   var active = (document.currentScript && document.currentScript.getAttribute("data-active")) || "";
   var pages = [
-    { id: "cases", href: "index.html", label: "⚖ 案件系統" },
-    { id: "widget", href: "widget.html", label: "📅 庭期 Widget" },
-    { id: "letters", href: "letters.html", label: "📮 信函管理" },
-    { id: "templates", href: "templates.html", label: "📚 文書範本" },
-    { id: "judgments", href: "judgments.html", label: "🔨 判決書管理" },
+    { id: "cases",     href: "index.html",      label: "⚖ 案件系統" },
+    { id: "judgments", href: "judgments.html",   label: "🔨 判決書管理" },
+    { id: "letters",   href: "letters.html",     label: "📮 信函管理" },
+    { id: "templates", href: "templates.html",   label: "📚 文書範本" },
+    { id: "tax",       href: "tax.html",         label: "💰 稅務管理" },
+    { id: "court",     href: "court_nav.html",   label: "🗺 開庭助理" },
+    { id: "widget",    href: "widget.html",      label: "📅 庭期 Widget" },
   ];
 
   if (!document.getElementById("sys-nav-css")) {

@@ -621,6 +621,12 @@ function App({user}){
     const [toolModal, setToolModal] = useState(false);
     const [toolForm, setToolForm] = useState({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"});
     const [editingToolId, setEditingToolId] = useState(null);
+    const [aiApiKey, setAiApiKey] = useState(()=>localStorage.getItem("claudeApiKey")||"");
+    const [aiKeyEditing, setAiKeyEditing] = useState(false);
+    const [aiKeyInput, setAiKeyInput] = useState("");
+    const [aiMessages, setAiMessages] = useState({});
+    const [aiInput, setAiInput] = useState("");
+    const [aiLoading, setAiLoading] = useState(false);
     const { mode, effective, cycleMode } = useTheme();
 
     // ── Firebase listener ──
@@ -882,16 +888,16 @@ function App({user}){
         const k=aiKeyInput.trim();
         if(!k){ toast("請輸入 API Key"); return; }
         setAiApiKey(k);
-        localStorage.setItem("aiApiKey",k);
+        localStorage.setItem("claudeApiKey",k);
         setAiKeyEditing(false);
         setAiKeyInput("");
-        toast("✅ API Key 已儲存");
+        toast("✅ Claude API Key 已儲存");
     };
     const clearApiKey=()=>{
         setAiApiKey("");
-        localStorage.removeItem("aiApiKey");
+        localStorage.removeItem("claudeApiKey");
         setAiKeyEditing(false);
-        toast("已清除 API Key");
+        toast("已清除 Claude API Key");
     };
     const getCaseMsgs=(caseId)=>aiMessages[caseId]||[];
     const addMsg=(caseId,msg)=>setAiMessages(prev=>({...prev,[caseId]:[...(prev[caseId]||[]),msg]}));
@@ -900,13 +906,13 @@ function App({user}){
     const sendAiMessage=async(c)=>{
         const text=aiInput.trim();
         if(!text||aiLoading) return;
-        if(!aiApiKey){ toast("請先設定 Gemini API Key"); setAiKeyEditing(true); return; }
+        if(!aiApiKey){ toast("請先設定 Claude API Key"); setAiKeyEditing(true); return; }
         const userMsg={role:"user",content:text};
         addMsg(c.id, userMsg);
         setAiInput("");
         setAiLoading(true);
 
-        const systemPrompt=`你是一位專業的台灣法律助理，正在協助律師處理以下案件：
+        const systemPrompt=`你是一位專業的台灣法律助理，正在協助律師處理以下案件。請根據案件背景，以繁體中文回答律師的問題，回答要專業、精準、具有實務參考價值。
 
 【案件資訊】
 事務所案件編號：${c.firmCaseNo||""}
@@ -918,65 +924,44 @@ function App({user}){
 案件類型：${c.caseType||""}
 案件狀態：${c.status||""}
 承辦律師：${c.attorney||""}
-備註：${c.notes||""}
+備註：${c.notes||""}`;
 
-請根據上述案件背景，以繁體中文回答律師的問題。回答要專業、精準、具有實務參考價值。`;
-
-        // Build Gemini contents — inject system as first user/model turn
         const history=getCaseMsgs(c.id);
-        const contents=[];
-        // System prompt as first turn
-        contents.push({role:"user",parts:[{text:systemPrompt}]});
-        contents.push({role:"model",parts:[{text:"了解，我已掌握本案資訊，請問有什麼需要協助的？"}]});
-        // History
-        history.forEach(m=>{
-            if(m.role==="user") contents.push({role:"user",parts:[{text:m.content}]});
-            else if(m.role==="ai") contents.push({role:"model",parts:[{text:m.content}]});
-        });
-        // Current message
-        contents.push({role:"user",parts:[{text}]});
+        const messages=history.map(m=>({role:m.role==="ai"?"assistant":"user",content:m.content}));
+        messages.push({role:"user",content:text});
 
         try{
-            const model="gemini-2.0-flash";
-            const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${aiApiKey}`;
-            let res;
-            try{
-                res=await fetch(url,{
-                    method:"POST",
-                    headers:{"Content-Type":"application/json"},
-                    body:JSON.stringify({
-                        contents,
-                        generationConfig:{maxOutputTokens:1500,temperature:0.7}
-                    })
-                });
-            }catch(networkErr){
-                // fetch 本身失敗：通常是 CORS 或網路問題
-                throw new Error("網路連線失敗，請確認網路狀態（"+networkErr.message+"）");
-            }
+            const res=await fetch("https://api.anthropic.com/v1/messages",{
+                method:"POST",
+                headers:{
+                    "x-api-key":aiApiKey,
+                    "anthropic-version":"2023-06-01",
+                    "anthropic-dangerous-direct-browser-access":"true",
+                    "content-type":"application/json"
+                },
+                body:JSON.stringify({
+                    model:"claude-opus-4-8",
+                    max_tokens:1500,
+                    system:systemPrompt,
+                    messages
+                })
+            });
             if(!res.ok){
-                let errBody={};
-                try{ errBody=await res.json(); }catch(_){}
-                const msg=errBody?.error?.message||"";
-                if(res.status===400) throw new Error("請求格式錯誤："+(msg||"請確認 API Key 是否正確"));
-                if(res.status===401||res.status===403) throw new Error("API Key 無效，請至 Google AI Studio 確認");
-                if(res.status===429){
-                    const retry=res.headers.get("Retry-After");
-                    throw new Error("Gemini 免費額度達上限，請稍後再試"+(retry?`（${retry}秒後）`:""));
-                }
-                if(res.status===500||res.status===503) throw new Error("Gemini 伺服器暫時無法回應，請稍後再試");
+                let err={};try{err=await res.json();}catch(_){}
+                const msg=err?.error?.message||"";
+                if(res.status===401)throw new Error("API Key 無效，請至 Anthropic Console 確認");
+                if(res.status===403)throw new Error("API Key 權限不足或帳號未啟用");
+                if(res.status===429)throw new Error("超過使用限制，請稍後再試");
+                if(res.status>=500)throw new Error("Claude 伺服器暫時無法回應，請稍後再試");
                 throw new Error(msg||`HTTP ${res.status}`);
             }
             const data=await res.json();
-            // Check for safety block
-            const candidate=data.candidates?.[0];
-            if(!candidate) throw new Error("Gemini 未回傳結果，可能觸發安全過濾");
-            if(candidate.finishReason==="SAFETY") throw new Error("此問題觸發 Gemini 安全過濾，請換個方式提問");
-            const reply=candidate.content?.parts?.[0]?.text||"（無回應）";
+            const reply=data.content?.[0]?.text||"（無回應）";
             addMsg(c.id,{role:"ai",content:reply});
         }catch(e){
-            console.error("Gemini error:",e);
+            console.error("Claude error:",e);
             addMsg(c.id,{role:"ai",content:"⚠️ "+e.message});
-            if(e.message.includes("API Key")||e.message.includes("無效")) setAiKeyEditing(true);
+            if(/API Key|無效|401|403/.test(e.message)) setAiKeyEditing(true);
         }finally{
             setAiLoading(false);
         }
@@ -1488,7 +1473,7 @@ function App({user}){
             </div>
             {/* Tab switcher */}
             <div style={{display:"flex",gap:0,padding:"0 16px",background:"var(--bg2)",borderBottom:"1px solid var(--border)"}}>
-                {[["info","📋 案件資訊"],["timeline","🕐 時間軸"],["notes","📓 案件筆記"]].map(([t,l])=>(
+                {[["info","📋 案件資訊"],["timeline","🕐 時間軸"],["notes","📓 案件筆記"],["ai","🤖 AI 助理"]].map(([t,l])=>(
                     <button key={t} onClick={()=>setDetailTab(t)} style={{
                         padding:"10px 18px",border:"none",background:"transparent",
                         color:detailTab===t?"var(--gold)":"var(--text3)",
@@ -1875,6 +1860,82 @@ function App({user}){
                     </div>
 
                 </div>}
+
+                {detailTab==="ai" && (
+                    <div style={{maxWidth:760,margin:"0 auto"}}>
+                        {/* API Key section */}
+                        <div style={{background:"linear-gradient(135deg,rgba(200,169,110,.06),rgba(139,92,246,.06))",border:"1px solid rgba(200,169,110,.2)",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                                <div style={{fontSize:12,fontWeight:700,color:"var(--gold)"}}>🤖 Claude AI 法律助理</div>
+                                {aiApiKey&&!aiKeyEditing&&<button style={{background:"none",border:"1px solid var(--border2)",borderRadius:6,color:"var(--text3)",cursor:"pointer",padding:"3px 10px",fontSize:11,fontFamily:"inherit"}} onClick={()=>setAiKeyEditing(true)}>變更 Key</button>}
+                            </div>
+                            {(!aiApiKey||aiKeyEditing)?(
+                                <div>
+                                    <div style={{fontSize:11,color:"var(--text3)",marginBottom:8}}>設定 Claude API Key（僅存於本機瀏覽器）</div>
+                                    <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                                        <input style={{flex:1,minWidth:200,background:"var(--bg3)",border:"1px solid var(--border)",borderRadius:7,padding:"8px 11px",color:"var(--text)",fontSize:12,outline:"none",fontFamily:"inherit"}}
+                                            type="password" placeholder="貼上 Anthropic API Key（sk-ant-…）"
+                                            value={aiKeyInput} onChange={e=>setAiKeyInput(e.target.value)}
+                                            onKeyDown={e=>e.key==="Enter"&&saveApiKey()}/>
+                                        <button style={{padding:"8px 14px",borderRadius:8,fontWeight:700,cursor:"pointer",border:"none",background:"linear-gradient(135deg,var(--gold),#a07840)",color:"#0a0a0a",fontSize:12,fontFamily:"inherit"}} onClick={saveApiKey}>儲存</button>
+                                        {aiApiKey&&<button style={{padding:"8px 14px",borderRadius:8,fontWeight:700,cursor:"pointer",border:"1px solid var(--border2)",background:"transparent",color:"var(--text2)",fontSize:12,fontFamily:"inherit"}} onClick={()=>setAiKeyEditing(false)}>取消</button>}
+                                    </div>
+                                    <div style={{fontSize:11,color:"var(--text4)",marginTop:6}}>至 <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" style={{color:"var(--gold)"}}>Anthropic Console</a> 取得 API Key</div>
+                                </div>
+                            ):(
+                                <div style={{fontSize:11,color:"var(--text3)"}}>AI 助理可根據案件資訊回答你的法律問題，對話記錄僅存於本次瀏覽器 session。
+                                    <button style={{background:"none",border:"none",color:"var(--red)",cursor:"pointer",fontSize:11,marginLeft:10,fontFamily:"inherit"}} onClick={()=>clearChat(selected.id)}>清除對話</button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Message history */}
+                        <div style={{minHeight:200,marginBottom:12}}>
+                            {getCaseMsgs(selected.id).length===0&&aiApiKey&&!aiKeyEditing&&(
+                                <div style={{textAlign:"center",padding:"40px 20px",color:"var(--text4)",fontSize:13}}>
+                                    <div style={{fontSize:32,marginBottom:8}}>🤖</div>
+                                    <div>可以問我關於這個案件的任何法律問題</div>
+                                    <div style={{fontSize:11,marginTop:6,color:"var(--text4)"}}>例如：請分析本案的勝訴關鍵、對方可能的抗辯、建議的訴訟策略…</div>
+                                </div>
+                            )}
+                            {getCaseMsgs(selected.id).map((msg,i)=>(
+                                <div key={i} style={{marginBottom:12,display:"flex",flexDirection:"column",alignItems:msg.role==="user"?"flex-end":"flex-start"}}>
+                                    <div style={{
+                                        maxWidth:"85%",padding:"10px 14px",borderRadius:12,fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",
+                                        background:msg.role==="user"?"rgba(200,169,110,.15)":"var(--bg3)",
+                                        border:msg.role==="user"?"1px solid rgba(200,169,110,.3)":"1px solid var(--border)",
+                                        color:"var(--text2)",
+                                        borderBottomRightRadius:msg.role==="user"?2:12,
+                                        borderBottomLeftRadius:msg.role==="ai"?2:12,
+                                    }}>{msg.content}</div>
+                                    <div style={{fontSize:10,color:"var(--text4)",marginTop:3}}>{msg.role==="user"?"律師":"🤖 Claude"}</div>
+                                </div>
+                            ))}
+                            {aiLoading&&<div style={{display:"flex",alignItems:"center",gap:8,color:"var(--text3)",fontSize:13,padding:"8px 0"}}>
+                                <div style={{width:16,height:16,border:"2px solid var(--border2)",borderTopColor:"var(--gold)",borderRadius:"50%",animation:"spin .8s linear infinite",flexShrink:0}}/>
+                                Claude 思考中…
+                            </div>}
+                        </div>
+
+                        {/* Input */}
+                        {aiApiKey&&!aiKeyEditing&&(
+                            <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                                <textarea
+                                    style={{flex:1,background:"var(--bg3)",border:"1px solid var(--border)",borderRadius:10,padding:"10px 12px",color:"var(--text)",fontSize:13,outline:"none",fontFamily:"inherit",lineHeight:1.6,resize:"none",minHeight:60,maxHeight:160}}
+                                    placeholder="輸入問題，例如：本案勝訴關鍵是什麼？"
+                                    value={aiInput} onChange={e=>setAiInput(e.target.value)}
+                                    onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAiMessage(selected);}}}
+                                    rows={2}/>
+                                <button
+                                    style={{padding:"10px 16px",borderRadius:10,fontWeight:700,cursor:"pointer",border:"none",background:aiLoading?"var(--bg4)":"linear-gradient(135deg,var(--gold),#a07840)",color:aiLoading?"var(--text3)":"#0a0a0a",fontSize:13,fontFamily:"inherit",flexShrink:0,alignSelf:"flex-end"}}
+                                    onClick={()=>sendAiMessage(selected)} disabled={aiLoading||!aiInput.trim()}>
+                                    {aiLoading?"…":"發送"}
+                                </button>
+                            </div>
+                        )}
+                        <div style={{fontSize:11,color:"var(--text4)",marginTop:8,textAlign:"center"}}>Enter 送出 · Shift+Enter 換行 · AI 回答僅供參考，不構成法律意見</div>
+                    </div>
+                )}
             </div>
 
             <div className="bnav">

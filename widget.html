@@ -728,9 +728,12 @@ function buildWidget(){
                 `:""} 
                 ${todos.length>0?`
                 <div style="font-size:11px;color:var(--text4);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:12px 0 8px">✅ 待辦事項（${todos.length}項）</div>
-                ${todos.map(t=>`<div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
+                ${todos.sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99")).map(t=>`<div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
                     <div style="width:16px;height:16px;border-radius:4px;border:2px solid #8b5cf6;background:${t.done?"#8b5cf6":"transparent"};flex-shrink:0;display:flex;align-items:center;justify-content:center">${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}</div>
-                    <div style="flex:1;color:var(--text);font-size:13px;text-decoration:${t.done?"line-through":"none"}">${t.text}</div>
+                    <div style="flex:1">
+                        ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
+                        <div style="color:var(--text);font-size:13px;text-decoration:${t.done?"line-through":"none"}">${t.text}</div>
+                    </div>
                 </div>`).join("")}
                 `:""} 
                 ${hearings.length===0&&todos.length===0?`<div style="text-align:center;padding:30px 20px;color:var(--text4)">此日無庭期或待辦</div>`:""}
@@ -752,9 +755,10 @@ function buildWidget(){
             ${state.showAddTodo?`
             <div id="todo-form" style="display:flex;flex-direction:column;gap:10px;padding-top:10px;border-top:1px solid var(--border)">
                 <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase">新增待辦事項</div>
-                <div class="form-row">
+                <div class="form-row three">
                     <input class="fi-sm" id="todo-text" placeholder="待辦事項內容" autocomplete="off">
                     <input class="fi-sm" id="todo-date" type="date" value="${today()}">
+                    <input class="fi-sm" id="todo-time" type="time">
                 </div>
                 <div class="form-row">
                     <input class="fi-sm" id="todo-note" placeholder="備註（可留空）" autocomplete="off">
@@ -767,7 +771,7 @@ function buildWidget(){
             const upcoming=(state.calTodos||[]).filter(t=>{
                 const d=daysUntil(t.date);
                 return d>=0 && d<=DAYS_AHEAD;
-            }).sort((a,b)=>a.date.localeCompare(b.date));
+            }).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"99:99").localeCompare(b.time||"99:99"));
             if(upcoming.length===0) return '<div style="text-align:center;padding:40px 20px;color:var(--text4)"><div style="font-size:36px;margin-bottom:10px">✨</div><div>近期無待辦事項</div></div>';
             const byDate={};
             upcoming.forEach(t=>{if(!byDate[t.date])byDate[t.date]=[];byDate[t.date].push(t);});
@@ -783,7 +787,10 @@ function buildWidget(){
                     </div>
                     ${todos.map(t=>`<div style="background:var(--bg3);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;opacity:${t.done?.5:1}">
                         <div style="width:18px;height:18px;border-radius:4px;border:2px solid #8b5cf6;background:${t.done?"#8b5cf6":"transparent"};flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center">${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}</div>
-                        <div style="flex:1;color:var(--text);font-size:14px;text-decoration:${t.done?"line-through":"none"}">${t.text}</div>
+                        <div style="flex:1">
+                            ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
+                            <div style="color:var(--text);font-size:14px;text-decoration:${t.done?"line-through":"none"}">${t.text}</div>
+                        </div>
                     </div>`).join("")}
                 </div>`;
             }).join("");
@@ -852,9 +859,10 @@ function buildWidget(){
             ${state.showAddTodo?`
             <div id="todo-form" style="display:flex;flex-direction:column;gap:10px;padding-top:10px;border-top:1px solid var(--border)">
                 <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase">新增待辦事項</div>
-                <div class="form-row">
+                <div class="form-row three">
                     <input class="fi-sm" id="todo-text" placeholder="待辦事項內容" autocomplete="off">
                     <input class="fi-sm" id="todo-date" type="date" value="${today()}">
+                    <input class="fi-sm" id="todo-time" type="time">
                 </div>
                 <div class="form-row">
                     <input class="fi-sm" id="todo-note" placeholder="備註（可留空）" autocomplete="off">
@@ -1332,10 +1340,11 @@ function addWidgetHearingFromForm(){
 function addTodoFromForm(){
     const text=document.getElementById("todo-text")?.value.trim();
     const date=document.getElementById("todo-date")?.value;
+    const time=document.getElementById("todo-time")?.value;
     const note=document.getElementById("todo-note")?.value.trim();
     if(!text){ setNotice("請輸入待辦事項內容"); return; }
     if(!date){ setNotice("請選擇待辦日期"); return; }
-    const item={id:uid(),text,date,note:note||"",done:false,createdAt:new Date().toISOString()};
+    const item={id:uid(),text,date,time:time||"",note:note||"",done:false,createdAt:new Date().toISOString()};
     saveCalTodos([...(state.calTodos||[]),item]);
     state.showAddTodo=false;
     state.notice="✅ 待辦事項已新增";

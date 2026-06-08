@@ -604,6 +604,7 @@ function App({user}){
     const [calTodos, setCalTodos] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(e){ return []; } });
     const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
     const [calTodoInput, setCalTodoInput] = useState("");
+    const [calTodoTime, setCalTodoTime] = useState("");
     const [filterTag, setFilterTag] = useState("全部");
     const [sortBy, setSortBy] = useState("retainerDate"); // retainerDate | feeReceived | feeUnpaid | nextHearing
     const [sortDir, setSortDir] = useState("desc");
@@ -795,9 +796,10 @@ function App({user}){
     };
     const addCalTodo=(dateStr)=>{
         if(!calTodoInput.trim()) return;
-        const updated=[...calTodos,{id:uid(),date:dateStr,text:calTodoInput.trim(),done:false,createdAt:new Date().toISOString()}];
+        const updated=[...calTodos,{id:uid(),date:dateStr,text:calTodoInput.trim(),time:calTodoTime||"",done:false,createdAt:new Date().toISOString()}];
         saveCalTodos(updated);
         setCalTodoInput("");
+        setCalTodoTime("");
     };
     const toggleCalTodo=(id)=>{
         const updated=calTodos.map(t=>t.id===id?{...t,done:!t.done}:t);
@@ -1350,27 +1352,38 @@ function App({user}){
                                 {/* Todos */}
                                 <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>✅ 待辦事項</div>
                                 {todosForDay.length===0 && <div style={{color:"var(--text4)",fontSize:13,padding:"8px 0 14px"}}>尚無待辦，在下方新增</div>}
-                                {todosForDay.map(t=>(
+                                {todosForDay.sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99")).map(t=>(
                                     <div key={t.id} className="cal-todo-item" onClick={()=>toggleCalTodo(t.id)}>
                                         <div className={`cal-todo-check${t.done?" done":""}`}>
                                             {t.done && <span style={{color:"#fff",fontSize:11,fontWeight:900}}>✓</span>}
                                         </div>
-                                        <div style={{flex:1,color:t.done?"var(--text4)":"var(--text)",textDecoration:t.done?"line-through":"none",fontSize:14}}>{t.text}</div>
+                                        <div style={{flex:1}}>
+                                            {t.time && <div style={{fontSize:11,color:"#8b5cf6",fontWeight:700,marginBottom:2}}>⏰ {t.time}</div>}
+                                            <div style={{color:t.done?"var(--text4)":"var(--text)",textDecoration:t.done?"line-through":"none",fontSize:14}}>{t.text}</div>
+                                        </div>
                                         <button className="cal-todo-del" onClick={e=>{e.stopPropagation();deleteCalTodo(t.id);}}>🗑</button>
                                     </div>
                                 ))}
 
                                 {/* Add new todo */}
-                                <div style={{display:"flex",gap:8,marginTop:14}}>
-                                    <input
-                                        style={{flex:1,background:"var(--bg)",border:"1px solid var(--border)",borderRadius:9,padding:"10px 13px",color:"var(--text)",fontSize:13,outline:"none",fontFamily:"inherit"}}
-                                        placeholder="新增待辦事項…"
-                                        value={calTodoInput}
-                                        onChange={e=>setCalTodoInput(e.target.value)}
-                                        onKeyDown={e=>{ if(e.key==="Enter"){ addCalTodo(ds); } }}
-                                        autoFocus
+                                <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:14}}>
+                                    <div style={{display:"flex",gap:8}}>
+                                        <input
+                                            style={{flex:1,background:"var(--bg)",border:"1px solid var(--border)",borderRadius:9,padding:"10px 13px",color:"var(--text)",fontSize:13,outline:"none",fontFamily:"inherit"}}
+                                            placeholder="新增待辦事項…"
+                                            value={calTodoInput}
+                                            onChange={e=>setCalTodoInput(e.target.value)}
+                                            onKeyDown={e=>{ if(e.key==="Enter"){ addCalTodo(ds); } }}
+                                            autoFocus
                                     />
                                     <button className="btn btn-gold" onClick={()=>addCalTodo(ds)} disabled={!calTodoInput.trim()}>＋ 新增</button>
+                                    </div>
+                                    <input
+                                        type="time"
+                                        style={{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:9,padding:"10px 13px",color:"var(--text)",fontSize:13,outline:"none",fontFamily:"inherit",width:"100%"}}
+                                        value={calTodoTime}
+                                        onChange={e=>setCalTodoTime(e.target.value)}
+                                    />
                                 </div>
                             </div>
                         </div>

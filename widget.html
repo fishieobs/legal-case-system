@@ -936,11 +936,14 @@ function buildWidget(){
                     ${todos.length>0?`
                     <div class="day-section">
                         <div class="day-section-title">✅ 待辦事項（${todos.length}項）</div>
-                        ${todos.map(t=>`<div class="day-item" style="display:flex;align-items:flex-start;gap:10px">
+                        ${todos.sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99")).map(t=>`<div class="day-item" style="display:flex;align-items:flex-start;gap:10px">
                             <div class="todo-check-box${t.done?" done":""}" onclick="event.stopPropagation();toggleTodo('${t.id}')">
                                 ${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}
                             </div>
-                            <div style="flex:1;color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"};font-size:13px">${esc(t.text)}</div>
+                            <div style="flex:1">
+                                ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
+                                <div style="color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"};font-size:13px">${esc(t.text)}</div>
+                            </div>
                         </div>`).join("")}
                     </div>`:""}
                     ${hearings.length===0&&todos.length===0?`
@@ -958,7 +961,7 @@ function buildWidget(){
 }
 
 function buildTodoSection(){
-    const allTodos=(state.calTodos||[]).sort((a,b)=>a.date.localeCompare(b.date));
+    const allTodos=(state.calTodos||[]).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"99:99").localeCompare(b.time||"99:99"));
     if(allTodos.length===0) return "";
     const pendingCount=allTodos.filter(t=>!t.done).length;
     const overdueCount=allTodos.filter(t=>!t.done&&daysUntil(t.date)<0).length;
@@ -988,7 +991,10 @@ function buildTodoSection(){
             }
             return `<div class="todo-item${t.done?" done":""}${isOverdue&&!t.done?" overdue":""}">
                 ${checkBox}
-                <div style="flex:1;font-size:13px;color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
+                <div style="flex:1">
+                    ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
+                    <div style="font-size:13px;color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
+                </div>
                 <button class="todo-edit-btn" onclick="window.startEditTodo('${t.id}',\`${esc(t.text)}\`)" title="編輯">✏️</button>
                 <button class="todo-edit-btn" onclick="window.deleteTodo('${t.id}')" title="刪除" style="color:var(--text4)">🗑</button>
             </div>`;

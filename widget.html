@@ -755,15 +755,15 @@ function buildWidget(){
             ${state.showAddTodo?`
             <div id="todo-form" style="display:flex;flex-direction:column;gap:10px;padding-top:10px;border-top:1px solid var(--border)">
                 <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase">新增待辦事項</div>
-                <div class="form-row">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start">
                     <input class="fi-sm" id="todo-text" placeholder="待辦事項內容" autocomplete="off">
-                    <input class="fi-sm" id="todo-date" type="date" value="${today()}">
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                        <input class="fi-sm" id="todo-date" type="date" value="${today()}">
+                        <input class="fi-sm" id="todo-time" type="time">
+                    </div>
                 </div>
                 <div class="form-row">
                     <input class="fi-sm" id="todo-note" placeholder="備註（選填）" autocomplete="off">
-                    <input class="fi-sm" id="todo-time" type="time">
-                </div>
-                <div style="display:flex;justify-content:flex-end">
                     <button class="btn-small gold" id="btn-save-todo" type="button">💾 儲存待辦</button>
                 </div>
             </div>`:""}
@@ -861,15 +861,15 @@ function buildWidget(){
             ${state.showAddTodo?`
             <div id="todo-form" style="display:flex;flex-direction:column;gap:10px;padding-top:10px;border-top:1px solid var(--border)">
                 <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase">新增待辦事項</div>
-                <div class="form-row">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start">
                     <input class="fi-sm" id="todo-text" placeholder="待辦事項內容" autocomplete="off">
-                    <input class="fi-sm" id="todo-date" type="date" value="${today()}">
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                        <input class="fi-sm" id="todo-date" type="date" value="${today()}">
+                        <input class="fi-sm" id="todo-time" type="time">
+                    </div>
                 </div>
                 <div class="form-row">
                     <input class="fi-sm" id="todo-note" placeholder="備註（選填）" autocomplete="off">
-                    <input class="fi-sm" id="todo-time" type="time">
-                </div>
-                <div style="display:flex;justify-content:flex-end">
                     <button class="btn-small gold" id="btn-save-todo" type="button">💾 儲存待辦</button>
                 </div>
             </div>`:""}

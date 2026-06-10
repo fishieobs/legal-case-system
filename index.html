@@ -602,6 +602,7 @@ function App({user}){
     const [statsMonth, setStatsMonth] = useState("全部");
     const [calDate, setCalDate] = useState(new Date());
     const [calTodos, setCalTodos] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(e){ return []; } });
+    const [widgetHearings, setWidgetHearings] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("widgetHearings")||"[]"); }catch(e){ return []; } });
     const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
     const [calTodoInput, setCalTodoInput] = useState("");
     const [calTodoTime, setCalTodoTime] = useState("");
@@ -650,6 +651,14 @@ function App({user}){
                     try{ localStorage.setItem("calTodos",JSON.stringify(items)); }catch(_){}
                 }
             }, e=>console.warn("calTodos listen failed:",e));
+            // Load widgetHearings from Firebase (realtime)
+            onSnapshot(window.fbMethods.doc(window.db,"widgetHearings","shared"), snap=>{
+                if(snap.exists()){
+                    const items=snap.data().items||[];
+                    setWidgetHearings(items);
+                    try{ localStorage.setItem("widgetHearings",JSON.stringify(items)); }catch(_){}
+                }
+            }, e=>console.warn("widgetHearings listen failed:",e));
             onSnapshot(
                 collection(window.db,"cases"),
                 snap=>{
@@ -1231,6 +1240,11 @@ function App({user}){
                             hearingMap[h.date].push({clientName:c.clientName,caseType:c.caseType,note:h.note||h.agency||"開庭",caseId:c.id,time:h.time||""});
                         });
                     });
+                    // Also include widgetHearings (臨時庭期)
+                    (widgetHearings||[]).forEach(h=>{
+                        if(!hearingMap[h.date]) hearingMap[h.date]=[];
+                        hearingMap[h.date].push({clientName:h.clientName||"臨時庭期",caseType:"臨時庭期",note:h.note||h.agency||"臨時庭期",caseId:null,time:h.time||"",isWidget:true});
+                    });
                     const cells=[];
                     // Previous month padding
                     const prevDays=new Date(y,m,0).getDate();
@@ -1278,10 +1292,10 @@ function App({user}){
                                             )}
                                             {events.slice(0,2).map((ev,ei)=>(
                                                 <div key={ei} className="cal-event"
-                                                    style={{background:(TYPE_COLOR[ev.caseType]||"#64748b")+"33",color:TYPE_COLOR[ev.caseType]||"#64748b"}}
-                                                    onClick={e=>{e.stopPropagation();openDetail(ev.caseId);}}
-                                                    title={`${ev.clientName} ${ev.time} ${ev.note}`}>
-                                                    {ev.time&&`${ev.time} `}{ev.clientName}
+                                                    style={{background:(ev.isWidget?"#c8a96e":(TYPE_COLOR[ev.caseType]||"#64748b"))+"33",color:ev.isWidget?"#c8a96e":(TYPE_COLOR[ev.caseType]||"#64748b")}}
+                                                    onClick={e=>{e.stopPropagation();if(!ev.isWidget)openDetail(ev.caseId);}}
+                                                    title={`${ev.isWidget?"⚡ ":""}${ev.clientName} ${ev.time} ${ev.note}`}>
+                                                    {ev.time&&`${ev.time} `}{ev.isWidget?"⚡ ":""}{ev.clientName}
                                                 </div>
                                             ))}
                                             {events.length>2 && <div style={{fontSize:9,color:"var(--text4)",paddingLeft:3}}>+{events.length-2}庭</div>}
@@ -1302,6 +1316,7 @@ function App({user}){
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:4,background:"rgba(139,92,246,.4)"}}/><span style={{color:"#8b5cf6",fontWeight:700}}>待辦</span></div>
                                 <div style={{width:1,height:14,background:"var(--border)",margin:"0 4px"}}/>
                                 {CASE_TYPES.map(t=><div key={t} className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:TYPE_COLOR[t]||"#64748b"}}/>{t}</div>)}
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:"#c8a96e"}}/><span style={{color:"#c8a96e",fontWeight:700}}>⚡ 臨時庭期</span></div>
                             </div>
                             <div style={{fontSize:10,color:"var(--text4)",padding:"6px 18px 0",textAlign:"right"}}>點選日期可新增待辦事項</div>
                         </div>
@@ -1318,7 +1333,8 @@ function App({user}){
                     const hearingsForDay=(()=>{
                         const hm={};
                         cases.forEach(c=>(c.hearings||[]).forEach(h=>{if(!hm[h.date])hm[h.date]=[];hm[h.date].push({...h,clientName:c.clientName,firmCaseNo:c.firmCaseNo,caseType:c.caseType,caseId:c.id});}));
-                        return hm[ds]||[];
+                        (widgetHearings||[]).forEach(h=>{if(!hm[h.date])hm[h.date]=[];hm[h.date].push({...h,caseType:"臨時庭期",caseId:null,isWidget:true});});
+                        return (hm[ds]||[]).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
                     })();
                     return(
                         <div className="cal-todo-modal" onClick={()=>setCalTodoModal(null)}>
@@ -1335,17 +1351,24 @@ function App({user}){
                                 {/* Hearings on this day */}
                                 {hearingsForDay.length>0 && <>
                                     <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>🏛 當日庭期</div>
-                                    {hearingsForDay.map((h,i)=>(
-                                        <div key={i} onClick={()=>{openDetail(h.caseId);setCalTodoModal(null);}}
-                                            style={{background:"var(--bg3)",border:`1px solid ${TYPE_COLOR[h.caseType]||"#64748b"}33`,borderRadius:10,padding:"10px 12px",marginBottom:8,cursor:"pointer",display:"flex",gap:10,alignItems:"center"}}>
-                                            <span style={{fontSize:15,color:TYPE_COLOR[h.caseType]||"#64748b"}}>🏛</span>
+                                    {hearingsForDay.map((h,i)=>{
+                                        const color=h.isWidget?"#c8a96e":(TYPE_COLOR[h.caseType]||"#64748b");
+                                        const label=h.isWidget?"臨時庭期":h.caseType;
+                                        const agency=h.agency||h.note||"";
+                                        const detail=[h.time,agency,h.courtroom].filter(Boolean).join(" · ");
+                                        return(
+                                        <div key={i}
+                                            onClick={h.isWidget?undefined:()=>{openDetail(h.caseId);setCalTodoModal(null);}}
+                                            style={{background:"var(--bg3)",border:`1px solid ${color}33`,borderRadius:10,padding:"10px 12px",marginBottom:8,cursor:h.isWidget?"default":"pointer",display:"flex",gap:10,alignItems:"center"}}>
+                                            <span style={{fontSize:15,color}}>{h.isWidget?"⚡":"🏛"}</span>
                                             <div style={{flex:1}}>
                                                 <div style={{fontWeight:700,color:"var(--text)",fontSize:13}}>{h.clientName}</div>
-                                                <div style={{fontSize:11,color:"var(--text3)"}}>{h.time&&`${h.time} · `}{h.note||h.agency||""}</div>
+                                                <div style={{fontSize:11,color:"var(--text3)"}}>{detail}</div>
                                             </div>
-                                            <Badge label={h.caseType} color={TYPE_COLOR[h.caseType]||"#64748b"}/>
+                                            <Badge label={label} color={color}/>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                     <div style={{height:1,background:"var(--border)",margin:"12px 0"}}/>
                                 </>}
 

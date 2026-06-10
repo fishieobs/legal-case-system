@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="裁判書查詢">
+<meta name="theme-color" content="#020810">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-judgments.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-judgments.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<title>🔍 司法院裁判書查詢</title>
+<style>
+:root{
+  --bg:#020810;--bg2:#080f1e;--bg3:#0c1428;--bg4:#121e36;--bg5:#1a2a48;
+  --gold:#c8a96e;--gold2:#a07840;--gold3:#e0c080;
+  --text:#dce8f8;--text2:#8ca0c0;--text3:#506080;--text4:#304060;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#38bdf8;--border:#121e36;
+  --purple:#8b5cf6;--orange:#f97316;
+  --civil:#38bdf8;--criminal:#ef4444;--admin:#f59e0b;
+  --family:#ec4899;--labor:#22c55e;--ip:#8b5cf6;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;font-size:14px;line-height:1.6;padding-top:41px;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px;}
+
+.page{max-width:740px;margin:0 auto;padding:20px 16px 80px;}
+h1{font-size:21px;font-weight:800;color:var(--gold);margin-bottom:3px;}
+.subtitle{font-size:12px;color:var(--text3);margin-bottom:22px;}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:14px;}
+.card-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+
+/* form */
+.fg{margin-bottom:12px;}
+label.fl{font-size:11px;color:var(--text3);margin-bottom:5px;display:block;font-weight:600;letter-spacing:.05em;}
+.fi{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;font-family:inherit;-webkit-appearance:none;appearance:none;transition:border-color .15s;}
+.fi:focus{border-color:var(--gold);}
+select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23506080'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px;}
+textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:480px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0a0a;}
+.btn-gold:hover:not(:disabled){filter:brightness(1.1);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-outline:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
+.btn-blue{background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.3);color:var(--blue);}
+.btn-blue:hover{background:rgba(56,189,248,.2);}
+.btn-danger{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red);}
+.btn-danger:hover{background:rgba(239,68,68,.18);}
+.btn-full{width:100%;}
+.btn-sm{padding:6px 12px;font-size:11px;border-radius:7px;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* quick-access shortcuts */
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+@media(max-width:400px){.quick-grid{grid-template-columns:repeat(2,1fr);}}
+.quick-btn{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 8px;text-align:center;cursor:pointer;transition:all .15s;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.quick-btn:hover{border-color:rgba(200,169,110,.4);background:var(--bg4);}
+.quick-btn .qi{font-size:20px;}
+.quick-btn .ql{font-size:11px;color:var(--text3);font-weight:700;}
+
+/* casenumber parser */
+.parse-result{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:12px;}
+.pr-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03);}
+.pr-row:last-child{border-bottom:none;}
+.pr-lbl{font-size:11px;color:var(--text3);}
+.pr-val{font-size:12px;color:var(--text);font-weight:600;}
+
+/* citation box */
+.cite-box{background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--text2);font-family:'Noto Serif TC',serif;line-height:1.7;cursor:pointer;user-select:all;position:relative;}
+.cite-box::after{content:"點擊複製";position:absolute;top:8px;right:10px;font-size:10px;color:var(--text3);font-family:'Noto Sans TC',sans-serif;}
+.cite-box.copied::after{content:"已複製 ✓";color:var(--green);}
+
+/* tags */
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);color:var(--text3);transition:all .12s;gap:4px;}
+.tag.active,.tag:hover{border-color:rgba(200,169,110,.4);color:var(--gold);background:rgba(200,169,110,.08);}
+.tag .tx{cursor:pointer;color:var(--text4);font-size:10px;margin-left:2px;}
+.tag .tx:hover{color:var(--red);}
+
+/* bookmark cards */
+.bk-item{background:var(--bg3);border:1px solid var(--border);border-radius:11px;padding:14px 16px;margin-bottom:10px;transition:border-color .15s;}
+.bk-item:hover{border-color:rgba(200,169,110,.25);}
+.bk-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;}
+.bk-num{font-size:14px;font-weight:700;color:var(--text);font-family:'Noto Serif TC',serif;}
+.bk-court{font-size:11px;color:var(--text3);margin-top:2px;}
+.bk-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.bt{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;}
+.bk-note{font-size:12px;color:var(--text3);margin-top:8px;line-height:1.6;border-left:2px solid var(--border);padding-left:10px;}
+.bk-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+
+/* search bar */
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none;}
+.fi-search{padding-left:33px;}
+
+/* type badge colors */
+.ct-civil{background:rgba(56,189,248,.12);color:#38bdf8;}
+.ct-criminal{background:rgba(239,68,68,.12);color:#ef4444;}
+.ct-admin{background:rgba(245,158,11,.12);color:#f59e0b;}
+.ct-family{background:rgba(236,72,153,.12);color:#ec4899;}
+.ct-labor{background:rgba(34,197,94,.12);color:#22c55e;}
+.ct-ip{background:rgba(139,92,246,.12);color:#8b5cf6;}
+.ct-other{background:rgba(100,116,139,.12);color:#64748b;}
+
+.empty{text-align:center;padding:36px;color:var(--text4);font-size:13px;}
+
+/* instance badge */
+.inst-pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(200,169,110,.1);color:var(--gold);}
+
+/* toast */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--gold);color:var(--gold);padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;}
+
+/* divider */
+.divider{height:1px;background:var(--border);margin:14px 0;}
+
+@media print{.sys-nav{display:none!important;}html,body{padding-top:0;}}
+</style>
+</head>
+<body>
+<script src="shared/sys-nav.js" data-active="judicial-search"></script>
+<div id="toast"></div>
+<div class="page">
+
+  <h1>🔍 司法院裁判書查詢</h1>
+  <div class="subtitle">搜尋建構器 · 裁判字號解析 · 書籤管理　｜　司法院裁判書查詢系統整合</div>
+
+  <!-- ── 快速連結 ── -->
+  <div class="card">
+    <div class="card-title">⚡ 快速入口</div>
+    <div class="quick-grid">
+      <a class="quick-btn" href="https://judgment.judicial.gov.tw/FJUD/default.aspx" target="_blank" rel="noopener">
+        <span class="qi">🏛</span><span class="ql">裁判書全文</span>
+      </a>
+      <a class="quick-btn" href="https://law.moj.gov.tw/" target="_blank" rel="noopener">
+        <span class="qi">📖</span><span class="ql">全國法規資料庫</span>
+      </a>
+      <a class="quick-btn" href="https://cons.judicial.gov.tw/" target="_blank" rel="noopener">
+        <span class="qi">⚖</span><span class="ql">憲法法庭</span>
+      </a>
+      <a class="quick-btn" href="https://sja.judicial.gov.tw/" target="_blank" rel="noopener">
+        <span class="qi">📅</span><span class="ql">開庭進行</span>
+      </a>
+    </div>
+    <div class="quick-grid">
+      <a class="quick-btn" href="https://www.judicial.gov.tw/tw/np-1.html" target="_blank" rel="noopener">
+        <span class="qi">🗺</span><span class="ql">司法院首頁</span>
+      </a>
+      <a class="quick-btn" href="https://pc.judicial.gov.tw/" target="_blank" rel="noopener">
+        <span class="qi">💻</span><span class="ql">電子訴訟平台</span>
+      </a>
+      <a class="quick-btn" href="https://www.legis.ly.gov.tw/" target="_blank" rel="noopener">
+        <span class="qi">📜</span><span class="ql">立法院法律系統</span>
+      </a>
+      <a class="quick-btn" href="https://lci.ly.gov.tw/" target="_blank" rel="noopener">
+        <span class="qi">🔎</span><span class="ql">立院議事查詢</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── 搜尋建構器 ── -->
+  <div class="card">
+    <div class="card-title">🔧 搜尋建構器　<span style="font-size:10px;color:var(--text4);text-transform:none;letter-spacing:0;">依條件組合後開啟司法院裁判書查詢</span></div>
+
+    <div class="grid2">
+      <div class="fg">
+        <label class="fl">法院</label>
+        <select class="fi" id="s-court">
+          <option value="">（不限）</option>
+          <optgroup label="── 最高法院 ──">
+            <option value="最高法院">最高法院</option>
+            <option value="最高行政法院">最高行政法院</option>
+          </optgroup>
+          <optgroup label="── 高等法院 ──">
+            <option value="臺灣高等法院">臺灣高等法院</option>
+            <option value="臺灣高等法院臺中分院">臺灣高等法院臺中分院</option>
+            <option value="臺灣高等法院臺南分院">臺灣高等法院臺南分院</option>
+            <option value="臺灣高等法院高雄分院">臺灣高等法院高雄分院</option>
+            <option value="臺灣高等法院花蓮分院">臺灣高等法院花蓮分院</option>
+          </optgroup>
+          <optgroup label="── 高等行政法院 ──">
+            <option value="臺北高等行政法院">臺北高等行政法院</option>
+            <option value="臺中高等行政法院">臺中高等行政法院</option>
+            <option value="高雄高等行政法院">高雄高等行政法院</option>
+          </optgroup>
+          <optgroup label="── 地方法院（北部）──">
+            <option value="臺灣臺北地方法院">臺灣臺北地方法院</option>
+            <option value="臺灣士林地方法院">臺灣士林地方法院</option>
+            <option value="臺灣新北地方法院">臺灣新北地方法院</option>
+            <option value="臺灣桃園地方法院">臺灣桃園地方法院</option>
+            <option value="臺灣新竹地方法院">臺灣新竹地方法院</option>
+            <option value="臺灣基隆地方法院">臺灣基隆地方法院</option>
+            <option value="臺灣宜蘭地方法院">臺灣宜蘭地方法院</option>
+          </optgroup>
+          <optgroup label="── 地方法院（中部）──">
+            <option value="臺灣苗栗地方法院">臺灣苗栗地方法院</option>
+            <option value="臺灣臺中地方法院">臺灣臺中地方法院</option>
+            <option value="臺灣南投地方法院">臺灣南投地方法院</option>
+            <option value="臺灣彰化地方法院">臺灣彰化地方法院</option>
+            <option value="臺灣雲林地方法院">臺灣雲林地方法院</option>
+          </optgroup>
+          <optgroup label="── 地方法院（南部）──">
+            <option value="臺灣嘉義地方法院">臺灣嘉義地方法院</option>
+            <option value="臺灣臺南地方法院">臺灣臺南地方法院</option>
+            <option value="臺灣橋頭地方法院">臺灣橋頭地方法院</option>
+            <option value="臺灣高雄地方法院">臺灣高雄地方法院</option>
+            <option value="臺灣屏東地方法院">臺灣屏東地方法院</option>
+          </optgroup>
+          <optgroup label="── 地方法院（離島/東部）──">
+            <option value="臺灣花蓮地方法院">臺灣花蓮地方法院</option>
+            <option value="臺灣臺東地方法院">臺灣臺東地方法院</option>
+            <option value="臺灣澎湖地方法院">臺灣澎湖地方法院</option>
+            <option value="臺灣金門地方法院">臺灣金門地方法院</option>
+            <option value="臺灣連江地方法院">臺灣連江地方法院</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">案件類型</label>
+        <select class="fi" id="s-casetype" onchange="updateTypeCode()">
+          <option value="">（不限）</option>
+          <option value="civil">民事</option>
+          <option value="criminal">刑事</option>
+          <option value="admin">行政</option>
+          <option value="family">家事</option>
+          <option value="labor">勞動</option>
+          <option value="ip">智財</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="fg">
+        <label class="fl">民國年份</label>
+        <input class="fi" type="number" id="s-year" placeholder="例：112" min="80" max="130">
+      </div>
+      <div class="fg">
+        <label class="fl">字號</label>
+        <select class="fi" id="s-typecode">
+          <option value="">（不限）</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">號碼</label>
+        <input class="fi" type="number" id="s-num" placeholder="例：1234" min="1">
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="fg">
+        <label class="fl">關鍵字（全文搜尋）</label>
+        <input class="fi" id="s-keyword" placeholder="例：締約過失 契約解除" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">法官姓名</label>
+        <input class="fi" id="s-judge" placeholder="例：王○○" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="fg">
+        <label class="fl">裁判日期（起）</label>
+        <input class="fi" type="date" id="s-from">
+      </div>
+      <div class="fg">
+        <label class="fl">裁判日期（迄）</label>
+        <input class="fi" type="date" id="s-to">
+      </div>
+    </div>
+
+    <!-- 組合查詢字串 -->
+    <div id="query-preview" style="display:none;margin-bottom:14px;">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-weight:600;letter-spacing:.05em;">查詢條件摘要</div>
+      <div id="query-text" style="background:var(--bg4);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.7;"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-gold" style="flex:1" onclick="openJudicial()">🔍 開啟司法院裁判書查詢</button>
+      <button class="btn btn-outline btn-sm" onclick="previewQuery()">預覽條件</button>
+      <button class="btn btn-outline btn-sm" onclick="clearSearch()">清除</button>
+    </div>
+  </div>
+
+  <!-- ── 裁判字號解析 ── -->
+  <div class="card">
+    <div class="card-title">📐 裁判字號解析 &amp; 引用格式</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <input class="fi" id="parse-input" placeholder="輸入裁判字號，例：最高法院112年度台上字第1234號判決" style="flex:1" autocomplete="off" oninput="parseCaseNumber()">
+      <button class="btn btn-outline btn-sm" onclick="parseCaseNumber()">解析</button>
+    </div>
+    <div id="parse-result" style="display:none"></div>
+    <div style="font-size:11px;color:var(--text4);margin-top:8px;">
+      支援格式：「法院＋年度＋字號＋號碼＋判決/裁定」或簡短格式如 112台上1234
+    </div>
+  </div>
+
+  <!-- ── 書籤管理 ── -->
+  <div class="card">
+    <div class="card-title">
+      🔖 裁判書書籤
+      <button class="btn btn-outline btn-sm" onclick="toggleAddForm()" id="add-toggle">＋ 新增書籤</button>
+    </div>
+
+    <!-- 新增表單（預設收折） -->
+    <div id="add-form" style="display:none">
+      <div class="divider"></div>
+
+      <div class="fg">
+        <label class="fl">裁判字號（完整）</label>
+        <input class="fi" id="bk-num" placeholder="例：最高法院 112 年度台上字第 1234 號判決" autocomplete="off" oninput="autoParseBookmark()">
+      </div>
+
+      <div class="grid2">
+        <div class="fg">
+          <label class="fl">法院</label>
+          <input class="fi" id="bk-court" placeholder="例：最高法院" autocomplete="off">
+        </div>
+        <div class="fg">
+          <label class="fl">案件類型</label>
+          <select class="fi" id="bk-type">
+            <option value="civil">民事</option>
+            <option value="criminal">刑事</option>
+            <option value="admin">行政</option>
+            <option value="family">家事</option>
+            <option value="labor">勞動</option>
+            <option value="ip">智財</option>
+            <option value="other">其他</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="fg">
+          <label class="fl">裁判日期</label>
+          <input class="fi" type="date" id="bk-date">
+        </div>
+        <div class="fg">
+          <label class="fl">審級</label>
+          <select class="fi" id="bk-instance">
+            <option value="1">第一審（地院）</option>
+            <option value="2">第二審（高院）</option>
+            <option value="3" selected>第三審（最高）</option>
+            <option value="admin-high">高等行政法院</option>
+            <option value="admin-supreme">最高行政法院</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label class="fl">裁判書連結（選填）</label>
+        <input class="fi" id="bk-url" placeholder="https://judgment.judicial.gov.tw/..." autocomplete="off">
+      </div>
+
+      <div class="fg">
+        <label class="fl">法律爭點 / 重要見解摘要</label>
+        <textarea class="fi" id="bk-note" placeholder="例：確認連帶保證人就主債務消滅時效利益之援用…"></textarea>
+      </div>
+
+      <div class="fg">
+        <label class="fl">關聯標籤（點選 + Enter 新增）</label>
+        <div style="display:flex;gap:7px;margin-bottom:7px;">
+          <input class="fi" id="bk-tag-input" placeholder="輸入標籤按 Enter" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}">
+          <button class="btn btn-outline btn-sm" onclick="addTag()">新增</button>
+        </div>
+        <div class="tag-row" id="bk-tags-preview"></div>
+        <div class="tag-row" style="margin-top:8px;">
+          <span style="font-size:10px;color:var(--text4);margin-right:4px;">常用：</span>
+          <span class="tag" onclick="quickTag('消滅時效')">消滅時效</span>
+          <span class="tag" onclick="quickTag('締約過失')">締約過失</span>
+          <span class="tag" onclick="quickTag('不當得利')">不當得利</span>
+          <span class="tag" onclick="quickTag('侵權行為')">侵權行為</span>
+          <span class="tag" onclick="quickTag('解除契約')">解除契約</span>
+          <span class="tag" onclick="quickTag('勞動契約')">勞動契約</span>
+          <span class="tag" onclick="quickTag('刑事責任')">刑事責任</span>
+          <span class="tag" onclick="quickTag('行政裁量')">行政裁量</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-gold" style="flex:1" onclick="saveBookmark()">💾 儲存書籤</button>
+        <button class="btn btn-outline btn-sm" onclick="toggleAddForm()">取消</button>
+      </div>
+      <div class="divider"></div>
+    </div>
+
+    <!-- 篩選 & 搜尋 -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="fi fi-search" id="bk-filter" placeholder="搜尋書籤（字號、摘要、標籤）" oninput="renderBookmarks()">
+    </div>
+    <div class="tag-row" style="margin-bottom:12px;" id="type-filter-row"></div>
+
+    <div id="bk-list"></div>
+  </div>
+
+</div>
+
+<script>
+// ── 字號對照表 ──────────────────────────────────────────
+const TYPE_CODES = {
+  civil:    ["台上","台抗","上","上易","上訴","簡上","重訴","訴","簡","小","小上","家訴","家","家聲","家抗","婚","親","監","繼","調","執","聲","抗","再"],
+  criminal: ["台上","台抗","上","上易","上訴","訴","易","簡","簡上","聲","聲再","更","矚上重訴","重訴"],
+  admin:    ["上","訴","簡","裁","更"],
+  family:   ["家訴","家","家聲","家抗","婚","親","監","繼","調"],
+  labor:    ["勞訴","勞抗","勞上","勞聲"],
+  ip:       ["民著訴","刑智上易","刑智上訴","智訴"],
+};
+
+const CT_COLOR = {
+  civil:"ct-civil", criminal:"ct-criminal", admin:"ct-admin",
+  family:"ct-family", labor:"ct-labor", ip:"ct-ip", other:"ct-other"
+};
+const CT_LABEL = {
+  civil:"民事", criminal:"刑事", admin:"行政",
+  family:"家事", labor:"勞動", ip:"智財", other:"其他"
+};
+const INSTANCE_LABEL = {
+  "1":"第一審","2":"第二審","3":"第三審",
+  "admin-high":"高等行政","admin-supreme":"最高行政"
+};
+
+// ── 搜尋建構器 ──────────────────────────────────────────
+function updateTypeCode(){
+  const ct = document.getElementById("s-casetype").value;
+  const sel = document.getElementById("s-typecode");
+  const codes = TYPE_CODES[ct] || [];
+  sel.innerHTML = '<option value="">（不限）</option>' +
+    codes.map(c=>`<option value="${c}">${c}</option>`).join("");
+}
+
+function previewQuery(){
+  const parts = buildQueryParts();
+  const wrap = document.getElementById("query-preview");
+  if(!parts.length){ wrap.style.display="none"; return; }
+  document.getElementById("query-text").innerHTML =
+    parts.map(p=>`<span style="color:var(--gold);font-weight:700;">${p.label}：</span>${escHtml(p.value)}`).join("　　");
+  wrap.style.display = "";
+}
+
+function buildQueryParts(){
+  const parts = [];
+  const v = id => document.getElementById(id).value.trim();
+  if(v("s-court"))   parts.push({label:"法院", value:v("s-court")});
+  if(v("s-casetype"))parts.push({label:"類型", value:CT_LABEL[v("s-casetype")]||v("s-casetype")});
+  if(v("s-year"))    parts.push({label:"年份", value:"民國"+v("s-year")+"年"});
+  if(v("s-typecode"))parts.push({label:"字號", value:v("s-typecode")+"字"});
+  if(v("s-num"))     parts.push({label:"號碼", value:"第"+v("s-num")+"號"});
+  if(v("s-keyword")) parts.push({label:"關鍵字", value:v("s-keyword")});
+  if(v("s-judge"))   parts.push({label:"法官", value:v("s-judge")});
+  if(v("s-from"))    parts.push({label:"起日", value:v("s-from")});
+  if(v("s-to"))      parts.push({label:"迄日", value:v("s-to")});
+  return parts;
+}
+
+function openJudicial(){
+  previewQuery();
+  // Open the Judicial Yuan search page — user fills in our previewed conditions
+  window.open("https://judgment.judicial.gov.tw/FJUD/default.aspx","_blank","noopener");
+  showToast("已開啟司法院裁判書查詢，請依上方條件填入搜尋欄位");
+}
+
+function clearSearch(){
+  ["s-court","s-casetype","s-typecode","s-year","s-num","s-keyword","s-judge","s-from","s-to"]
+    .forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
+  document.getElementById("query-preview").style.display="none";
+  updateTypeCode();
+}
+
+// ── 裁判字號解析 ────────────────────────────────────────
+function parseCaseNumber(){
+  const raw = document.getElementById("parse-input").value.trim();
+  const wrap = document.getElementById("parse-result");
+  if(!raw){ wrap.style.display="none"; return; }
+  const parsed = parseCN(raw);
+  if(!parsed){ wrap.style.display="none"; return; }
+  const cite = buildCitation(parsed);
+  wrap.style.display = "";
+  wrap.innerHTML = `
+    <div class="parse-result">
+      ${row("法院", parsed.court||"—")}
+      ${row("民國年份", parsed.year ? parsed.year+"年度" : "—")}
+      ${row("字號", parsed.code ? parsed.code+"字" : "—")}
+      ${row("號碼", parsed.num ? "第"+parsed.num+"號" : "—")}
+      ${row("裁判類型", parsed.jtype||"—")}
+      ${row("審級推測", parsed.instance||"—")}
+    </div>
+    ${cite ? `
+    <div style="margin-top:10px;font-size:10px;color:var(--text3);margin-bottom:6px;font-weight:600;letter-spacing:.05em;">標準引用格式</div>
+    <div class="cite-box" id="cite-box" onclick="copyCitation()">${escHtml(cite)}</div>` : ""}
+    <div class="btn-row" style="margin-top:10px;">
+      <button class="btn btn-blue btn-sm" onclick="openJudicialById()">🔗 開啟司法院查詢此案</button>
+      <button class="btn btn-outline btn-sm" onclick="fillBookmarkFromParse()">＋ 加入書籤</button>
+    </div>
+  `;
+}
+
+function row(label, val){
+  return `<div class="pr-row"><span class="pr-lbl">${label}</span><span class="pr-val">${escHtml(val)}</span></div>`;
+}
+
+const COURT_PATTERN = "(?:最高法院|最高行政法院|臺灣高等法院(?:[^地\\s]*分院)?|臺北高等行政法院|臺中高等行政法院|高雄高等行政法院|臺灣[^地\\s]{2,6}地方法院|憲法法庭)";
+const YEAR_PATTERN  = "(\\d{2,3})";
+const CODE_PATTERN  = "([台臺上下重訴抗易簡小家婚親監繼調執聲再勞智著矚]+)";
+const NUM_PATTERN   = "(\\d{1,6})";
+
+function parseCN(raw){
+  // Remove all whitespace and normalize
+  const s = raw.replace(/\s/g,"").replace(/O/g,"0");
+
+  // Try full pattern: 法院＋年度＋字號＋號碼
+  const fullRe = new RegExp(
+    `(${COURT_PATTERN})?` +
+    `${YEAR_PATTERN}年(?:度)?` +
+    `${CODE_PATTERN}字第?${NUM_PATTERN}號` +
+    `([判裁]決?定?)?`
+  );
+  let m = s.match(fullRe);
+  if(m){
+    return {
+      court: m[1]||"",
+      year: m[2],
+      code: m[3],
+      num: m[4],
+      jtype: m[5] ? (m[5].startsWith("判")?"判決":"裁定") : "判決",
+      instance: inferInstance(m[1]||"", m[3]||""),
+    };
+  }
+
+  // Short form: 112台上1234
+  const shortRe = /(\d{2,3})([台臺]?[上下重訴抗易簡小家婚親監繼調執聲]+)(\d{1,6})/;
+  m = s.match(shortRe);
+  if(m){
+    return { court:"", year:m[1], code:m[2], num:m[3], jtype:"判決", instance:"" };
+  }
+  return null;
+}
+
+function inferInstance(court, code){
+  if(court.includes("最高")) return "第三審";
+  if(court.includes("高等") && !court.includes("行政")) return "第二審";
+  if(court.includes("地方")) return "第一審";
+  if(court.includes("行政")) return "行政訴訟";
+  if(code.startsWith("台上")||code.startsWith("臺上")) return "第三審（推測）";
+  return "";
+}
+
+function buildCitation(p){
+  if(!p) return "";
+  const court = p.court || "【法院】";
+  const year  = p.year  || "【年度】";
+  const code  = p.code  || "【字】";
+  const num   = p.num   || "【號】";
+  const jtype = p.jtype || "判決";
+  return `${court}${year}年度${code}字第${num}號${jtype}`;
+}
+
+function copyCitation(){
+  const box = document.getElementById("cite-box");
+  if(!box) return;
+  navigator.clipboard.writeText(box.innerText.replace("點擊複製","").replace("已複製 ✓","").trim())
+    .then(()=>{ box.classList.add("copied"); setTimeout(()=>box.classList.remove("copied"),1800); })
+    .catch(()=>{ showToast("複製失敗，請手動複製"); });
+}
+
+function openJudicialById(){
+  const raw = document.getElementById("parse-input").value.trim();
+  const p = parseCN(raw);
+  if(!p){ showToast("無法解析字號，請直接至司法院搜尋"); window.open("https://judgment.judicial.gov.tw/FJUD/default.aspx","_blank","noopener"); return; }
+  const q = encodeURIComponent(buildCitation(p));
+  window.open(`https://judgment.judicial.gov.tw/FJUD/default.aspx#search=${q}`,"_blank","noopener");
+}
+
+function fillBookmarkFromParse(){
+  const raw = document.getElementById("parse-input").value.trim();
+  const p = parseCN(raw);
+  if(!p){ showToast("無法解析字號"); return; }
+  document.getElementById("bk-num").value = buildCitation(p);
+  document.getElementById("bk-court").value = p.court||"";
+  if(!document.getElementById("add-form").style.display || document.getElementById("add-form").style.display==="none"){
+    toggleAddForm();
+  }
+  document.getElementById("bk-num").focus();
+}
+
+// ── 書籤管理 ────────────────────────────────────────────
+let bookmarkTags = [];
+let typeFilter = "";
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+function loadBookmarks(){ try{ return JSON.parse(localStorage.getItem("jBookmarks")||"[]"); }catch(e){ return []; } }
+function saveBookmarks(arr){ localStorage.setItem("jBookmarks", JSON.stringify(arr)); }
+
+function toggleAddForm(){
+  const f = document.getElementById("add-form");
+  const open = f.style.display !== "none";
+  f.style.display = open ? "none" : "";
+  document.getElementById("add-toggle").textContent = open ? "＋ 新增書籤" : "✕ 收折";
+  if(!open) clearBookmarkForm();
+}
+
+function clearBookmarkForm(){
+  ["bk-num","bk-court","bk-date","bk-url","bk-note","bk-tag-input"]
+    .forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
+  document.getElementById("bk-type").value = "civil";
+  document.getElementById("bk-instance").value = "3";
+  bookmarkTags = [];
+  renderTagsPreview();
+}
+
+function autoParseBookmark(){
+  const raw = document.getElementById("bk-num").value.trim();
+  const p = parseCN(raw);
+  if(!p) return;
+  if(p.court) document.getElementById("bk-court").value = p.court;
+  // infer type from code
+  for(const [ct, codes] of Object.entries(TYPE_CODES)){
+    if(codes.some(c => p.code && p.code.includes(c))){
+      document.getElementById("bk-type").value = ct; break;
+    }
+  }
+}
+
+function addTag(){
+  const inp = document.getElementById("bk-tag-input");
+  const t = inp.value.trim();
+  if(!t || bookmarkTags.includes(t)) { inp.value=""; return; }
+  bookmarkTags.push(t);
+  inp.value = "";
+  renderTagsPreview();
+}
+function quickTag(t){
+  if(bookmarkTags.includes(t)) return;
+  bookmarkTags.push(t);
+  renderTagsPreview();
+}
+function removeTag(t){
+  bookmarkTags = bookmarkTags.filter(x=>x!==t);
+  renderTagsPreview();
+}
+function renderTagsPreview(){
+  document.getElementById("bk-tags-preview").innerHTML =
+    bookmarkTags.map(t=>`<span class="tag active">${escHtml(t)}<span class="tx" onclick="removeTag('${escHtml(t)}')">✕</span></span>`).join("");
+}
+
+function saveBookmark(){
+  const num = document.getElementById("bk-num").value.trim();
+  if(!num){ showToast("請輸入裁判字號"); return; }
+  const arr = loadBookmarks();
+  arr.unshift({
+    id: uid(),
+    num,
+    court:    document.getElementById("bk-court").value.trim(),
+    type:     document.getElementById("bk-type").value,
+    date:     document.getElementById("bk-date").value,
+    instance: document.getElementById("bk-instance").value,
+    url:      document.getElementById("bk-url").value.trim(),
+    note:     document.getElementById("bk-note").value.trim(),
+    tags:     [...bookmarkTags],
+    savedAt:  new Date().toISOString(),
+  });
+  if(arr.length>200) arr.splice(200);
+  saveBookmarks(arr);
+  toggleAddForm();
+  renderBookmarks();
+  showToast("書籤已儲存");
+}
+
+function deleteBookmark(id){
+  if(!confirm("確認刪除此書籤？")) return;
+  saveBookmarks(loadBookmarks().filter(x=>x.id!==id));
+  renderBookmarks();
+}
+
+function renderTypeFilterRow(){
+  const arr = loadBookmarks();
+  const counts = {};
+  arr.forEach(b => { counts[b.type] = (counts[b.type]||0)+1; });
+  const usedTypes = Object.keys(counts);
+  const row = document.getElementById("type-filter-row");
+  if(!usedTypes.length){ row.innerHTML=""; return; }
+  row.innerHTML =
+    `<span class="tag${!typeFilter?" active":""}" onclick="setTypeFilter('')">全部 (${arr.length})</span>` +
+    usedTypes.map(t=>`<span class="tag${typeFilter===t?" active":""}" onclick="setTypeFilter('${t}')">${CT_LABEL[t]||t} (${counts[t]})</span>`).join("");
+}
+
+function setTypeFilter(t){ typeFilter=t; renderTypeFilterRow(); renderBookmarks(); }
+
+function renderBookmarks(){
+  renderTypeFilterRow();
+  const arr = loadBookmarks();
+  const q = (document.getElementById("bk-filter").value||"").toLowerCase();
+  const filtered = arr.filter(b => {
+    if(typeFilter && b.type!==typeFilter) return false;
+    if(!q) return true;
+    return [b.num,b.court,b.note,...(b.tags||[])].some(s=>(s||"").toLowerCase().includes(q));
+  });
+  const wrap = document.getElementById("bk-list");
+  if(!filtered.length){ wrap.innerHTML = `<div class="empty">${arr.length ? "無符合結果" : "尚無書籤，點擊右上角新增"}</div>`; return; }
+  wrap.innerHTML = filtered.map(renderBookmarkItem).join("");
+}
+
+function renderBookmarkItem(b){
+  const ctc = CT_COLOR[b.type]||"ct-other";
+  const ctl = CT_LABEL[b.type]||b.type;
+  const inst = INSTANCE_LABEL[b.instance]||"";
+  const dateStr = b.date ? b.date.replace(/-/g,"/") : "";
+  const tagsHtml = (b.tags||[]).map(t=>`<span class="bt" style="background:rgba(200,169,110,.1);color:var(--gold)">${escHtml(t)}</span>`).join("");
+  return `<div class="bk-item">
+    <div class="bk-top">
+      <div>
+        <div class="bk-num">${escHtml(b.num)}</div>
+        <div class="bk-court">${b.court?escHtml(b.court)+" · ":""}${dateStr}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="bt ${ctc}">${ctl}</span>
+        ${inst?`<span class="inst-pill">${inst}</span>`:""}
+      </div>
+    </div>
+    ${tagsHtml?`<div class="bk-tags">${tagsHtml}</div>`:""}
+    ${b.note?`<div class="bk-note">${escHtml(b.note)}</div>`:""}
+    <div class="bk-actions">
+      ${b.url?`<a href="${escHtml(b.url)}" target="_blank" rel="noopener" class="btn btn-blue btn-sm">🔗 開啟判決書</a>`:""}
+      <button class="btn btn-outline btn-sm" onclick="copyRef('${b.id}')">📋 複製引用</button>
+      <button class="btn btn-outline btn-sm" onclick="openSearch('${b.id}')">🔍 司法院搜尋</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteBookmark('${b.id}')">刪除</button>
+    </div>
+  </div>`;
+}
+
+function copyRef(id){
+  const b = loadBookmarks().find(x=>x.id===id);
+  if(!b) return;
+  navigator.clipboard.writeText(b.num)
+    .then(()=>showToast("引用格式已複製"))
+    .catch(()=>showToast("複製失敗，請手動複製"));
+}
+
+function openSearch(id){
+  const b = loadBookmarks().find(x=>x.id===id);
+  if(!b) return;
+  const q = encodeURIComponent(b.num);
+  window.open(`https://judgment.judicial.gov.tw/FJUD/default.aspx#q=${q}`,"_blank","noopener");
+}
+
+// ── utils ───────────────────────────────────────────────
+function escHtml(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function showToast(msg, duration=2200){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), duration);
+}
+
+// ── init ────────────────────────────────────────────────
+updateTypeCode();
+renderBookmarks();
+</script>
+</body>
+</html>

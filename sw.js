@@ -1,4 +1,4 @@
-const CACHE = "case-mgr-v11";
+const CACHE = "case-mgr-v12";
 
 const PRECACHE = [
   "./",
@@ -21,6 +21,11 @@ const PRECACHE = [
   "./icons/icon-templates.png",
   "./icons/icon-judgments.png",
   "./icons/icon-widget.png",
+  "./icons/icon-deadline.png",
+  "./icons/icon-checklist.png",
+  "./icons/icon-judicial-search.png",
+  "./icons/icon-tax.png",
+  "./icons/icon-court.png",
   "./assets/img-0adfa7b3d292.png",
   "./assets/img-2b4029bc7779.jpg",
   "./assets/img-d1456ca19b20.jpg",

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="開庭清單">
+<meta name="theme-color" content="#0a1628">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-cases.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-cases.png">
+<title>📋 開庭準備清單</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#020817;--bg2:#0a1628;--bg3:#0f172a;--bg4:#1e293b;
+  --gold:#c8a96e;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--text4:#475569;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--border:#1e293b;
+  --purple:#8b5cf6;
+}
+html,body{min-height:100vh;padding-top:40px;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',system-ui,sans-serif;font-size:14px;line-height:1.5;}
+.page{max-width:680px;margin:0 auto;padding:20px 16px 80px;}
+
+h1{font-size:22px;font-weight:800;color:var(--gold);margin-bottom:4px;}
+.subtitle{font-size:12px;color:var(--text3);margin-bottom:24px;}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;}
+.card-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+
+.fg{margin-bottom:12px;}
+label.fl{font-size:11px;color:var(--text3);margin-bottom:5px;display:block;}
+.fi{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:10px 13px;color:var(--text);font-size:13px;outline:none;font-family:inherit;-webkit-appearance:none;appearance:none;}
+.fi:focus{border-color:var(--gold);}
+select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:420px){.grid2{grid-template-columns:1fr;}}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:10px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center;white-space:nowrap;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-gold{background:var(--gold);color:#1a0e00;}
+.btn-gold:hover:not(:disabled){filter:brightness(1.1);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-outline:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
+.btn-danger{background:transparent;border:1px solid rgba(239,68,68,.3);color:var(--red);}
+.btn-danger:hover:not(:disabled){background:rgba(239,68,68,.08);}
+.btn-full{width:100%;}
+.btn-sm{padding:6px 11px;font-size:11px;border-radius:8px;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* Progress */
+.progress-wrap{margin-bottom:16px;}
+.progress-bar-bg{height:6px;background:var(--bg4);border-radius:4px;overflow:hidden;margin-bottom:6px;}
+.progress-bar{height:100%;background:var(--gold);border-radius:4px;transition:width .3s;}
+.progress-text{font-size:11px;color:var(--text3);display:flex;justify-content:space-between;}
+
+/* Category */
+.cat-block{margin-bottom:20px;}
+.cat-head{font-size:11px;font-weight:700;color:var(--text4);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.cat-head span{height:1px;flex:1;background:var(--border);}
+
+/* Checklist item */
+.cl-item{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;transition:background .12s;user-select:none;margin-bottom:4px;border:1px solid transparent;}
+.cl-item:hover{background:var(--bg3);}
+.cl-item.checked{background:rgba(200,169,110,.05);border-color:rgba(200,169,110,.12);}
+.cl-item .cb{width:16px;height:16px;border-radius:4px;border:2px solid var(--text4);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.cl-item.checked .cb{background:var(--gold);border-color:var(--gold);}
+.cl-item.checked .cb::after{content:"✓";font-size:10px;color:#1a0e00;font-weight:900;}
+.cl-item .cl-text{flex:1;font-size:13px;line-height:1.4;}
+.cl-item.checked .cl-text{color:var(--text3);text-decoration:line-through;text-decoration-color:var(--text4);}
+.cl-item .cl-note{font-size:11px;color:var(--text4);margin-top:2px;}
+.cl-item .del-btn{font-size:11px;color:var(--text4);background:none;border:none;cursor:pointer;padding:0 2px;opacity:0;transition:opacity .1s;flex-shrink:0;}
+.cl-item:hover .del-btn{opacity:1;}
+.cl-item .del-btn:hover{color:var(--red);}
+
+/* Add item row */
+.add-row{display:flex;gap:8px;margin-top:4px;}
+.add-row .fi{flex:1;}
+
+/* Notice */
+.notice{background:rgba(200,169,110,.06);border:1px solid rgba(200,169,110,.2);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--gold);margin-bottom:12px;}
+
+/* Case info header (inside checklist card) */
+.case-header{background:var(--bg3);border-radius:10px;padding:13px 16px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;}
+@media(max-width:420px){.case-header{grid-template-columns:1fr;}}
+.ch-row{display:flex;flex-direction:column;}
+.ch-label{font-size:10px;color:var(--text4);}
+.ch-val{font-size:13px;font-weight:600;}
+.ch-val.highlight{color:var(--gold);}
+
+/* Saved list */
+.saved-item{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .12s;}
+.saved-item:hover{border-color:rgba(200,169,110,.35);}
+.saved-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.saved-item-title{font-size:13px;font-weight:700;margin-bottom:3px;}
+.saved-item-meta{font-size:11px;color:var(--text4);}
+.saved-item-prog{font-size:11px;color:var(--text3);margin-top:4px;}
+.prog-pill{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;}
+.prog-done{background:rgba(34,197,94,.12);color:var(--green);}
+.prog-part{background:rgba(200,169,110,.1);color:var(--gold);}
+.prog-none{background:rgba(100,116,139,.1);color:var(--text4);}
+
+.empty{text-align:center;padding:32px;color:var(--text4);font-size:13px;}
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:all .12s;border:1px solid var(--border);color:var(--text3);}
+.tag.active{background:rgba(200,169,110,.15);color:var(--gold);border-color:rgba(200,169,110,.4);}
+.tag:hover:not(.active){border-color:rgba(200,169,110,.2);color:var(--text2);}
+
+@media print{
+  .sys-nav,.no-print{display:none!important;}
+  html,body{background:#fff!important;color:#000!important;padding-top:0;}
+  .page{padding:12px;max-width:none;}
+  .card{border:1px solid #ddd!important;background:#fff!important;}
+  .cl-item{border:1px solid #eee!important;background:#fff!important;}
+  .cb{border-color:#999!important;}
+  .cl-item.checked .cl-text{text-decoration:line-through!important;color:#999!important;}
+}
+</style>
+</head>
+<body>
+<script src="shared/sys-nav.js" data-active="checklist"></script>
+<div class="page">
+
+  <h1>📋 開庭準備清單</h1>
+  <div class="subtitle">依庭次類型自動產生準備清單，勾選追蹤進度</div>
+
+  <!-- ── 新增清單 ── -->
+  <div class="card" id="form-card">
+    <div class="card-title">✏️ 建立新清單</div>
+
+    <div class="grid2">
+      <div class="fg">
+        <label class="fl">案號</label>
+        <input class="fi" id="f-caseno" placeholder="例：114年度民字第123號" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">法院 / 庭別</label>
+        <input class="fi" id="f-court" placeholder="例：臺北地方法院 第五法庭" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="fg">
+        <label class="fl">庭期日期</label>
+        <input class="fi" type="date" id="f-date">
+      </div>
+      <div class="fg">
+        <label class="fl">庭期時間</label>
+        <input class="fi" type="time" id="f-time">
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="fl">對造當事人 / 案件名稱（選填）</label>
+      <input class="fi" id="f-party" placeholder="例：原告○○○ 訴 被告△△△" autocomplete="off">
+    </div>
+
+    <div class="fg">
+      <label class="fl">庭次類型</label>
+      <div class="tag-row" id="type-tags"></div>
+    </div>
+
+    <div class="fg" id="sub-type-wrap" style="display:none">
+      <label class="fl">詳細類型</label>
+      <select class="fi" id="f-subtype"></select>
+    </div>
+
+    <div class="fg">
+      <label class="fl">身份</label>
+      <select class="fi" id="f-role">
+        <option value="plaintiff">原告 / 告訴人</option>
+        <option value="defendant">被告 / 相對人</option>
+        <option value="both">雙方均代理 / 不確定</option>
+      </select>
+    </div>
+
+    <button class="btn btn-gold btn-full" onclick="generateChecklist()">產生準備清單 →</button>
+  </div>
+
+  <!-- ── 已生成清單（動態） ── -->
+  <div id="checklist-card" style="display:none">
+    <div class="card">
+      <div class="card-title">
+        <span id="cl-title">準備清單</span>
+        <div class="btn-row no-print">
+          <button class="btn btn-outline btn-sm" onclick="window.print()">🖨 列印</button>
+          <button class="btn btn-outline btn-sm" onclick="saveChecklist()">💾 儲存</button>
+          <button class="btn btn-outline btn-sm" onclick="closeChecklist()">✕ 關閉</button>
+        </div>
+      </div>
+
+      <div class="case-header" id="cl-case-header"></div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar-bg"><div class="progress-bar" id="prog-bar" style="width:0%"></div></div>
+        <div class="progress-text"><span id="prog-label">0 / 0 項已完成</span><span id="prog-pct">0%</span></div>
+      </div>
+
+      <div id="cl-body"></div>
+
+      <!-- 自訂項目 -->
+      <div class="cat-block no-print">
+        <div class="cat-head">＋ 自訂項目 <span></span></div>
+        <div class="add-row">
+          <input class="fi" id="custom-text" placeholder="新增自訂準備項目…" autocomplete="off" onkeydown="if(event.key==='Enter')addCustomItem()">
+          <button class="btn btn-outline btn-sm" onclick="addCustomItem()">新增</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 已儲存清單 ── -->
+  <div class="card">
+    <div class="card-title">
+      <span>🗂 已儲存清單</span>
+      <button class="btn btn-outline btn-sm no-print" onclick="renderSaved()" id="refresh-saved">重整</button>
+    </div>
+    <div id="saved-list"></div>
+  </div>
+
+</div>
+
+<script>
+// ── 庭次分類 ─────────────────────────────────────────────
+const TYPES = {
+  civil: {
+    label: "民事",
+    subs: {
+      "civil-prep":      "準備程序庭",
+      "civil-oral":      "言詞辯論庭",
+      "civil-mediation": "調解庭",
+      "civil-execution": "強制執行庭",
+      "civil-retrial":   "再審庭",
+      "civil-evidence":  "調查證據庭",
+    }
+  },
+  criminal: {
+    label: "刑事",
+    subs: {
+      "crim-trial":      "審判庭",
+      "crim-prep":       "準備程序庭",
+      "crim-detention":  "羈押庭",
+      "crim-sentencing": "量刑辯論庭",
+      "crim-retrial":    "再審庭",
+    }
+  },
+  admin: {
+    label: "行政",
+    subs: {
+      "admin-oral":      "言詞辯論庭",
+      "admin-prep":      "準備程序庭",
+      "admin-evidence":  "調查證據庭",
+    }
+  },
+  family: {
+    label: "家事",
+    subs: {
+      "family-mediation":"調解庭",
+      "family-trial":    "審判庭",
+      "family-prep":     "準備程序庭",
+    }
+  },
+  labor: {
+    label: "勞動",
+    subs: {
+      "labor-mediation": "勞動調解庭",
+      "labor-oral":      "言詞辯論庭",
+    }
+  },
+};
+
+// ── 清單定義 ─────────────────────────────────────────────
+// 每個項目：{ text, note, cat, roles }
+// roles: 'plaintiff'|'defendant'|'both' (省略 = 所有人)
+const ITEMS = {
+  // ── 通用 ──────────────
+  common: [
+    { cat:"基本文件", text:"委任狀（已簽署、蓋章）", note:"確認是否已附於卷宗" },
+    { cat:"基本文件", text:"當事人身分證件（正本備查）" },
+    { cat:"基本文件", text:"確認委任代理權限範圍（含和解授權與否）" },
+    { cat:"基本文件", text:"對造訴訟代理人資訊確認" },
+    { cat:"庭前確認", text:"確認開庭地點、法庭號碼" },
+    { cat:"庭前確認", text:"確認法官／書記官聯絡方式" },
+    { cat:"庭前確認", text:"庭前與客戶溝通注意事項（出庭禮節、發言節奏）" },
+    { cat:"庭後事項", text:"庭後筆錄核對申請" },
+    { cat:"庭後事項", text:"下次庭期記入行事曆" },
+    { cat:"庭後事項", text:"庭後與客戶電話／書面回報庭況" },
+  ],
+
+  // ── 民事準備程序庭 ──────
+  "civil-prep": [
+    { cat:"書狀 & 書證", text:"起訴狀或答辯狀（含副本）", roles:"plaintiff" },
+    { cat:"書狀 & 書證", text:"答辯狀（附證物編號）", roles:"defendant" },
+    { cat:"書狀 & 書證", text:"書證影本（每份備法院一份 + 對造一份）" },
+    { cat:"書狀 & 書證", text:"書證原本（庭上核對用）" },
+    { cat:"書狀 & 書證", text:"書證清單（逐一列明編號與說明）" },
+    { cat:"準備程序事項", text:"聲請調查證據清單草稿（目擊證人、鑑定等）" },
+    { cat:"準備程序事項", text:"爭點整理意見（確認本案爭點）" },
+    { cat:"準備程序事項", text:"是否聲請傳訊證人（含姓名、地址、聯絡方式）" },
+    { cat:"準備程序事項", text:"是否聲請鑑定、勘驗（備妥聲請書）" },
+    { cat:"準備程序事項", text:"訴之聲明確認（金額、利息起算日確認）" },
+  ],
+
+  "civil-oral": [
+    { cat:"書狀 & 書證", text:"辯論意旨狀（庭前提出）" },
+    { cat:"書狀 & 書證", text:"所有書證原本（逐一帶齊）" },
+    { cat:"書狀 & 書證", text:"引用法條整理表" },
+    { cat:"言詞辯論", text:"確認證人出庭（並送達通知書）" },
+    { cat:"言詞辯論", text:"鑑定報告（如有，備齊副本）" },
+    { cat:"言詞辯論", text:"交互詰問問題清單（如有証人）" },
+    { cat:"言詞辯論", text:"損害金額計算明細表" },
+    { cat:"言詞辯論", text:"聲明與事實摘要（口頭陳述提綱）" },
+    { cat:"結案準備", text:"確認是否聲請言詞辯論終結後陳報補充理由" },
+  ],
+
+  "civil-mediation": [
+    { cat:"調解前準備", text:"確認客戶和解底線（書面確認）" },
+    { cat:"調解前準備", text:"損害金額計算明細（含和解折讓空間評估）" },
+    { cat:"調解前準備", text:"相關書證（佐證損害或契約）" },
+    { cat:"調解前準備", text:"確認客戶是否授權當場簽署和解書" },
+    { cat:"調解前準備", text:"和解條件草案（備而不發）" },
+    { cat:"調解前準備", text:"調解不成立後訴訟策略確認" },
+  ],
+
+  "civil-execution": [
+    { cat:"執行文件", text:"確定判決書正本或執行名義" },
+    { cat:"執行文件", text:"強制執行聲請書" },
+    { cat:"執行文件", text:"債務人財產資料（不動產、存款、薪資）" },
+    { cat:"執行文件", text:"查詢財產授權書（如需調查） " },
+    { cat:"執行事項", text:"聲請假扣押或假處分狀（如需保全）" },
+    { cat:"執行事項", text:"確認執行費用預算" },
+  ],
+
+  "civil-retrial": [
+    { cat:"再審書狀", text:"再審聲請狀" },
+    { cat:"再審書狀", text:"原確定判決書正本" },
+    { cat:"再審書狀", text:"新事實 / 新證據清單" },
+    { cat:"再審書狀", text:"再審理由法律依據整理（民訴法§496）" },
+  ],
+
+  "civil-evidence": [
+    { cat:"調查證據", text:"聲請調查證據書狀" },
+    { cat:"調查證據", text:"證人名單及聯絡資訊" },
+    { cat:"調查證據", text:"鑑定事項說明書" },
+    { cat:"調查證據", text:"勘驗地點資訊（如需現場勘驗）" },
+    { cat:"交互詰問", text:"主詰問問題清單（主要爭點）" },
+    { cat:"交互詰問", text:"反詰問問題清單（對造證人）" },
+    { cat:"交互詰問", text:"補充詰問預備問題" },
+  ],
+
+  // ── 刑事 ──────────────
+  "crim-trial": [
+    { cat:"辯護書狀", text:"辯護意旨書（庭前提出）" },
+    { cat:"辯護書狀", text:"引用証據清單" },
+    { cat:"辯護書狀", text:"犯罪事實有無爭執確認（認罪協商評估）" },
+    { cat:"証據 & 証人", text:"所有証物、書證原本" },
+    { cat:"証據 & 証人", text:"辯護証人出庭確認" },
+    { cat:"証據 & 証人", text:"鑑定人出庭確認（如有）" },
+    { cat:"証據 & 証人", text:"交互詰問問題清單" },
+    { cat:"被告準備", text:"確認被告出庭服裝（重要案件）" },
+    { cat:"被告準備", text:"庭前告知被告不自證其罪權利" },
+    { cat:"被告準備", text:"量刑輕重因素整理（更生可能性、家庭狀況）" },
+    { cat:"被告準備", text:"自首、認罪、和解紀錄確認（減輕刑責依據）" },
+  ],
+
+  "crim-prep": [
+    { cat:"準備程序", text:"確認起訴書 / 不起訴處分書副本" },
+    { cat:"準備程序", text:"確認偵查卷宗閱卷完畢" },
+    { cat:"準備程序", text:"確認犯罪事實哪些爭執、哪些承認" },
+    { cat:"準備程序", text:"聲請調查證據（証人傳訊、書面証據）" },
+    { cat:"準備程序", text:"閱卷申請確認（未閱部分）" },
+  ],
+
+  "crim-detention": [
+    { cat:"羈押聲請", text:"不羈押理由書狀" },
+    { cat:"羈押聲請", text:"具保聲請（評估保證金金額）" },
+    { cat:"羈押聲請", text:"被告住所、工作、家庭穩定性証明" },
+    { cat:"羈押聲請", text:"無逃亡之虞証明（護照繳交等）" },
+    { cat:"羈押聲請", text:"偵查不自證其罪提示" },
+    { cat:"家屬聯繫", text:"家屬聯絡方式確認" },
+    { cat:"家屬聯繫", text:"告知家屬羈押結果處理程序" },
+  ],
+
+  "crim-sentencing": [
+    { cat:"量刑資料", text:"被告家庭、職業、教育背景資料" },
+    { cat:"量刑資料", text:"被告無犯罪前科（或前科說明）" },
+    { cat:"量刑資料", text:"被告已與被害人達成和解（和解書正本）" },
+    { cat:"量刑資料", text:"被告悔罪書、自白書（酌情）" },
+    { cat:"量刑資料", text:"社會調查報告（已聲請者）" },
+    { cat:"量刑資料", text:"緩刑聲請書（如主張緩刑）" },
+  ],
+
+  "crim-retrial": [
+    { cat:"再審書狀", text:"再審聲請狀" },
+    { cat:"再審書狀", text:"確定判決書正本" },
+    { cat:"再審書狀", text:"新証據、新事實說明" },
+    { cat:"再審書狀", text:"再審理由（刑訴法§420）" },
+  ],
+
+  // ── 行政 ──────────────
+  "admin-oral": [
+    { cat:"行政書狀", text:"行政訴訟補充理由狀" },
+    { cat:"行政書狀", text:"訴願決定書副本" },
+    { cat:"行政書狀", text:"行政處分書副本" },
+    { cat:"行政書狀", text:"相關法規整理（行政院法規委員會解釋函令）" },
+    { cat:"行政書狀", text:"所有書証" },
+    { cat:"行政書狀", text:"機關答辯狀回應摘要" },
+    { cat:"行政書狀", text:"法律爭點及判決先例整理" },
+  ],
+
+  "admin-prep": [
+    { cat:"準備程序", text:"行政訴訟起訴狀副本" },
+    { cat:"準備程序", text:"訴願決定書" },
+    { cat:"準備程序", text:"行政處分書原本" },
+    { cat:"準備程序", text:"聲請閱卷（行政機關卷宗）" },
+    { cat:"準備程序", text:"爭點整理意見" },
+    { cat:"準備程序", text:"聲請調查証據（如需鑑定、勘驗）" },
+  ],
+
+  "admin-evidence": [
+    { cat:"調查証據", text:"聲請調查証據書狀" },
+    { cat:"調查証據", text:"専家証人名單" },
+    { cat:"調查證據", text:"行政機關資料調閱申請" },
+  ],
+
+  // ── 家事 ──────────────
+  "family-mediation": [
+    { cat:"家事調解", text:"確認當事人調解意願" },
+    { cat:"家事調解", text:"財產清冊（離婚財產分配用）" },
+    { cat:"家事調解", text:"子女監護權方案草稿" },
+    { cat:"家事調解", text:"子女探視安排方案" },
+    { cat:"家事調解", text:"贍養費計算依據（收入、生活費）" },
+    { cat:"家事調解", text:"調解委員名單確認（偏好）" },
+    { cat:"家事調解", text:"確認當事人情緒穩定（必要時安排心理支持）" },
+  ],
+
+  "family-trial": [
+    { cat:"家事書狀", text:"家事訴訟狀（含附件）" },
+    { cat:"家事書狀", text:"婚姻存否證明（戶籍謄本）" },
+    { cat:"家事書狀", text:"子女出生証明、未成年子女意見陳述" },
+    { cat:"家事書狀", text:"財產目錄（夫妻財產制用）" },
+    { cat:"家事書狀", text:"家暴事証（如有，含驗傷單、警察報告）" },
+    { cat:"家事書狀", text:"監護鑑定報告（已聲請者）" },
+  ],
+
+  "family-prep": [
+    { cat:"家事準備", text:"家事聲請狀副本" },
+    { cat:"家事準備", text:"戶籍謄本（三個月內）" },
+    { cat:"家事準備", text:"確認聲請事項（監護、贍養、財產）" },
+    { cat:"家事準備", text:"証據清單" },
+  ],
+
+  // ── 勞動 ──────────────
+  "labor-mediation": [
+    { cat:"勞動調解", text:"勞動契約書" },
+    { cat:"勞動調解", text:"薪資明細（最近6個月）" },
+    { cat:"勞動調解", text:"解僱通知書（如有）" },
+    { cat:"勞動調解", text:"工資、資遣費計算明細" },
+    { cat:"勞動調解", text:"勞保投保紀錄" },
+    { cat:"勞動調解", text:"出勤紀錄（加班費計算）" },
+    { cat:"勞動調解", text:"和解金額底線確認（與客戶確認）" },
+    { cat:"勞動調解", text:"確認客戶是否授權當場簽署調解書" },
+  ],
+
+  "labor-oral": [
+    { cat:"勞動書狀", text:"勞動事件起訴狀" },
+    { cat:"勞動書狀", text:"辯論意旨狀" },
+    { cat:"勞動書狀", text:"工資、資遣費計算書" },
+    { cat:"勞動書狀", text:"勞動契約、工作規則副本" },
+    { cat:"勞動書狀", text:"所有書証" },
+    { cat:"勞動書狀", text:"証人出庭確認" },
+  ],
+};
+
+// ── 狀態 ─────────────────────────────────────────────────
+let state = {
+  selectedType: null,  // 'civil','criminal','admin','family','labor'
+  items: [],           // { id, cat, text, note, checked, custom }
+  caseInfo: {},
+  editingId: null,     // id of saved checklist being edited
+};
+
+// ── 初始化 ───────────────────────────────────────────────
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+function init(){
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById("f-date").value = today;
+  renderTypeTags();
+  renderSaved();
+}
+
+function renderTypeTags(){
+  const wrap = document.getElementById("type-tags");
+  wrap.innerHTML = Object.entries(TYPES).map(([k,v])=>
+    `<span class="tag${state.selectedType===k?" active":""}" onclick="selectType('${k}')">${v.label}</span>`
+  ).join("");
+}
+
+function selectType(t){
+  state.selectedType = t;
+  renderTypeTags();
+  const wrap = document.getElementById("sub-type-wrap");
+  const sel = document.getElementById("f-subtype");
+  const subs = TYPES[t].subs;
+  sel.innerHTML = Object.entries(subs).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+  wrap.style.display = "";
+}
+
+// ── 產生清單 ─────────────────────────────────────────────
+function generateChecklist(){
+  const caseno = document.getElementById("f-caseno").value.trim();
+  const court  = document.getElementById("f-court").value.trim();
+  const date   = document.getElementById("f-date").value;
+  const time   = document.getElementById("f-time").value;
+  const party  = document.getElementById("f-party").value.trim();
+  const role   = document.getElementById("f-role").value;
+
+  if(!state.selectedType){ alert("請選擇庭次類型"); return; }
+  const subtype = document.getElementById("f-subtype").value;
+  if(!date){ alert("請選擇庭期日期"); return; }
+
+  const roleLabel = {plaintiff:"原告／告訴人",defendant:"被告／相對人",both:"雙方"}[role];
+  state.caseInfo = { caseno, court, date, time, party, role, roleLabel,
+    typeLabel: TYPES[state.selectedType].label,
+    subtypeLabel: TYPES[state.selectedType].subs[subtype],
+    subtype };
+  state.editingId = null;
+
+  // 收集項目
+  const base = [...(ITEMS.common||[])];
+  const specific = [...(ITEMS[subtype]||[])];
+  const all = [...base, ...specific].filter(item => {
+    if(!item.roles) return true;
+    if(item.roles === "both") return true;
+    if(role === "both") return true;
+    return item.roles === role;
+  });
+
+  state.items = all.map(item => ({
+    id: uid(), cat: item.cat, text: item.text,
+    note: item.note||"", checked: false, custom: false
+  }));
+
+  renderChecklistCard();
+  document.getElementById("checklist-card").style.display = "";
+  document.getElementById("checklist-card").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function closeChecklist(){
+  document.getElementById("checklist-card").style.display = "none";
+  state.items = [];
+  state.caseInfo = {};
+  state.editingId = null;
+}
+
+// ── 渲染清單 ─────────────────────────────────────────────
+function renderChecklistCard(){
+  const ci = state.caseInfo;
+  document.getElementById("cl-title").textContent =
+    `${ci.typeLabel} · ${ci.subtypeLabel}`;
+
+  // case header
+  const fmtDate = ci.date ? ci.date.replace(/-/g,"/") : "—";
+  const fmtTime = ci.time || "—";
+  document.getElementById("cl-case-header").innerHTML = `
+    <div class="ch-row"><span class="ch-label">案號</span><span class="ch-val highlight">${ci.caseno||"—"}</span></div>
+    <div class="ch-row"><span class="ch-label">法院 / 庭別</span><span class="ch-val">${ci.court||"—"}</span></div>
+    <div class="ch-row"><span class="ch-label">庭期</span><span class="ch-val">${fmtDate} ${fmtTime}</span></div>
+    <div class="ch-row"><span class="ch-label">對造 / 案件</span><span class="ch-val">${ci.party||"—"}</span></div>
+    <div class="ch-row"><span class="ch-label">身份</span><span class="ch-val">${ci.roleLabel}</span></div>
+  `;
+
+  renderItems();
+  updateProgress();
+}
+
+function renderItems(){
+  const body = document.getElementById("cl-body");
+  if(!state.items.length){ body.innerHTML = '<div class="empty">清單為空</div>'; return; }
+
+  // 分組
+  const cats = {};
+  state.items.forEach(it => {
+    if(!cats[it.cat]) cats[it.cat] = [];
+    cats[it.cat].push(it);
+  });
+
+  body.innerHTML = Object.entries(cats).map(([cat, items]) => `
+    <div class="cat-block">
+      <div class="cat-head">${cat} <span></span></div>
+      ${items.map(renderItem).join("")}
+    </div>
+  `).join("");
+}
+
+function renderItem(it){
+  return `<div class="cl-item${it.checked?" checked":""}" id="ci-${it.id}" onclick="toggleItem('${it.id}')">
+    <div class="cb"></div>
+    <div style="flex:1">
+      <div class="cl-text">${escHtml(it.text)}</div>
+      ${it.note?`<div class="cl-note">${escHtml(it.note)}</div>`:""}
+    </div>
+    <button class="del-btn no-print" onclick="delItem(event,'${it.id}')">✕</button>
+  </div>`;
+}
+
+function toggleItem(id){
+  const it = state.items.find(x=>x.id===id);
+  if(!it) return;
+  it.checked = !it.checked;
+  const el = document.getElementById("ci-"+id);
+  if(el){ el.classList.toggle("checked", it.checked); }
+  updateProgress();
+  // auto-save if editing saved checklist
+  if(state.editingId) autoSave();
+}
+
+function delItem(e, id){
+  e.stopPropagation();
+  state.items = state.items.filter(x=>x.id!==id);
+  renderItems();
+  updateProgress();
+}
+
+function addCustomItem(){
+  const inp = document.getElementById("custom-text");
+  const text = inp.value.trim();
+  if(!text) return;
+  state.items.push({ id:uid(), cat:"自訂項目", text, note:"", checked:false, custom:true });
+  inp.value = "";
+  renderItems();
+  updateProgress();
+}
+
+function updateProgress(){
+  const total = state.items.length;
+  const done  = state.items.filter(x=>x.checked).length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+  document.getElementById("prog-bar").style.width = pct+"%";
+  document.getElementById("prog-label").textContent = `${done} / ${total} 項已完成`;
+  document.getElementById("prog-pct").textContent = pct+"%";
+}
+
+// ── 儲存 & 載入 ──────────────────────────────────────────
+function loadSaved(){
+  try{ return JSON.parse(localStorage.getItem("checklists")||"[]"); }catch(e){ return []; }
+}
+function writeSaved(arr){ localStorage.setItem("checklists", JSON.stringify(arr)); }
+
+function saveChecklist(){
+  const ci = state.caseInfo;
+  if(!ci.date){ alert("無案件資訊，請先產生清單"); return; }
+  const arr = loadSaved();
+  if(state.editingId){
+    const idx = arr.findIndex(x=>x.id===state.editingId);
+    if(idx>=0){
+      arr[idx] = { ...arr[idx], caseInfo:ci, items:[...state.items], updatedAt:new Date().toISOString() };
+      writeSaved(arr);
+      renderSaved();
+      showNotice("已更新儲存");
+      return;
+    }
+  }
+  const id = uid();
+  state.editingId = id;
+  arr.unshift({ id, caseInfo:ci, items:[...state.items], createdAt:new Date().toISOString() });
+  if(arr.length>50) arr.splice(50);
+  writeSaved(arr);
+  renderSaved();
+  showNotice("清單已儲存");
+}
+
+function autoSave(){
+  const arr = loadSaved();
+  const idx = arr.findIndex(x=>x.id===state.editingId);
+  if(idx<0) return;
+  arr[idx].items = [...state.items];
+  arr[idx].updatedAt = new Date().toISOString();
+  writeSaved(arr);
+}
+
+function loadChecklist(id){
+  const arr = loadSaved();
+  const entry = arr.find(x=>x.id===id);
+  if(!entry) return;
+  state.caseInfo = entry.caseInfo;
+  state.items = entry.items.map(it=>({...it}));
+  state.editingId = id;
+  // also set selectedType for tag highlight
+  const typeMap = {civil:"civil",criminal:"criminal",admin:"admin",family:"family",labor:"labor"};
+  const sub = entry.caseInfo.subtype||"";
+  for(const [k,v] of Object.entries(TYPES)){
+    if(v.subs[sub]){ state.selectedType = k; break; }
+  }
+  renderTypeTags();
+  renderChecklistCard();
+  document.getElementById("checklist-card").style.display = "";
+  document.getElementById("checklist-card").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function deleteChecklist(e, id){
+  e.stopPropagation();
+  if(!confirm("確認刪除此清單？")) return;
+  let arr = loadSaved().filter(x=>x.id!==id);
+  writeSaved(arr);
+  if(state.editingId===id) closeChecklist();
+  renderSaved();
+}
+
+function renderSaved(){
+  const arr = loadSaved();
+  const wrap = document.getElementById("saved-list");
+  if(!arr.length){ wrap.innerHTML = '<div class="empty">尚無儲存清單</div>'; return; }
+  wrap.innerHTML = arr.map(entry => {
+    const ci = entry.caseInfo||{};
+    const items = entry.items||[];
+    const done = items.filter(x=>x.checked).length;
+    const total = items.length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    let progClass = "prog-none", progText = "未開始";
+    if(pct===100){ progClass="prog-done"; progText="已完成 ✓"; }
+    else if(pct>0){ progClass="prog-part"; progText=`進行中 ${pct}%`; }
+    const fmtDate = (ci.date||"").replace(/-/g,"/");
+    return `<div class="saved-item" onclick="loadChecklist('${entry.id}')">
+      <div class="saved-item-head">
+        <div>
+          <div class="saved-item-title">${escHtml(ci.typeLabel||"")} · ${escHtml(ci.subtypeLabel||"")}${ci.caseno?` — ${escHtml(ci.caseno)}`:""}</div>
+          <div class="saved-item-meta">${fmtDate}${ci.time?" "+ci.time:""} ${ci.court?`· ${escHtml(ci.court)}`:""}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="prog-pill ${progClass}">${progText}</span>
+          <button class="btn btn-danger btn-sm no-print" onclick="deleteChecklist(event,'${entry.id}')">刪除</button>
+        </div>
+      </div>
+      <div class="saved-item-prog">${done} / ${total} 項已勾選</div>
+    </div>`;
+  }).join("");
+}
+
+// ── 工具 ─────────────────────────────────────────────────
+function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function showNotice(msg){
+  const n = document.createElement("div");
+  n.className = "notice no-print";
+  n.textContent = msg;
+  n.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;";
+  n.style.background = "rgba(200,169,110,.95)";
+  n.style.color = "#1a0e00";
+  document.body.appendChild(n);
+  setTimeout(()=>n.remove(), 2000);
+}
+
+init();
+</script>
+</body>
+</html>

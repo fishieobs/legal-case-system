@@ -1,4 +1,4 @@
-const CACHE = "case-mgr-v7";
+const CACHE = "case-mgr-v8";
 
 const PRECACHE = [
   "./",
@@ -9,6 +9,7 @@ const PRECACHE = [
   "./judgments.html",
   "./widget.html",
   "./deadline.html",
+  "./checklist.html",
   "./manifest.json",
   "./manifest-letters.json",
   "./manifest-templates.json",

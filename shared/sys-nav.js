@@ -9,6 +9,7 @@
     { id: "court",     href: "court_nav.html",   label: "🗺 開庭助理" },
     { id: "widget",    href: "widget.html",      label: "📅 庭期 Widget" },
     { id: "deadline",  href: "deadline.html",    label: "⏱ 時效計算器" },
+    { id: "checklist", href: "checklist.html",  label: "📋 開庭清單" },
   ];
 
   if (!document.getElementById("sys-nav-css")) {

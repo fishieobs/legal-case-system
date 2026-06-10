@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="時效計算器">
+<meta name="theme-color" content="#0a1628">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-cases.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-cases.png">
+<title>⏱ 時效計算器</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#020817;--bg2:#0a1628;--bg3:#0f172a;--bg4:#1e293b;
+  --gold:#c8a96e;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--text4:#475569;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--border:#1e293b;
+  --purple:#8b5cf6;
+}
+html,body{min-height:100vh;padding-top:40px;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',system-ui,sans-serif;font-size:14px;line-height:1.5;}
+.page{max-width:640px;margin:0 auto;padding:20px 16px 60px;}
+
+h1{font-size:22px;font-weight:800;color:var(--gold);margin-bottom:4px;}
+.subtitle{font-size:12px;color:var(--text3);margin-bottom:24px;}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;}
+.card-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+
+.fg{margin-bottom:12px;}
+label.fl{font-size:11px;color:var(--text3);margin-bottom:5px;display:block;}
+.fi{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:10px 13px;color:var(--text);font-size:13px;outline:none;font-family:inherit;-webkit-appearance:none;appearance:none;}
+.fi:focus{border-color:var(--gold);}
+select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+
+.check-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;user-select:none;}
+.check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
+.check-row span{font-size:12px;color:var(--text3);}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:10px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-gold{background:var(--gold);color:#1a0e00;}
+.btn-gold:hover:not(:disabled){filter:brightness(1.1);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-outline:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
+.btn-full{width:100%;}
+.btn-sm{padding:7px 12px;font-size:11px;}
+
+/* Result box */
+.result{margin-top:16px;border-radius:12px;padding:16px 18px;border:1px solid var(--border);background:var(--bg3);}
+.result.urgent{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.05);}
+.result.soon{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.05);}
+.result.safe{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.04);}
+.result.expired{border-color:rgba(100,116,139,.4);}
+
+.result-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;}
+.result-label.urgent{color:var(--red);}
+.result-label.soon{color:var(--yellow);}
+.result-label.safe{color:var(--green);}
+.result-label.expired{color:var(--text4);}
+.result-label.exclusion{color:var(--purple);}
+
+.result-date{font-size:24px;font-weight:800;margin-bottom:4px;letter-spacing:-.3px;}
+.result-date.urgent{color:var(--red);}
+.result-date.soon{color:var(--yellow);}
+.result-date.safe{color:var(--green);}
+.result-date.expired{color:var(--text3);}
+
+.result-sub{font-size:12px;color:var(--text3);margin-bottom:10px;display:flex;flex-direction:column;gap:3px;}
+.result-basis{font-size:11px;color:var(--text4);background:var(--bg4);border-radius:7px;padding:8px 11px;margin-bottom:12px;line-height:1.6;}
+.adj-note{color:var(--yellow);font-size:11px;}
+
+.notice-box{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--purple);margin-bottom:12px;line-height:1.6;}
+
+/* History */
+.hist-item{padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;}
+.hist-item:last-child{margin-bottom:0;}
+.hist-title{font-size:13px;font-weight:700;margin-bottom:2px;}
+.hist-meta{font-size:11px;color:var(--text4);}
+.empty{text-align:center;padding:28px;color:var(--text4);font-size:13px;}
+
+/* Tip section */
+.tip-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:400px){.tip-grid{grid-template-columns:1fr;}}
+.tip-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;}
+.tip-head{font-size:11px;font-weight:700;color:var(--gold);margin-bottom:4px;}
+.tip-body{font-size:11px;color:var(--text3);line-height:1.6;}
+</style>
+</head>
+<body>
+<script src="shared/sys-nav.js" data-active="deadline"></script>
+<div class="page">
+
+  <h1>⏱ 時效計算器</h1>
+  <div class="subtitle">訴訟程序期間 · 消滅時效 · 除斥期間　｜　自動排除假日、週末</div>
+
+  <!-- ── 程序期間 ── -->
+  <div class="card">
+    <div class="card-title">📋 程序期間（不變期間）計算</div>
+
+    <div class="fg">
+      <label class="fl">期間類型</label>
+      <select class="fi" id="proc-type">
+        <optgroup label="── 民事訴訟 ──">
+          <option value="civil-appeal-2nd">民事上訴第二審（20日）</option>
+          <option value="civil-appeal-3rd">民事上訴第三審（20日）</option>
+          <option value="civil-protest">民事抗告（10日）</option>
+          <option value="civil-retrial">民事聲請再審（30日）</option>
+          <option value="civil-oppose">強制執行聲明異議（10日）</option>
+          <option value="civil-3p-oppose">強執第三人異議之訴（30日）</option>
+        </optgroup>
+        <optgroup label="── 刑事訴訟 ──">
+          <option value="crim-appeal">刑事上訴（10日）</option>
+          <option value="crim-protest">刑事抗告（5日）</option>
+          <option value="crim-retrial">刑事聲請再審（30日）</option>
+          <option value="crim-complaint">刑事告訴期間（6個月）</option>
+        </optgroup>
+        <optgroup label="── 行政程序 ──">
+          <option value="admin-appeal">訴願（30日）</option>
+          <option value="admin-litigation">行政訴訟—撤銷訴訟（2個月）</option>
+          <option value="admin-compensation">國家賠償申請（2年）</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="fg">
+      <label class="fl" id="proc-date-label">起算事由日期（裁判書送達日 / 知悉日）</label>
+      <input class="fi" type="date" id="proc-date">
+    </div>
+
+    <label class="check-row">
+      <input type="checkbox" id="proc-next-day" checked>
+      <span>翌日起算（始日不算入，民訴法 §161 / 刑訴法 §65）</span>
+    </label>
+
+    <button class="btn btn-gold btn-full" onclick="calcProc()">計算截止日 →</button>
+    <div id="proc-result" style="display:none"></div>
+  </div>
+
+  <!-- ── 消滅時效 ── -->
+  <div class="card">
+    <div class="card-title">⏳ 消滅時效 &amp; 除斥期間</div>
+
+    <div class="fg">
+      <label class="fl">請求權 / 形成權類型</label>
+      <select class="fi" id="lim-type">
+        <optgroup label="── 消滅時效（民法）──">
+          <option value="general">一般請求權（15年）</option>
+          <option value="periodic">定期給付—利息、租金、薪資（5年）</option>
+          <option value="tort-know">侵權行為，自知悉日起算（2年）</option>
+          <option value="tort-act">侵權行為，自行為日起算（10年）</option>
+          <option value="bill-maker">票據—執票人對發票人（3年）</option>
+          <option value="bill-endorser">票據—對背書人 / 承兌人（1年）</option>
+          <option value="labor">勞動契約工資請求權（5年）</option>
+          <option value="medical">醫療費用請求權（2年）</option>
+        </optgroup>
+        <optgroup label="── 除斥期間（逾期權利消滅，不可中斷）──">
+          <option value="fraud-know">詐欺 / 脅迫撤銷，自知悉日起算（1年）</option>
+          <option value="fraud-act">詐欺 / 脅迫撤銷，自行為日起算（10年）</option>
+          <option value="sale-defect">買賣物之瑕疵擔保（6個月）</option>
+          <option value="work-defect-1">承攬瑕疵—一般工作物（1年）</option>
+          <option value="work-defect-5">承攬瑕疵—土木建築（5年）</option>
+          <option value="gift-revoke">贈與撤銷—忘恩負義（1年）</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="fg">
+      <label class="fl">起算日期（知悉日 / 事由發生日）</label>
+      <input class="fi" type="date" id="lim-date">
+    </div>
+
+    <button class="btn btn-gold btn-full" onclick="calcLim()">計算屆滿日 →</button>
+    <div id="lim-result" style="display:none"></div>
+  </div>
+
+  <!-- ── 計算記錄 ── -->
+  <div class="card">
+    <div class="card-title">
+      <span>📖 計算記錄</span>
+      <button class="btn btn-outline btn-sm" onclick="clearHistory()">清除記錄</button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- ── 速查 ── -->
+  <div class="card">
+    <div class="card-title">📌 常見期間速查</div>
+    <div class="tip-grid">
+      <div class="tip-item">
+        <div class="tip-head">民事上訴</div>
+        <div class="tip-body">二審 / 三審均為 <strong>20日</strong><br>自判決送達翌日起算<br>民訴法 §440</div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-head">刑事上訴</div>
+        <div class="tip-body"><strong>10日</strong>（宣示或送達，取較後者）<br>刑訴法 §349</div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-head">訴願</div>
+        <div class="tip-body"><strong>30日</strong><br>自行政處分書達到翌日起算<br>訴願法 §14</div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-head">行政訴訟</div>
+        <div class="tip-body"><strong>2個月</strong><br>自訴願決定書送達翌日起算<br>行訴法 §106</div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-head">侵權行為時效</div>
+        <div class="tip-body">知悉起 <strong>2年</strong><br>行為起 <strong>10年</strong><br>民法 §197</div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-head">末日假日順延</div>
+        <div class="tip-body">末日為例假日、國定假日，順延至次工作日<br>民訴法 §162 / 行程法 §48</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- .page -->
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",
+  authDomain: "legalcasemanageer.firebaseapp.com",
+  projectId: "legalcasemanageer",
+  storageBucket: "legalcasemanageer.firebasestorage.app",
+  messagingSenderId: "559838504556",
+  appId: "1:559838504556:web:ba10c071a12650bbd85a49"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+let currentUser = null;
+onAuthStateChanged(auth, u => { currentUser = u; });
+
+// ── 台灣國定假日 2024-2027 ──
+const TW_HOLIDAYS = {
+  "2024-01-01":"元旦","2024-02-08":"除夕","2024-02-09":"春節","2024-02-10":"春節",
+  "2024-02-11":"春節","2024-02-12":"春節","2024-02-13":"春節","2024-02-14":"彈性放假",
+  "2024-02-28":"和平紀念日","2024-04-04":"兒童節","2024-04-05":"清明節",
+  "2024-06-10":"端午節","2024-09-17":"中秋節","2024-10-10":"國慶日",
+  "2025-01-01":"元旦","2025-01-27":"除夕","2025-01-28":"春節","2025-01-29":"春節",
+  "2025-01-30":"春節","2025-01-31":"春節","2025-02-03":"彈性放假",
+  "2025-02-28":"和平紀念日","2025-04-03":"兒童節","2025-04-04":"清明節",
+  "2025-05-01":"勞動節","2025-05-30":"端午節","2025-06-02":"彈性放假",
+  "2025-10-06":"中秋節","2025-10-10":"國慶日",
+  "2026-01-01":"元旦","2026-02-16":"除夕","2026-02-17":"春節","2026-02-18":"春節",
+  "2026-02-19":"春節","2026-02-20":"春節","2026-02-28":"和平紀念日",
+  "2026-04-03":"兒童節","2026-04-04":"清明節","2026-04-06":"彈性放假",
+  "2026-05-01":"勞動節","2026-06-19":"端午節","2026-09-25":"中秋節",
+  "2026-10-09":"彈性放假","2026-10-10":"國慶日",
+  "2027-01-01":"元旦","2027-02-05":"除夕","2027-02-06":"春節","2027-02-07":"春節",
+  "2027-02-08":"春節","2027-02-09":"春節","2027-02-28":"和平紀念日",
+  "2027-04-04":"兒童節","2027-04-05":"清明節","2027-05-01":"勞動節",
+  "2027-06-09":"端午節","2027-10-01":"彈性放假","2027-10-10":"國慶日",
+};
+
+// ── 期間定義 ──
+const PROC_TYPES = {
+  "civil-appeal-2nd": { label:"民事上訴第二審",    period:{days:20},   basis:"民訴法 §440",       note:"自第一審判決送達翌日起算" },
+  "civil-appeal-3rd": { label:"民事上訴第三審",    period:{days:20},   basis:"民訴法 §469、§470", note:"自第二審判決送達翌日起算" },
+  "civil-protest":    { label:"民事抗告",          period:{days:10},   basis:"民訴法 §487",       note:"自裁定送達翌日起算" },
+  "civil-retrial":    { label:"民事聲請再審",      period:{days:30},   basis:"民訴法 §500Ⅰ",     note:"自知悉再審事由翌日起算，不逾確定後5年" },
+  "civil-oppose":     { label:"強制執行聲明異議",  period:{days:10},   basis:"強執法 §12Ⅱ",      note:"自知悉之翌日起算" },
+  "civil-3p-oppose":  { label:"強執第三人異議之訴",period:{days:30},   basis:"強執法 §15",        note:"自知悉之翌日起算（需在執行程序終結前）" },
+  "crim-appeal":      { label:"刑事上訴",          period:{days:10},   basis:"刑訴法 §349",       note:"自判決宣示或送達（取較後者）翌日起算" },
+  "crim-protest":     { label:"刑事抗告",          period:{days:5},    basis:"刑訴法 §406",       note:"自裁定送達翌日起算" },
+  "crim-retrial":     { label:"刑事聲請再審",      period:{days:30},   basis:"刑訴法 §424",       note:"自知悉再審事由翌日起算" },
+  "crim-complaint":   { label:"刑事告訴期間",      period:{months:6},  basis:"刑訴法 §237Ⅰ",     note:"自得告訴人知悉犯人翌日起算" },
+  "admin-appeal":     { label:"訴願",              period:{days:30},   basis:"訴願法 §14Ⅰ",      note:"自行政處分書達到翌日起算" },
+  "admin-litigation": { label:"行政訴訟—撤銷訴訟", period:{months:2},  basis:"行訴法 §106Ⅰ",     note:"自訴願決定書送達翌日起算" },
+  "admin-compensation":{ label:"國家賠償申請",     period:{years:2},   basis:"國賠法 §8Ⅰ",       note:"自知有損害時起算，自損害發生起逾5年不得請求" },
+};
+
+const LIM_TYPES = {
+  "general":       { label:"一般請求權（15年）",              period:{years:15},  basis:"民法 §125",         exclusion:false },
+  "periodic":      { label:"定期給付—利息、租金、薪資（5年）", period:{years:5},   basis:"民法 §126",         exclusion:false },
+  "tort-know":     { label:"侵權行為（知悉日，2年）",          period:{years:2},   basis:"民法 §197Ⅰ前段",   exclusion:false },
+  "tort-act":      { label:"侵權行為（行為日，10年）",         period:{years:10},  basis:"民法 §197Ⅰ後段",   exclusion:false },
+  "bill-maker":    { label:"票據—對發票人（3年）",             period:{years:3},   basis:"票據法 §22Ⅰ",      exclusion:false },
+  "bill-endorser": { label:"票據—對背書人/承兌人（1年）",      period:{years:1},   basis:"票據法 §22Ⅱ",      exclusion:false },
+  "labor":         { label:"勞動工資請求權（5年）",            period:{years:5},   basis:"民法 §126",         exclusion:false },
+  "medical":       { label:"醫療費用請求權（2年）",            period:{years:2},   basis:"民法 §127⑶",       exclusion:false },
+  "fraud-know":    { label:"詐欺/脅迫撤銷（知悉後1年）",      period:{years:1},   basis:"民法 §93（除斥）",  exclusion:true },
+  "fraud-act":     { label:"詐欺/脅迫撤銷（行為後10年）",     period:{years:10},  basis:"民法 §93（除斥）",  exclusion:true },
+  "sale-defect":   { label:"買賣物之瑕疵擔保（6個月）",       period:{months:6},  basis:"民法 §365（除斥）", exclusion:true },
+  "work-defect-1": { label:"承攬瑕疵—一般工作物（1年）",      period:{years:1},   basis:"民法 §514Ⅰ（除斥）",exclusion:true },
+  "work-defect-5": { label:"承攬瑕疵—土木建築（5年）",        period:{years:5},   basis:"民法 §514Ⅱ（除斥）",exclusion:true },
+  "gift-revoke":   { label:"贈與撤銷—忘恩負義（1年）",        period:{years:1},   basis:"民法 §416Ⅱ（除斥）",exclusion:true },
+};
+
+// ── 工具函式 ──
+const WD = ["日","一","二","三","四","五","六"];
+
+function twStr(date) {
+  // Return YYYY-MM-DD in Taiwan time
+  const d = new Date(date.getTime());
+  const offset = 8 * 60 * 60 * 1000;
+  const tw = new Date(d.getTime() + offset - d.getTimezoneOffset() * 60000);
+  return tw.toISOString().split("T")[0];
+}
+function parseDate(str) { return new Date(str + "T00:00:00+08:00"); }
+function isWorkDay(d) { return d.getDay() !== 0 && d.getDay() !== 6 && !TW_HOLIDAYS[twStr(d)]; }
+function nextWorkDay(date) { const d=new Date(date); while(!isWorkDay(d)) d.setDate(d.getDate()+1); return d; }
+function addDays(d,n)   { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function addMonths(d,n) { const r=new Date(d); r.setMonth(r.getMonth()+n); return r; }
+function addYears(d,n)  { const r=new Date(d); r.setFullYear(r.getFullYear()+n); return r; }
+
+function applyPeriod(date, {days, months, years}) {
+  if (days)   return addDays(date, days);
+  if (months) return addMonths(date, months);
+  if (years)  return addYears(date, years);
+}
+
+function formatDate(d) {
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WD[d.getDay()]}）`;
+}
+function daysLeft(d) {
+  const now = parseDate(new Date().toISOString().split("T")[0]);
+  return Math.round((d - now) / 86400000);
+}
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function urgency(days) {
+  if (days < 0)   return "expired";
+  if (days <= 7)  return "urgent";
+  if (days <= 30) return "soon";
+  return "safe";
+}
+function urgencyText(days) {
+  if (days < 0)   return `已逾期 ${Math.abs(days)} 天`;
+  if (days === 0) return "今天截止 ⚠️";
+  if (days <= 7)  return `剩餘 ${days} 天 ⚠️`;
+  return `剩餘 ${days} 天`;
+}
+
+function calcDeadline(eventStr, period) {
+  // 翌日起算：始日不算入，加整個期間天數即是末日
+  const event = parseDate(eventStr);
+  const raw = applyPeriod(event, period);
+  const original = new Date(raw);
+  const adjusted = nextWorkDay(raw);
+  const adjDays = Math.round((adjusted - original) / 86400000);
+  return { deadline: adjusted, original, adjDays };
+}
+
+function buildResult({ label, deadline, original, adjDays, basis, note, exclusion }) {
+  const days = daysLeft(deadline);
+  const uc = urgency(days);
+  const ucLabel = exclusion ? "exclusion" : uc;
+
+  let html = `<div class="result ${uc}">`;
+  html += `<div class="result-label ${ucLabel}">${exclusion ? "除斥期間" : (days<0?"已逾期":"不變期間")}</div>`;
+  html += `<div class="result-date ${uc}">${formatDate(deadline)}</div>`;
+  html += `<div class="result-sub">`;
+  html += `<span>${urgencyText(days)}</span>`;
+  if (adjDays > 0) {
+    const reason = TW_HOLIDAYS[twStr(original)] || (original.getDay()===0?"星期日":"星期六");
+    html += `<span class="adj-note">⟳ 原末日 ${original.getMonth()+1}/${original.getDate()} 為「${reason}」，自動順延 ${adjDays} 天</span>`;
+  }
+  html += `</div>`;
+  html += `<div class="result-basis">📖 <strong>${basis}</strong>`;
+  if (note) html += `<br>${note}`;
+  html += `</div>`;
+  if (exclusion) {
+    html += `<div class="notice-box">⚠️ 除斥期間屆滿後，形成權當然消滅，不得以時效中斷或不完成延長，請務必在期限前行使。</div>`;
+  }
+  if (days >= 0) {
+    const ds = twStr(deadline);
+    html += `<button class="btn btn-outline btn-full" onclick="addToTodo('${label.replace(/'/g,"\\'")}','${ds}')">📅 加入待辦提醒</button>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+// ── 程序期間 ──
+window.calcProc = function() {
+  const typeId = document.getElementById("proc-type").value;
+  const dateStr = document.getElementById("proc-date").value;
+  if (!dateStr) { alert("請先選擇起算事由日期"); return; }
+  const def = PROC_TYPES[typeId];
+  const { deadline, original, adjDays } = calcDeadline(dateStr, def.period);
+  const el = document.getElementById("proc-result");
+  el.style.display = "block";
+  el.innerHTML = buildResult({ label:def.label, deadline, original, adjDays, basis:def.basis, note:def.note, exclusion:false });
+  saveHist({ label:def.label, basis:def.basis, eventDate:dateStr, deadline:twStr(deadline) });
+  renderHist();
+};
+
+// ── 消滅時效 / 除斥期間 ──
+window.calcLim = function() {
+  const typeId = document.getElementById("lim-type").value;
+  const dateStr = document.getElementById("lim-date").value;
+  if (!dateStr) { alert("請先選擇起算日期"); return; }
+  const def = LIM_TYPES[typeId];
+  const { deadline, original, adjDays } = calcDeadline(dateStr, def.period);
+  const el = document.getElementById("lim-result");
+  el.style.display = "block";
+  el.innerHTML = buildResult({ label:def.label, deadline, original, adjDays, basis:def.basis, note:"", exclusion:def.exclusion });
+  saveHist({ label:def.label, basis:def.basis, eventDate:dateStr, deadline:twStr(deadline) });
+  renderHist();
+};
+
+// ── 加入待辦 ──
+window.addToTodo = async function(label, dateStr) {
+  const btns = document.querySelectorAll(`button[onclick*="${dateStr}"]`);
+  btns.forEach(b => { b.disabled=true; b.textContent="加入中…"; });
+  try {
+    const existing = JSON.parse(localStorage.getItem("calTodos")||"[]");
+    const item = {
+      id: uid(), date: dateStr, time: "",
+      text: `【時效截止】${label}`,
+      note: "由時效計算器自動建立",
+      done: false, createdAt: new Date().toISOString()
+    };
+    const updated = [...existing, item];
+    localStorage.setItem("calTodos", JSON.stringify(updated));
+    if (currentUser) {
+      await setDoc(doc(db,"calTodos","shared"), { items:updated, updatedAt:new Date().toISOString() });
+    }
+    btns.forEach(b => {
+      b.textContent = "✅ 已加入待辦";
+      b.style.color = "var(--green)";
+      b.style.borderColor = "var(--green)";
+    });
+  } catch(e) {
+    btns.forEach(b => { b.disabled=false; b.textContent="📅 加入待辦提醒"; });
+    alert("加入失敗：" + e.message);
+  }
+};
+
+// ── 歷史記錄 ──
+function saveHist(entry) {
+  const h = JSON.parse(localStorage.getItem("deadlineHistory")||"[]");
+  h.unshift({ ...entry, id:uid(), at:new Date().toISOString() });
+  localStorage.setItem("deadlineHistory", JSON.stringify(h.slice(0,30)));
+}
+function renderHist() {
+  const h = JSON.parse(localStorage.getItem("deadlineHistory")||"[]");
+  const el = document.getElementById("history-list");
+  if (!h.length) { el.innerHTML='<div class="empty">尚無計算記錄</div>'; return; }
+  const colorMap = { urgent:"var(--red)", soon:"var(--yellow)", safe:"var(--green)", expired:"var(--text4)" };
+  el.innerHTML = h.map(e => {
+    const days = daysLeft(parseDate(e.deadline));
+    const uc = urgency(days);
+    return `<div class="hist-item">
+      <div class="hist-title" style="color:${colorMap[uc]}">${e.label} ─ ${e.deadline}</div>
+      <div class="hist-meta">${e.basis}　·　起算 ${e.eventDate}　·　${urgencyText(days)}</div>
+    </div>`;
+  }).join("");
+}
+window.clearHistory = function() {
+  if (!confirm("確認清除所有計算記錄？")) return;
+  localStorage.removeItem("deadlineHistory");
+  renderHist();
+};
+
+// ── 初始化 ──
+(function init() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById("proc-date").value = todayStr;
+  document.getElementById("lim-date").value  = todayStr;
+  renderHist();
+})();
+</script>
+</body>
+</html>

@@ -11,6 +11,7 @@
     { id: "deadline",  href: "deadline.html",    label: "⏱ 時效計算器" },
     { id: "checklist",      href: "checklist.html",      label: "📋 開庭清單" },
     { id: "judicial-search",href: "judicial-search.html",label: "🔍 裁判書查詢" },
+    { id: "fees",           href: "fees.html",           label: "💰 律師費計算" },
   ];
 
   if (!document.getElementById("sys-nav-css")) {

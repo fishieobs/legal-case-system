@@ -171,7 +171,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
 
   <!-- ── 搜尋建構器 ── -->
   <div class="card">
-    <div class="card-title">🔧 搜尋建構器　<span style="font-size:10px;color:var(--text4);text-transform:none;letter-spacing:0;">條件直接代入司法院裁判書查詢結果</span></div>
+    <div class="card-title">🔧 搜尋建構器　<span style="font-size:10px;color:var(--text4);text-transform:none;letter-spacing:0;">組合查詢關鍵字 · 自動複製後開啟司法院</span></div>
 
     <div class="grid2">
       <div class="fg">
@@ -281,12 +281,11 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
 
     <!-- 組合查詢字串 -->
     <div id="query-preview" style="display:none;margin-bottom:14px;">
-      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-weight:600;letter-spacing:.05em;">查詢條件摘要</div>
       <div id="query-text" style="background:var(--bg4);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.7;"></div>
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-gold" style="flex:1" onclick="openJudicial()">🔍 直接查詢（代入條件）</button>
+      <button class="btn btn-gold" style="flex:1" onclick="openJudicial()">📋 複製條件並開啟司法院</button>
       <button class="btn btn-outline btn-sm" onclick="previewQuery()">預覽條件</button>
       <button class="btn btn-outline btn-sm" onclick="clearSearch()">清除</button>
     </div>
@@ -444,7 +443,7 @@ function previewQuery(){
   const wrap = document.getElementById("query-preview");
   if(!parts.length){ wrap.style.display="none"; return; }
   document.getElementById("query-text").innerHTML =
-    parts.map(p=>`<span style="color:var(--gold);font-weight:700;">${p.label}：</span>${escHtml(p.value)}`).join("　　");
+    `<div style="margin-bottom:8px;">${parts.map(p=>`<span style="color:var(--gold);font-weight:700;">${p.label}：</span>${escHtml(p.value)}`).join("　")}</div>`;
   wrap.style.display = "";
 }
 
@@ -463,13 +462,9 @@ function buildQueryParts(){
   return parts;
 }
 
-// Build a full-text keyword string for FJUD's kw= GET parameter.
-// FJUD full-text search matches court name, case number and body text,
-// so we compose conditions into one keyword string.
 function buildKwString(){
   const v = id => document.getElementById(id).value.trim();
   const parts = [];
-  // Case number components combine into one token: 112年度台上字第1234號
   const year=v("s-year"), code=v("s-typecode"), num=v("s-num");
   if(year && code && num){
     parts.push(`${year}年度${code}字第${num}號`);
@@ -484,26 +479,39 @@ function buildKwString(){
   return parts.join(" ").trim();
 }
 
-// Direct GET search on FJUD: qryresultlst.aspx?ty=ONLYKW&kw=…
-function fjudSearchUrl(kw){
-  return "https://judgment.judicial.gov.tw/FJUD/qryresultlst.aspx?ty=ONLYKW&kw=" + encodeURIComponent(kw);
-}
-
 function openJudicial(){
-  previewQuery();
   const kw = buildKwString();
   if(!kw){
     window.open("https://judgment.judicial.gov.tw/FJUD/default.aspx","_blank","noopener");
     showToast("未輸入任何條件，已開啟司法院裁判書查詢首頁");
     return;
   }
-  // Copy to clipboard as backup — if the direct link fails, user can paste
   navigator.clipboard?.writeText(kw).catch(()=>{});
-  window.open(fjudSearchUrl(kw),"_blank","noopener");
+  showKwCopyBox(kw);
+  window.open("https://judgment.judicial.gov.tw/FJUD/default.aspx","_blank","noopener");
+}
+
+function showKwCopyBox(kw){
   const hasDate = document.getElementById("s-from").value || document.getElementById("s-to").value;
-  showToast(hasDate
-    ? "已直接代入查詢（關鍵字已複製）。日期範圍請在司法院頁面進階條件設定"
-    : "已直接代入查詢。關鍵字也已複製到剪貼簿，可隨時貼上", 3200);
+  const wrap = document.getElementById("query-preview");
+  document.getElementById("query-text").innerHTML = `
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600;">
+      ✅ 司法院裁判書查詢已於新分頁開啟。請將以下關鍵字貼入搜尋欄：
+    </div>
+    <div class="cite-box" id="kw-copy-box" onclick="copyKwBox()">${escHtml(kw)}</div>
+    ${hasDate?`<div style="margin-top:8px;font-size:11px;color:var(--yellow);">⚠️ 日期範圍請在司法院頁面的「進階條件」中另行設定</div>`:""}
+  `;
+  wrap.style.display = "";
+  showToast("關鍵字已複製到剪貼簿，請貼入司法院搜尋欄", 4000);
+}
+
+function copyKwBox(){
+  const box = document.getElementById("kw-copy-box");
+  if(!box) return;
+  const text = box.innerText.replace("點擊複製","").replace("已複製 ✓","").trim();
+  navigator.clipboard.writeText(text)
+    .then(()=>{ box.classList.add("copied"); setTimeout(()=>box.classList.remove("copied"),1800); })
+    .catch(()=>showToast("複製失敗，請手動選取複製"));
 }
 
 function clearSearch(){
@@ -613,11 +621,10 @@ function openJudicialById(){
   const raw = document.getElementById("parse-input").value.trim();
   const p = parseCN(raw);
   if(!p){ showToast("無法解析字號，請直接至司法院搜尋"); window.open("https://judgment.judicial.gov.tw/FJUD/default.aspx","_blank","noopener"); return; }
-  // Search by case number components (court + 年度字號) for precise match
   const kw = [p.court, `${p.year}年度${p.code}字第${p.num}號`].filter(Boolean).join(" ");
   navigator.clipboard?.writeText(kw).catch(()=>{});
-  window.open(fjudSearchUrl(kw),"_blank","noopener");
-  showToast("已直接代入查詢此案（關鍵字已複製）");
+  window.open("https://judgment.judicial.gov.tw/FJUD/default.aspx","_blank","noopener");
+  showToast("關鍵字已複製到剪貼簿，請貼入司法院搜尋欄", 4000);
 }
 
 function fillBookmarkFromParse(){
@@ -789,12 +796,11 @@ function copyRef(id){
 function openSearch(id){
   const b = loadBookmarks().find(x=>x.id===id);
   if(!b) return;
-  // Use parsed case-number components when possible for a precise kw search
   const p = parseCN(b.num);
   const kw = p ? [p.court, `${p.year}年度${p.code}字第${p.num}號`].filter(Boolean).join(" ") : b.num;
   navigator.clipboard?.writeText(kw).catch(()=>{});
-  window.open(fjudSearchUrl(kw),"_blank","noopener");
-  showToast("已直接代入查詢（關鍵字已複製）");
+  window.open("https://judgment.judicial.gov.tw/FJUD/default.aspx","_blank","noopener");
+  showToast("關鍵字已複製到剪貼簿，請貼入司法院搜尋欄", 4000);
 }
 
 // ── utils ───────────────────────────────────────────────

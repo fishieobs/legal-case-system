@@ -113,12 +113,12 @@ select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='
           <option value="civil-protest">民事抗告（10日）</option>
           <option value="civil-retrial">民事聲請再審（30日）</option>
           <option value="civil-oppose">強制執行聲明異議（10日）</option>
-          <option value="civil-3p-oppose">強執第三人異議之訴（30日）</option>
+          <option value="civil-3p-oppose">強執第三人異議之訴（程序終結前，無固定天數）</option>
         </optgroup>
         <optgroup label="── 刑事訴訟 ──">
-          <option value="crim-appeal">刑事上訴（10日）</option>
+          <option value="crim-appeal">刑事上訴（20日）</option>
           <option value="crim-protest">刑事抗告（5日）</option>
-          <option value="crim-retrial">刑事聲請再審（30日）</option>
+          <option value="crim-retrial">刑事聲請再審（無固定期限）</option>
           <option value="crim-complaint">刑事告訴期間（6個月）</option>
         </optgroup>
         <optgroup label="── 行政程序 ──">
@@ -199,7 +199,7 @@ select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='
       </div>
       <div class="tip-item">
         <div class="tip-head">刑事上訴</div>
-        <div class="tip-body"><strong>10日</strong>（宣示或送達，取較後者）<br>刑訴法 §349</div>
+        <div class="tip-body"><strong>20日</strong><br>自判決書送達翌日起算<br>宣示後送達前上訴亦有效<br>刑訴法 §349</div>
       </div>
       <div class="tip-item">
         <div class="tip-head">訴願</div>
@@ -265,16 +265,16 @@ const TW_HOLIDAYS = {
 
 // ── 期間定義 ──
 const PROC_TYPES = {
-  "civil-appeal-2nd": { label:"民事上訴第二審",    period:{days:20},   basis:"民訴法 §440",       note:"自第一審判決送達翌日起算" },
-  "civil-appeal-3rd": { label:"民事上訴第三審",    period:{days:20},   basis:"民訴法 §469、§470", note:"自第二審判決送達翌日起算" },
-  "civil-protest":    { label:"民事抗告",          period:{days:10},   basis:"民訴法 §487",       note:"自裁定送達翌日起算" },
-  "civil-retrial":    { label:"民事聲請再審",      period:{days:30},   basis:"民訴法 §500Ⅰ",     note:"自知悉再審事由翌日起算，不逾確定後5年" },
-  "civil-oppose":     { label:"強制執行聲明異議",  period:{days:10},   basis:"強執法 §12Ⅱ",      note:"自知悉之翌日起算" },
-  "civil-3p-oppose":  { label:"強執第三人異議之訴",period:{days:30},   basis:"強執法 §15",        note:"自知悉之翌日起算（需在執行程序終結前）" },
-  "crim-appeal":      { label:"刑事上訴",          period:{days:10},   basis:"刑訴法 §349",       note:"自判決宣示或送達（取較後者）翌日起算" },
-  "crim-protest":     { label:"刑事抗告",          period:{days:5},    basis:"刑訴法 §406",       note:"自裁定送達翌日起算" },
-  "crim-retrial":     { label:"刑事聲請再審",      period:{days:30},   basis:"刑訴法 §424",       note:"自知悉再審事由翌日起算" },
-  "crim-complaint":   { label:"刑事告訴期間",      period:{months:6},  basis:"刑訴法 §237Ⅰ",     note:"自得告訴人知悉犯人翌日起算" },
+  "civil-appeal-2nd": { label:"民事上訴第二審",    period:{days:20},  basis:"民訴法 §440",           note:"自第一審判決送達翌日起算" },
+  "civil-appeal-3rd": { label:"民事上訴第三審",    period:{days:20},  basis:"民訴法 §481 準用 §440", note:"自第二審判決送達翌日起算" },
+  "civil-protest":    { label:"民事抗告",          period:{days:10},  basis:"民訴法 §487",           note:"自裁定送達翌日起算" },
+  "civil-retrial":    { label:"民事聲請再審",      period:{days:30},  basis:"民訴法 §500Ⅰ",         note:"自知悉再審事由翌日起算，不逾確定後5年（§500Ⅱ）" },
+  "civil-oppose":     { label:"強制執行聲明異議",  period:{days:10},  basis:"強執法 §12Ⅱ",          note:"自知悉之翌日起算" },
+  "civil-3p-oppose":  { label:"強執第三人異議之訴",noCalc:true,       basis:"強執法 §15",            note:"§15 本身無固定天數。須於強制執行程序終結前，向執行法院對債權人提起。建議知悉後立即聲請假處分，同時提起本訴，不得拖延。" },
+  "crim-appeal":      { label:"刑事上訴",          period:{days:20},  basis:"刑訴法 §349",           note:"自判決書送達翌日起算（宣示後送達前上訴亦有效，§349 但書）" },
+  "crim-protest":     { label:"刑事抗告",          period:{days:5},   basis:"刑訴法 §406",           note:"自裁定送達翌日起算" },
+  "crim-retrial":     { label:"刑事聲請再審",      noCalc:true,       basis:"刑訴法 §420、§425",     note:"受判決人之利益聲請再審，原則上於判決確定後至執行完畢前均得聲請，無固定天數（§425）。不利益再審（§422）則有其他限制。請依具體事由確認。" },
+  "crim-complaint":   { label:"刑事告訴期間",      period:{months:6}, basis:"刑訴法 §237Ⅰ",         note:"自得告訴人知悉犯人翌日起算" },
   "admin-appeal":     { label:"訴願",              period:{days:30},   basis:"訴願法 §14Ⅰ",      note:"自行政處分書達到翌日起算" },
   "admin-litigation": { label:"行政訴訟—撤銷訴訟", period:{months:2},  basis:"行訴法 §106Ⅰ",     note:"自訴願決定書送達翌日起算" },
   "admin-compensation":{ label:"國家賠償申請",     period:{years:2},   basis:"國賠法 §8Ⅰ",       note:"自知有損害時起算，自損害發生起逾5年不得請求" },
@@ -383,12 +383,24 @@ function buildResult({ label, deadline, original, adjDays, basis, note, exclusio
 // ── 程序期間 ──
 window.calcProc = function() {
   const typeId = document.getElementById("proc-type").value;
-  const dateStr = document.getElementById("proc-date").value;
-  if (!dateStr) { alert("請先選擇起算事由日期"); return; }
   const def = PROC_TYPES[typeId];
-  const { deadline, original, adjDays } = calcDeadline(dateStr, def.period);
   const el = document.getElementById("proc-result");
   el.style.display = "block";
+
+  if (def.noCalc) {
+    el.innerHTML = `
+      <div class="result" style="border-color:rgba(139,92,246,.4);background:rgba(139,92,246,.05);">
+        <div class="result-label exclusion">無固定期間</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:10px;">${def.label}</div>
+        <div class="notice-box">⚠️ ${def.note}</div>
+        <div class="result-basis">📖 <strong>${def.basis}</strong></div>
+      </div>`;
+    return;
+  }
+
+  const dateStr = document.getElementById("proc-date").value;
+  if (!dateStr) { alert("請先選擇起算事由日期"); return; }
+  const { deadline, original, adjDays } = calcDeadline(dateStr, def.period);
   el.innerHTML = buildResult({ label:def.label, deadline, original, adjDays, basis:def.basis, note:def.note, exclusion:false });
   saveHist({ label:def.label, basis:def.basis, eventDate:dateStr, deadline:twStr(deadline) });
   renderHist();

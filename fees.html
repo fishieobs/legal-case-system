@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="律師費計算">
+<meta name="theme-color" content="#020810">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-fees.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-fees.png">
+<link rel="manifest" href="manifest-fees.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<title>💰 律師費計算與請款單</title>
+<style>
+:root{
+  --bg:#020810;--bg2:#080f1e;--bg3:#0c1428;--bg4:#121e36;--bg5:#1a2a48;
+  --gold:#c8a96e;--gold2:#a07840;--gold3:#e0c080;
+  --text:#dce8f8;--text2:#8ca0c0;--text3:#506080;--text4:#304060;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#38bdf8;--border:#121e36;
+  --purple:#8b5cf6;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;font-size:14px;line-height:1.6;padding-top:41px;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px;}
+
+.page{max-width:740px;margin:0 auto;padding:20px 16px 80px;}
+h1{font-size:21px;font-weight:800;color:var(--gold);margin-bottom:3px;}
+.subtitle{font-size:12px;color:var(--text3);margin-bottom:22px;}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:14px;}
+.card-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+
+.fg{margin-bottom:12px;}
+label.fl{font-size:11px;color:var(--text3);margin-bottom:5px;display:block;font-weight:600;letter-spacing:.05em;}
+.fi{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;font-family:inherit;-webkit-appearance:none;appearance:none;transition:border-color .15s;}
+.fi:focus{border-color:var(--gold);}
+select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23506080'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px;}
+textarea.fi{resize:vertical;min-height:66px;line-height:1.6;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:480px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0a0a;}
+.btn-gold:hover:not(:disabled){filter:brightness(1.1);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-outline:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
+.btn-blue{background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.3);color:var(--blue);}
+.btn-blue:hover{background:rgba(56,189,248,.2);}
+.btn-danger{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red);}
+.btn-danger:hover{background:rgba(239,68,68,.18);}
+.btn-full{width:100%;}
+.btn-sm{padding:6px 12px;font-size:11px;border-radius:7px;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+.calc-tabs{display:flex;gap:0;background:var(--bg3);border-radius:10px;padding:3px;margin-bottom:16px;}
+.calc-tab{flex:1;padding:8px 4px;text-align:center;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;border-radius:8px;transition:all .15s;border:none;background:transparent;font-family:inherit;}
+.calc-tab.active{background:var(--bg5);color:var(--gold);box-shadow:0 1px 4px rgba(0,0,0,.4);}
+.calc-panel{display:none;}
+.calc-panel.active{display:block;}
+
+.preset-row{display:flex;flex-wrap:wrap;gap:6px;}
+.preset-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--bg4);color:var(--text3);transition:all .12s;font-family:inherit;}
+.preset-btn:hover{border-color:rgba(200,169,110,.4);color:var(--gold);background:var(--bg5);}
+
+.calc-result{background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:12px 0;display:flex;align-items:center;justify-content:space-between;}
+.calc-result-label{font-size:11px;color:var(--text3);}
+.calc-result-amount{font-size:22px;font-weight:800;color:var(--gold);font-family:'Noto Serif TC',serif;}
+
+.item-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.item-row:last-child{border-bottom:none;}
+.item-name{flex:1;min-width:0;}
+.item-name-text{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.item-note-text{font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.item-amount{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;min-width:90px;text-align:right;font-family:'Noto Serif TC',serif;}
+
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.total-row:last-child{border-bottom:none;}
+.total-lbl{font-size:12px;color:var(--text3);}
+.total-val{font-size:14px;font-weight:700;color:var(--text);font-family:'Noto Serif TC',serif;}
+.grand-total{background:rgba(200,169,110,.08);border:1px solid rgba(200,169,110,.25);border-radius:10px;padding:12px 16px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;}
+.grand-lbl{font-size:13px;font-weight:700;color:var(--gold);}
+.grand-val{font-size:24px;font-weight:800;color:var(--gold);font-family:'Noto Serif TC',serif;}
+
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.toggle-lbl{font-size:12px;color:var(--text2);}
+.toggle{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.tog-slider{position:absolute;cursor:pointer;inset:0;background:var(--bg4);border-radius:20px;transition:.2s;}
+.tog-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:var(--text3);border-radius:50%;transition:.2s;}
+input:checked+.tog-slider{background:var(--gold);}
+input:checked+.tog-slider:before{transform:translateX(16px);background:var(--bg);}
+
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--gold);color:var(--gold);padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;}
+.divider{height:1px;background:var(--border);margin:14px 0;}
+.empty{text-align:center;padding:28px;color:var(--text4);font-size:13px;}
+.hint{font-size:11px;color:var(--text4);margin-bottom:12px;}
+
+/* ── invoice (screen) ── */
+.invoice{background:#fff;color:#1a1a2e;border-radius:10px;padding:28px 32px;font-family:'Noto Serif TC',serif;line-height:1.8;font-size:13px;}
+.inv-header{text-align:center;padding-bottom:14px;border-bottom:2px solid #1a1a2e;margin-bottom:14px;}
+.inv-firm{font-size:17px;font-weight:700;color:#1a1a2e;letter-spacing:.05em;}
+.inv-contact{font-size:11px;color:#607090;margin-top:4px;line-height:1.7;}
+.inv-title{font-size:20px;font-weight:700;margin:14px 0 4px;text-align:center;letter-spacing:.12em;color:#1a1a2e;}
+.inv-meta{font-size:11px;color:#607090;text-align:center;}
+.inv-sec{margin:12px 0;}
+.inv-sec-lbl{font-size:10px;font-weight:700;color:#607090;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+.inv-sec-val{font-size:13px;color:#1a1a2e;}
+.inv-table{width:100%;border-collapse:collapse;margin-top:10px;}
+.inv-table th{font-size:11px;font-weight:700;color:#607090;text-align:left;padding:5px 8px;border-bottom:1px solid #bbc;letter-spacing:.05em;}
+.inv-table th:last-child,.inv-table td:last-child{text-align:right;}
+.inv-table td{padding:7px 8px;border-bottom:1px solid #eef;font-size:13px;color:#1a1a2e;}
+.inv-table .sub-row td{padding-top:10px;border-top:1px solid #bbc;font-weight:600;color:#1a1a2e;}
+.inv-table .grand-row td{border-top:2px solid #1a1a2e;border-bottom:none;font-size:15px;font-weight:700;padding-top:8px;color:#1a1a2e;}
+.inv-payment{background:#f5f6fa;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:12px;color:#1a1a2e;line-height:1.8;}
+.inv-payment-ttl{font-weight:700;font-size:13px;margin-bottom:4px;}
+.inv-notes{margin-top:14px;font-size:12px;color:#607090;border-left:3px solid #bbc;padding-left:10px;line-height:1.8;}
+.inv-footer{margin-top:18px;padding-top:12px;border-top:1px solid #bbc;font-size:11px;color:#999;text-align:center;letter-spacing:.04em;}
+
+/* ── print ── */
+@media print{
+  body *{visibility:hidden;}
+  #invoice-area,#invoice-area *{visibility:visible;}
+  #invoice-area{position:absolute;left:0;top:0;width:100%;}
+  .invoice{border-radius:0;padding:16px 24px;font-size:11pt;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .inv-firm{font-size:14pt;}
+  .inv-title{font-size:16pt;}
+}
+</style>
+</head>
+<body>
+<script src="shared/sys-nav.js" data-active="fees"></script>
+<div id="toast"></div>
+<div class="page">
+
+  <h1>💰 律師費計算與請款單</h1>
+  <div class="subtitle">計費計算器 · 費用明細 · 請款單產生器</div>
+
+  <!-- ── 計費計算器 ── -->
+  <div class="card">
+    <div class="card-title">🧮 計費計算器</div>
+    <div class="calc-tabs">
+      <button class="calc-tab active" onclick="switchTab(0)">固定費用</button>
+      <button class="calc-tab" onclick="switchTab(1)">按時計費</button>
+      <button class="calc-tab" onclick="switchTab(2)">按比例計費</button>
+    </div>
+
+    <!-- 固定費用 -->
+    <div class="calc-panel active" id="tab-fixed">
+      <div class="grid2">
+        <div class="fg">
+          <label class="fl">案件類型</label>
+          <select class="fi" id="fix-ct" onchange="updateFixedPreset()">
+            <option value="">選擇類型</option>
+            <option value="civil">民事</option>
+            <option value="criminal">刑事</option>
+            <option value="admin">行政訴訟</option>
+            <option value="family">家事</option>
+            <option value="labor">勞動</option>
+            <option value="ip">智財</option>
+            <option value="mediate">調解／仲裁代理</option>
+            <option value="consult">法律諮詢</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">審級／服務別</label>
+          <select class="fi" id="fix-inst" onchange="updateFixedPreset()">
+            <option value="first">第一審</option>
+            <option value="second">第二審</option>
+            <option value="third">第三審</option>
+            <option value="other">其他</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">項目名稱</label>
+        <input class="fi" id="fix-label" placeholder="例：民事一審委任律師酬金" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">金額（新台幣）</label>
+        <input class="fi" id="fix-amount" type="number" placeholder="0" min="0" step="1000" oninput="calcResult()">
+        <div class="preset-row" id="fix-presets" style="margin-top:8px;"></div>
+      </div>
+      <div class="fg">
+        <label class="fl">備註（選填）</label>
+        <input class="fi" id="fix-note" placeholder="例：含閱卷費、出庭費" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- 按時計費 -->
+    <div class="calc-panel" id="tab-hourly">
+      <div class="grid2">
+        <div class="fg">
+          <label class="fl">時薪（元／小時）</label>
+          <input class="fi" id="hr-rate" type="number" placeholder="例：5000" min="500" step="500" oninput="calcResult()">
+          <div class="preset-row" style="margin-top:8px;">
+            <span class="preset-btn" onclick="setV('hr-rate',3000)">$3,000</span>
+            <span class="preset-btn" onclick="setV('hr-rate',5000)">$5,000</span>
+            <span class="preset-btn" onclick="setV('hr-rate',8000)">$8,000</span>
+            <span class="preset-btn" onclick="setV('hr-rate',12000)">$12,000</span>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">工作時數</label>
+          <input class="fi" id="hr-hrs" type="number" placeholder="例：4.5" min="0.5" step="0.5" oninput="calcResult()">
+          <div class="preset-row" style="margin-top:8px;">
+            <span class="preset-btn" onclick="setV('hr-hrs',1)">1h</span>
+            <span class="preset-btn" onclick="setV('hr-hrs',2)">2h</span>
+            <span class="preset-btn" onclick="setV('hr-hrs',4)">4h</span>
+            <span class="preset-btn" onclick="setV('hr-hrs',8)">8h</span>
+          </div>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">項目名稱</label>
+        <input class="fi" id="hr-label" placeholder="例：法律意見書撰擬及文件審閱" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">備註（選填）</label>
+        <input class="fi" id="hr-note" placeholder="例：2026/01/10–01/15" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- 按比例計費 -->
+    <div class="calc-panel" id="tab-pct">
+      <div class="grid2">
+        <div class="fg">
+          <label class="fl">訴訟標的金額（元）</label>
+          <input class="fi" id="pct-claim" type="number" placeholder="例：1000000" min="0" step="10000" oninput="calcResult()">
+        </div>
+        <div class="fg">
+          <label class="fl">費率（%）</label>
+          <input class="fi" id="pct-rate" type="number" placeholder="例：8" min="0.1" max="50" step="0.5" oninput="calcResult()">
+          <div class="preset-row" style="margin-top:8px;">
+            <span class="preset-btn" onclick="setV('pct-rate',5)">5%</span>
+            <span class="preset-btn" onclick="setV('pct-rate',8)">8%</span>
+            <span class="preset-btn" onclick="setV('pct-rate',10)">10%</span>
+            <span class="preset-btn" onclick="setV('pct-rate',15)">15%</span>
+          </div>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">項目名稱</label>
+        <input class="fi" id="pct-label" placeholder="例：民事訴訟委任酬金" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">備註（選填）</label>
+        <input class="fi" id="pct-note" placeholder="例：訴訟標的 × 8%" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="calc-result" id="calc-result" style="display:none">
+      <span class="calc-result-label" id="calc-desc">計算結果</span>
+      <span class="calc-result-amount" id="calc-amt">NT$0</span>
+    </div>
+    <button class="btn btn-gold btn-full" onclick="addFromCalc()">＋ 加入費用明細</button>
+  </div>
+
+  <!-- ── 費用明細 ── -->
+  <div class="card">
+    <div class="card-title">
+      📋 費用明細
+      <button class="btn btn-outline btn-sm" onclick="toggleManual(true)">＋ 手動新增</button>
+    </div>
+
+    <div id="manual-form" style="display:none;margin-bottom:14px;">
+      <div class="divider"></div>
+      <div class="grid2">
+        <div class="fg">
+          <label class="fl">項目名稱</label>
+          <input class="fi" id="man-label" placeholder="例：差旅費" autocomplete="off">
+        </div>
+        <div class="fg">
+          <label class="fl">金額（元）</label>
+          <input class="fi" id="man-amt" type="number" placeholder="0" min="0">
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--text4);margin-bottom:6px;">常用代墊費用：</div>
+        <div class="preset-row">
+          <span class="preset-btn" onclick="quickItem('出庭費',3000)">出庭費 $3,000</span>
+          <span class="preset-btn" onclick="quickItem('出庭費',5000)">出庭費 $5,000</span>
+          <span class="preset-btn" onclick="quickItem('閱卷費',2000)">閱卷費 $2,000</span>
+          <span class="preset-btn" onclick="quickItem('存證信函費',3000)">存證 $3,000</span>
+          <span class="preset-btn" onclick="quickItem('差旅費',1500)">差旅費 $1,500</span>
+          <span class="preset-btn" onclick="quickItem('影印費',500)">影印費 $500</span>
+          <span class="preset-btn" onclick="quickItem('裁判費代墊',0)">裁判費代墊</span>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">備註（選填）</label>
+        <input class="fi" id="man-note" placeholder="例：2026/01/10 士林地院" autocomplete="off">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-gold btn-sm" onclick="saveManual()">加入明細</button>
+        <button class="btn btn-outline btn-sm" onclick="toggleManual(false)">取消</button>
+      </div>
+      <div class="divider"></div>
+    </div>
+
+    <div id="items-list"></div>
+
+    <div style="margin-top:12px;">
+      <div class="total-row">
+        <span class="total-lbl">小計</span>
+        <span class="total-val" id="t-sub">NT$0</span>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">加計營業稅（5%）</span>
+        <label class="toggle"><input type="checkbox" id="tax-chk" onchange="renderTotals()"><span class="tog-slider"></span></label>
+      </div>
+      <div class="total-row" id="tax-row" style="display:none">
+        <span class="total-lbl">營業稅（5%）</span>
+        <span class="total-val" id="t-tax">NT$0</span>
+      </div>
+      <div class="grand-total">
+        <span class="grand-lbl">請款總金額</span>
+        <span class="grand-val" id="t-grand">NT$0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 請款單設定 ── -->
+  <div class="card">
+    <div class="card-title">✒ 請款單設定</div>
+
+    <div style="font-size:10px;color:var(--text3);margin-bottom:12px;font-weight:700;letter-spacing:.07em;">律師 ／ 事務所資訊（自動儲存）</div>
+    <div class="grid2">
+      <div class="fg">
+        <label class="fl">事務所名稱</label>
+        <input class="fi atty" id="a-firm" placeholder="例：○○法律事務所" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">律師姓名</label>
+        <input class="fi atty" id="a-lawyer" placeholder="例：王○○ 律師" autocomplete="off">
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">事務所地址</label>
+      <input class="fi atty" id="a-addr" placeholder="例：臺北市○○路○號○樓" autocomplete="off">
+    </div>
+    <div class="grid2">
+      <div class="fg">
+        <label class="fl">電話</label>
+        <input class="fi atty" id="a-tel" placeholder="例：(02) XXXX-XXXX" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">E-mail</label>
+        <input class="fi atty" id="a-email" type="email" autocomplete="off">
+      </div>
+    </div>
+    <div class="grid3">
+      <div class="fg">
+        <label class="fl">銀行名稱</label>
+        <input class="fi atty" id="a-bank" placeholder="例：台灣銀行" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">分行</label>
+        <input class="fi atty" id="a-branch" placeholder="例：信義分行" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">帳號</label>
+        <input class="fi atty" id="a-acct" autocomplete="off">
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="fg">
+        <label class="fl">戶名</label>
+        <input class="fi atty" id="a-acctname" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">統一編號（選填）</label>
+        <input class="fi atty" id="a-taxid" maxlength="8" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:12px;font-weight:700;letter-spacing:.07em;">本件委任資訊</div>
+    <div class="grid2">
+      <div class="fg">
+        <label class="fl">委任人姓名 ／ 公司</label>
+        <input class="fi" id="i-client" placeholder="例：○○股份有限公司" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">案件名稱</label>
+        <input class="fi" id="i-case" placeholder="例：○○損害賠償案" autocomplete="off">
+      </div>
+    </div>
+    <div class="grid3">
+      <div class="fg">
+        <label class="fl">請款日期</label>
+        <input class="fi" type="date" id="i-date">
+      </div>
+      <div class="fg">
+        <label class="fl">付款期限</label>
+        <input class="fi" type="date" id="i-due">
+      </div>
+      <div class="fg">
+        <label class="fl">請款單號</label>
+        <input class="fi" id="i-no" placeholder="自動產生">
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">備註</label>
+      <textarea class="fi" id="i-notes" placeholder="例：本請款單含本件第一審全程委任律師費用。如有疑問請來電洽詢。"></textarea>
+    </div>
+  </div>
+
+  <!-- ── 請款單預覽 ── -->
+  <div class="card">
+    <div class="card-title">
+      📄 請款單預覽
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="renderInvoice()">🔄 更新預覽</button>
+        <button class="btn btn-gold btn-sm" onclick="doPrint()">🖨 列印 ／ PDF</button>
+      </div>
+    </div>
+    <div class="hint">列印時選「另存為 PDF」即可匯出 PDF 檔案。建議使用 Chrome ／ Edge。</div>
+    <div id="invoice-area"><div class="empty">填寫上方資料後點擊「更新預覽」</div></div>
+  </div>
+
+</div>
+
+<script>
+// ── state ─────────────────────────────────────────────
+let items   = [];
+let activeTab = 0;
+
+// ── tab ───────────────────────────────────────────────
+function switchTab(n){
+  activeTab = n;
+  document.querySelectorAll(".calc-tab").forEach((t,i)=>t.classList.toggle("active",i===n));
+  document.querySelectorAll(".calc-panel").forEach((p,i)=>p.classList.toggle("active",i===n));
+  document.getElementById("calc-result").style.display = "none";
+}
+
+// ── fixed presets ─────────────────────────────────────
+const FP = {
+  civil:    {first:[30000,50000,80000], second:[25000,45000,65000], third:[20000,35000,55000]},
+  criminal: {first:[50000,80000,150000],second:[40000,70000,120000],third:[30000,60000,100000]},
+  admin:    {first:[40000,60000,100000],second:[30000,50000,80000], third:[25000,40000,60000]},
+  family:   {first:[25000,40000,70000], second:[20000,35000,60000], third:[15000,28000,50000]},
+  labor:    {first:[30000,50000,80000], second:[25000,40000,65000], third:[20000,35000,55000]},
+  ip:       {first:[50000,80000,150000],second:[40000,70000,120000],third:[30000,60000,100000]},
+  mediate:  {first:[15000,25000,40000],other:[15000,25000,40000]},
+  consult:  {first:[5000,8000,15000],  other:[5000,8000,15000]},
+};
+const FL = {
+  civil:"民事訴訟委任酬金",criminal:"刑事辯護委任酬金",admin:"行政訴訟委任酬金",
+  family:"家事事件委任酬金",labor:"勞動事件委任酬金",ip:"智財案件委任酬金",
+  mediate:"調解／仲裁代理酬金",consult:"法律諮詢費",
+};
+const IL = {first:"一審",second:"二審",third:"三審",other:""};
+
+function updateFixedPreset(){
+  const ct = document.getElementById("fix-ct").value;
+  const inst = document.getElementById("fix-inst").value;
+  const vals = (FP[ct]||{})[inst] || (FP[ct]||{})["other"] || [];
+  document.getElementById("fix-presets").innerHTML =
+    vals.map(v=>`<span class="preset-btn" onclick="setAmt(${v})">${n(v)}</span>`).join("");
+  const lbl = document.getElementById("fix-label");
+  if(lbl.dataset.auto !== "0"){
+    const il = IL[inst]; lbl.value = (FL[ct]||"律師酬金")+(il?`（${il}）`:""); lbl.dataset.auto="1";
+  }
+}
+document.getElementById("fix-label").addEventListener("input",function(){ this.dataset.auto="0"; });
+function setAmt(v){ setV("fix-amount",v); calcResult(); }
+
+// ── calc result ───────────────────────────────────────
+function setV(id,v){ const el=document.getElementById(id); if(el){ el.value=v; calcResult(); } }
+
+function calcResult(){
+  const box=document.getElementById("calc-result");
+  let amt=0, desc="";
+  if(activeTab===0){
+    amt=num("fix-amount"); desc="固定費用";
+  } else if(activeTab===1){
+    const rate=num("hr-rate"), hrs=num("hr-hrs");
+    amt=rate*hrs; desc=rate&&hrs?`${n(rate)} × ${hrs}h`:"按時計費";
+  } else {
+    const claim=num("pct-claim"), pct=num("pct-rate");
+    amt=Math.round(claim*pct/100);
+    desc=claim&&pct?`${n(claim)} × ${pct}%`:"按比例";
+  }
+  if(amt<=0){ box.style.display="none"; return; }
+  document.getElementById("calc-desc").textContent=desc;
+  document.getElementById("calc-amt").textContent="NT$"+n(amt);
+  box.style.display="flex";
+}
+
+function addFromCalc(){
+  let label="",amt=0,note="";
+  if(activeTab===0){
+    label=g("fix-label")||"律師酬金"; amt=num("fix-amount"); note=g("fix-note");
+  } else if(activeTab===1){
+    const rate=num("hr-rate"),hrs=num("hr-hrs");
+    label=g("hr-label")||"按時計費"; amt=rate*hrs;
+    note=g("hr-note")||(rate&&hrs?`${n(rate)}元/h × ${hrs}h`:"");
+  } else {
+    const claim=num("pct-claim"),pct=num("pct-rate");
+    label=g("pct-label")||"按比例計費"; amt=Math.round(claim*pct/100);
+    note=g("pct-note")||(claim&&pct?`${n(claim)}元 × ${pct}%`:"");
+  }
+  if(!amt){ toast("請先輸入金額或費率"); return; }
+  push({label,amt,note});
+  toast(`「${label}」已加入明細`);
+}
+
+// ── items ─────────────────────────────────────────────
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function push({label,amt,note}){ items.push({id:uid(),label,amt,note}); save(); renderItems(); }
+
+function del(id){ items=items.filter(x=>x.id!==id); save(); renderItems(); }
+function move(id,dir){
+  const i=items.findIndex(x=>x.id===id); if(i<0) return;
+  const j=i+dir; if(j<0||j>=items.length) return;
+  [items[i],items[j]]=[items[j],items[i]]; save(); renderItems();
+}
+function save(){ localStorage.setItem("feeItems",JSON.stringify(items)); }
+function load(){ try{ return JSON.parse(localStorage.getItem("feeItems")||"[]"); }catch(e){ return []; } }
+
+function renderItems(){
+  renderTotals();
+  const el=document.getElementById("items-list");
+  if(!items.length){ el.innerHTML=`<div class="empty">尚無費用項目<br>使用上方計算器或手動新增</div>`; return; }
+  el.innerHTML=items.map((x,i)=>`
+    <div class="item-row">
+      <div style="display:flex;flex-direction:column;gap:2px;margin-right:2px;">
+        <button class="btn btn-outline btn-sm" style="padding:2px 7px;font-size:10px;" ${i===0?"disabled":""} onclick="move('${x.id}',-1)">▲</button>
+        <button class="btn btn-outline btn-sm" style="padding:2px 7px;font-size:10px;" ${i===items.length-1?"disabled":""} onclick="move('${x.id}',1)">▼</button>
+      </div>
+      <div class="item-name">
+        <div class="item-name-text">${esc(x.label)}</div>
+        ${x.note?`<div class="item-note-text">${esc(x.note)}</div>`:""}
+      </div>
+      <div class="item-amount">NT$${n(x.amt)}</div>
+      <button class="btn btn-danger btn-sm" style="padding:5px 9px;" onclick="del('${x.id}')">✕</button>
+    </div>`).join("");
+}
+
+function renderTotals(){
+  const sub=items.reduce((s,x)=>s+x.amt,0);
+  const taxOn=document.getElementById("tax-chk").checked;
+  const tax=taxOn?Math.round(sub*0.05):0;
+  document.getElementById("t-sub").textContent="NT$"+n(sub);
+  document.getElementById("t-tax").textContent="NT$"+n(tax);
+  document.getElementById("t-grand").textContent="NT$"+n(sub+tax);
+  document.getElementById("tax-row").style.display=taxOn?"":"none";
+}
+
+// ── manual add ────────────────────────────────────────
+function toggleManual(show){
+  document.getElementById("manual-form").style.display=show?"":"none";
+  if(show) document.getElementById("man-label").focus();
+  else { ["man-label","man-amt","man-note"].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=""; }); }
+}
+function quickItem(label,amt){ setV("man-label",label||""); setV("man-amt",amt||""); document.getElementById("man-label").value=label; document.getElementById("man-amt").value=amt; }
+function saveManual(){
+  const label=g("man-label"), amt=num("man-amt"), note=g("man-note");
+  if(!label){ toast("請輸入項目名稱"); return; }
+  if(!amt){ toast("請輸入金額"); return; }
+  push({label,amt,note}); toggleManual(false); toast(`「${label}」已加入明細`);
+}
+
+// ── attorney info (auto-save on blur) ─────────────────
+const ATTY_IDS=["a-firm","a-lawyer","a-addr","a-tel","a-email","a-bank","a-branch","a-acct","a-acctname","a-taxid"];
+function saveAtty(){
+  const d={}; ATTY_IDS.forEach(id=>{ d[id]=document.getElementById(id)?.value||""; });
+  localStorage.setItem("feeAtty",JSON.stringify(d));
+}
+function loadAtty(){
+  try{ const d=JSON.parse(localStorage.getItem("feeAtty")||"{}");
+    ATTY_IDS.forEach(id=>{ const el=document.getElementById(id); if(el&&d[id]) el.value=d[id]; });
+  }catch(e){}
+}
+document.querySelectorAll(".fi.atty").forEach(el=>el.addEventListener("blur",saveAtty));
+
+// ── invoice defaults ──────────────────────────────────
+function initDefaults(){
+  const t=new Date(), due=new Date(t); due.setDate(t.getDate()+30);
+  const fmt=d=>d.toISOString().slice(0,10);
+  if(!document.getElementById("i-date").value) document.getElementById("i-date").value=fmt(t);
+  if(!document.getElementById("i-due").value)  document.getElementById("i-due").value=fmt(due);
+  if(!document.getElementById("i-no").value)
+    document.getElementById("i-no").value="INV-"+t.getFullYear()+(""+(t.getMonth()+1)).padStart(2,"0")+(""+t.getDate()).padStart(2,"0");
+}
+
+// ── invoice render ────────────────────────────────────
+function roc(s){ if(!s) return ""; const [y,m,d]=s.split("-"); return `民國 ${+y-1911} 年 ${+m} 月 ${+d} 日`; }
+
+function renderInvoice(){
+  const firm=g("a-firm"),lawyer=g("a-lawyer"),addr=g("a-addr"),
+        tel=g("a-tel"),email=g("a-email"),
+        bank=g("a-bank"),branch=g("a-branch"),acct=g("a-acct"),acctname=g("a-acctname"),taxid=g("a-taxid"),
+        client=g("i-client"),caseName=g("i-case"),
+        invDate=g("i-date"),dueDate=g("i-due"),invNo=g("i-no"),notes=g("i-notes");
+
+  const sub=items.reduce((s,x)=>s+x.amt,0);
+  const taxOn=document.getElementById("tax-chk").checked;
+  const tax=taxOn?Math.round(sub*0.05):0;
+  const grand=sub+tax;
+
+  const rows=items.length
+    ? items.map(x=>`<tr><td>${esc(x.label)}${x.note?`<br><span style="font-size:11px;color:#888;">${esc(x.note)}</span>`:""}</td><td>NT$${n(x.amt)}</td></tr>`).join("")
+    : `<tr><td colspan="2" style="text-align:center;color:#aaa;">（無費用項目）</td></tr>`;
+
+  const contactParts=[];
+  if(addr) contactParts.push(addr);
+  const telEmail=[tel,email].filter(Boolean).join("　｜　");
+  if(telEmail) contactParts.push(telEmail);
+  if(taxid) contactParts.push("統一編號："+taxid);
+
+  const bankLines=[];
+  if(bank||branch) bankLines.push("銀行："+[bank,branch].filter(Boolean).join("　"));
+  if(acct)     bankLines.push("帳號："+acct);
+  if(acctname) bankLines.push("戶名："+acctname);
+
+  document.getElementById("invoice-area").innerHTML=`
+  <div class="invoice">
+    <div class="inv-header">
+      <div class="inv-firm">${firm||"（事務所名稱）"}</div>
+      ${lawyer?`<div class="inv-contact" style="font-size:13px;font-weight:700;margin-top:2px;">${esc(lawyer)}</div>`:""}
+      ${contactParts.length?`<div class="inv-contact">${contactParts.map(esc).join("<br>")}</div>`:""}
+    </div>
+    <div class="inv-title">律師費用請款單</div>
+    <div class="inv-meta">${invNo?"No. "+esc(invNo)+"　":""}日期：${roc(invDate)||"——"}</div>
+    <div class="inv-sec"><div class="inv-sec-lbl">委任人</div><div class="inv-sec-val">${esc(client)||"（委任人姓名／公司）"}</div></div>
+    ${caseName?`<div class="inv-sec"><div class="inv-sec-lbl">案件</div><div class="inv-sec-val">${esc(caseName)}</div></div>`:""}
+    <table class="inv-table">
+      <thead><tr><th>費用項目</th><th>金額（NTD）</th></tr></thead>
+      <tbody>
+        ${rows}
+        <tr class="sub-row"><td>小計</td><td>NT$${n(sub)}</td></tr>
+        ${taxOn?`<tr><td>營業稅（5%）</td><td>NT$${n(tax)}</td></tr>`:""}
+        <tr class="grand-row"><td><strong>請款總金額</strong></td><td><strong>NT$${n(grand)}</strong></td></tr>
+      </tbody>
+    </table>
+    ${bankLines.length?`<div class="inv-payment"><div class="inv-payment-ttl">付款方式</div>${bankLines.map(esc).join("<br>")}</div>`:""}
+    ${dueDate?`<div class="inv-sec" style="margin-top:12px;"><div class="inv-sec-lbl">付款期限</div><div class="inv-sec-val">${roc(dueDate)}</div></div>`:""}
+    ${notes?`<div class="inv-notes">${esc(notes).replace(/\n/g,"<br>")}</div>`:""}
+    <div class="inv-footer">${[firm,lawyer].filter(Boolean).map(esc).join("　")}　　請款日期：${roc(invDate)||"——"}</div>
+  </div>`;
+}
+
+function doPrint(){ renderInvoice(); setTimeout(()=>window.print(),150); }
+
+// ── utils ─────────────────────────────────────────────
+function g(id){ return (document.getElementById(id)?.value||"").trim(); }
+function num(id){ return Number(document.getElementById(id)?.value)||0; }
+function n(v){ return Math.round(v).toLocaleString("zh-TW"); }
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function toast(msg,dur=2200){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),dur); }
+
+// ── init ──────────────────────────────────────────────
+items = load();
+loadAtty();
+initDefaults();
+renderItems();
+</script>
+</body>
+</html>

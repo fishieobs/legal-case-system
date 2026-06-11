@@ -375,9 +375,65 @@ def make_court_nav(size=192):
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# 6.  CHECKLIST alt name: also save as icon-checklist  (already done above)
-#     Extra: TAX alt name icon-tax
+# 6.  FEES  —  Fox with receipt  (orange fur, gold receipt)
 # ══════════════════════════════════════════════════════════════════════════
+def make_fees(size=192):
+    img, d = new_canvas(size)
+    S = size / 192
+    cx, cy = size // 2, int(size * 0.38)
+
+    ORANGE   = (220, 110,  30)
+    ORANGE_DK= (155,  65,  12)
+    CREAM    = (245, 228, 200)
+    EAR_PINK = (235, 155, 140)
+
+    # Pointed ears (drawn before face)
+    for ex in [-1, 1]:
+        ecx = cx + ex * int(26 * S)
+        tip_y   = cy - int(56 * S)
+        base_y  = cy - int(20 * S)
+        ew = int(17 * S)
+        d.polygon([ecx, tip_y, ecx - ew, base_y, ecx + ew, base_y], fill=ORANGE_DK)
+        iw = int(9 * S)
+        d.polygon([ecx, tip_y + int(7*S), ecx - iw, base_y - int(5*S), ecx + iw, base_y - int(5*S)], fill=EAR_PINK)
+
+    # Face
+    circle(d, cx, cy, int(36 * S), ORANGE)
+    # White cheek patches
+    d.ellipse([cx - int(38*S), cy - int(10*S), cx - int(14*S), cy + int(12*S)], fill=CREAM)
+    d.ellipse([cx + int(14*S), cy - int(10*S), cx + int(38*S), cy + int(12*S)], fill=CREAM)
+    # White muzzle
+    d.ellipse([cx - int(19*S), cy + int(4*S), cx + int(19*S), cy + int(26*S)], fill=CREAM)
+
+    eyes(d, cx, cy - int(8*S), size, gap=int(13*S), r=int(6*S), iris=(180, 100, 20))
+    nose(d, cx, cy + int(7*S), size, color=ORANGE_DK)
+    blush(d, cx, cy - int(2*S), size)
+    mouth(d, cx, cy + int(15*S), size, color=ORANGE_DK)
+
+    # Receipt / invoice (bottom centre)
+    rx, ry = cx - int(28*S), cy + int(44*S)
+    rw, rh = int(56*S), int(44*S)
+    d.rounded_rectangle([rx, ry, rx + rw, ry + rh], radius=int(3*S), fill=CREAM, outline=GOLD_DK, width=max(1, int(1*S)))
+    # gold header bar
+    d.rounded_rectangle([rx, ry, rx + rw, ry + int(12*S)], radius=int(3*S), fill=GOLD)
+    # item lines
+    for i in range(3):
+        ly = ry + int(18*S) + i * int(8*S)
+        d.line([rx + int(5*S), ly, rx + rw * 6 // 10, ly], fill=GOLD_DK, width=max(1, int(1*S)))
+        d.line([rx + rw * 6 // 10 + int(4*S), ly, rx + rw - int(5*S), ly], fill=GOLD, width=max(2, int(2*S)))
+    # total divider + line
+    tly = ry + rh - int(8*S)
+    d.line([rx + int(4*S), tly - int(3*S), rx + rw - int(4*S), tly - int(3*S)], fill=GOLD_DK, width=max(1, int(1*S)))
+    d.line([rx + rw * 4 // 10, tly, rx + rw - int(5*S), tly], fill=GOLD, width=max(3, int(3*S)))
+
+    # Gold coin overlapping top-right corner of receipt
+    ccx, ccy = rx + rw - int(2*S), ry - int(8*S)
+    circle(d, ccx, ccy, int(13*S), GOLD_DK)
+    circle(d, ccx, ccy, int(10*S), GOLD)
+    circle(d, ccx, ccy, int(6*S),  GOLD_LT)
+
+    save_both(img, "icon-fees")
+
 
 if __name__ == "__main__":
     print("Generating icons...")
@@ -386,4 +442,5 @@ if __name__ == "__main__":
     make_judicial_search()
     make_tax()
     make_court_nav()
+    make_fees()
     print("Done! All icons saved to icons/")

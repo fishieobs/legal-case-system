@@ -171,7 +171,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
 
   <!-- ── 搜尋建構器 ── -->
   <div class="card">
-    <div class="card-title">🔧 搜尋建構器　<span style="font-size:10px;color:var(--text4);text-transform:none;letter-spacing:0;">依條件組合後開啟司法院裁判書查詢</span></div>
+    <div class="card-title">🔧 搜尋建構器　<span style="font-size:10px;color:var(--text4);text-transform:none;letter-spacing:0;">條件直接代入司法院裁判書查詢結果</span></div>
 
     <div class="grid2">
       <div class="fg">
@@ -286,7 +286,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-gold" style="flex:1" onclick="openJudicial()">🔍 開啟司法院裁判書查詢</button>
+      <button class="btn btn-gold" style="flex:1" onclick="openJudicial()">🔍 直接查詢（代入條件）</button>
       <button class="btn btn-outline btn-sm" onclick="previewQuery()">預覽條件</button>
       <button class="btn btn-outline btn-sm" onclick="clearSearch()">清除</button>
     </div>
@@ -463,11 +463,47 @@ function buildQueryParts(){
   return parts;
 }
 
+// Build a full-text keyword string for FJUD's kw= GET parameter.
+// FJUD full-text search matches court name, case number and body text,
+// so we compose conditions into one keyword string.
+function buildKwString(){
+  const v = id => document.getElementById(id).value.trim();
+  const parts = [];
+  // Case number components combine into one token: 112年度台上字第1234號
+  const year=v("s-year"), code=v("s-typecode"), num=v("s-num");
+  if(year && code && num){
+    parts.push(`${year}年度${code}字第${num}號`);
+  } else {
+    if(year) parts.push(`${year}年度`);
+    if(code) parts.push(`${code}字`);
+    if(num)  parts.push(`第${num}號`);
+  }
+  if(v("s-court"))   parts.push(v("s-court"));
+  if(v("s-keyword")) parts.push(v("s-keyword"));
+  if(v("s-judge"))   parts.push(v("s-judge"));
+  return parts.join(" ").trim();
+}
+
+// Direct GET search on FJUD: qryresultlst.aspx?ty=ONLYKW&kw=…
+function fjudSearchUrl(kw){
+  return "https://judgment.judicial.gov.tw/FJUD/qryresultlst.aspx?ty=ONLYKW&kw=" + encodeURIComponent(kw);
+}
+
 function openJudicial(){
   previewQuery();
-  // Open the Judicial Yuan search page — user fills in our previewed conditions
-  window.open("https://judgment.judicial.gov.tw/FJUD/default.aspx","_blank","noopener");
-  showToast("已開啟司法院裁判書查詢，請依上方條件填入搜尋欄位");
+  const kw = buildKwString();
+  if(!kw){
+    window.open("https://judgment.judicial.gov.tw/FJUD/default.aspx","_blank","noopener");
+    showToast("未輸入任何條件，已開啟司法院裁判書查詢首頁");
+    return;
+  }
+  // Copy to clipboard as backup — if the direct link fails, user can paste
+  navigator.clipboard?.writeText(kw).catch(()=>{});
+  window.open(fjudSearchUrl(kw),"_blank","noopener");
+  const hasDate = document.getElementById("s-from").value || document.getElementById("s-to").value;
+  showToast(hasDate
+    ? "已直接代入查詢（關鍵字已複製）。日期範圍請在司法院頁面進階條件設定"
+    : "已直接代入查詢。關鍵字也已複製到剪貼簿，可隨時貼上", 3200);
 }
 
 function clearSearch(){
@@ -577,8 +613,11 @@ function openJudicialById(){
   const raw = document.getElementById("parse-input").value.trim();
   const p = parseCN(raw);
   if(!p){ showToast("無法解析字號，請直接至司法院搜尋"); window.open("https://judgment.judicial.gov.tw/FJUD/default.aspx","_blank","noopener"); return; }
-  const q = encodeURIComponent(buildCitation(p));
-  window.open(`https://judgment.judicial.gov.tw/FJUD/default.aspx#search=${q}`,"_blank","noopener");
+  // Search by case number components (court + 年度字號) for precise match
+  const kw = [p.court, `${p.year}年度${p.code}字第${p.num}號`].filter(Boolean).join(" ");
+  navigator.clipboard?.writeText(kw).catch(()=>{});
+  window.open(fjudSearchUrl(kw),"_blank","noopener");
+  showToast("已直接代入查詢此案（關鍵字已複製）");
 }
 
 function fillBookmarkFromParse(){
@@ -750,8 +789,12 @@ function copyRef(id){
 function openSearch(id){
   const b = loadBookmarks().find(x=>x.id===id);
   if(!b) return;
-  const q = encodeURIComponent(b.num);
-  window.open(`https://judgment.judicial.gov.tw/FJUD/default.aspx#q=${q}`,"_blank","noopener");
+  // Use parsed case-number components when possible for a precise kw search
+  const p = parseCN(b.num);
+  const kw = p ? [p.court, `${p.year}年度${p.code}字第${p.num}號`].filter(Boolean).join(" ") : b.num;
+  navigator.clipboard?.writeText(kw).catch(()=>{});
+  window.open(fjudSearchUrl(kw),"_blank","noopener");
+  showToast("已直接代入查詢（關鍵字已複製）");
 }
 
 // ── utils ───────────────────────────────────────────────

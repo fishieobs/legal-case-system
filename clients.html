@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="客戶管理">
+<meta name="theme-color" content="#0a0612">
+<title>👥 律師事務所客戶管理系統</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E👥%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0612;--bg2:#120b1e;--bg3:#190f29;--bg4:#221536;--bg5:#2c1c45;
+  --violet:#8b5cf6;--violet2:#7c3aed;--violet3:#a78bfa;
+  --gold:#f59e0b;--gold2:#d97706;--gold3:#fbbf24;
+  --text:#e9e0f5;--text2:#b3a0cc;--text3:#7a6699;--text4:#4d3d66;
+  --red:#ef4444;--blue:#38bdf8;--green:#22c55e;--orange:#f97316;
+  --border:#221536;--border2:#2c1c45;
+  --shadow:0 4px 20px rgba(0,0,0,.6);
+}
+:root.light{
+  --bg:#f6f3fc;--bg2:#fff;--bg3:#fff;--bg4:#f0eafa;--bg5:#e6dcf5;
+  --violet:#7c3aed;--violet2:#6d28d9;--violet3:#8b5cf6;
+  --gold:#b45309;--gold2:#92400e;--gold3:#d97706;
+  --text:#1a0f2e;--text2:#3a2a52;--text3:#7a6699;--text4:#a08cc0;
+  --border:#e2d8f0;--border2:#d0c2e8;--shadow:0 2px 10px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.6;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px;}
+
+.app{min-height:100vh;padding-top:41px;}
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;position:sticky;top:41px;z-index:200;}
+.hdr-title{font-family:'Noto Serif TC',serif;font-size:1.05rem;color:var(--violet);}
+.hdr-sub{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
+.hdr-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+
+.tab-bar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;position:sticky;top:93px;z-index:150;}
+.tab-bar::-webkit-scrollbar{display:none;}
+.tab{padding:10px 16px;border:none;background:transparent;color:var(--text3);font-weight:500;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;}
+.tab.active{color:var(--violet);font-weight:700;border-bottom-color:var(--violet);}
+
+.btn{padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-family:inherit;transition:all .15s;white-space:nowrap;}
+.btn:active{opacity:.8;}
+.btn-violet{background:linear-gradient(135deg,var(--violet),var(--violet2));color:#fff;}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.btn-outline:hover{border-color:var(--violet);color:var(--violet);}
+.btn-ghost{background:transparent;color:var(--text3);border:none;}
+.btn-ghost:hover{color:var(--text);background:var(--bg4);}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.btn-sm{padding:6px 11px;font-size:11px;}
+.btn-xs{padding:4px 8px;font-size:10px;}
+
+.content{padding:16px 18px;max-width:1000px;margin:0 auto;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);}
+.stat-val{font-size:20px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+.stat-lbl{font-size:9px;color:var(--text4);margin-top:4px;letter-spacing:.04em;text-transform:uppercase;}
+
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:12px;}
+.card-hdr{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--border);}
+.info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03);gap:10px;}
+.info-row:last-child{border-bottom:none;}
+.info-lbl{font-size:11px;color:var(--text4);min-width:84px;flex-shrink:0;}
+.info-val{font-size:12px;color:var(--text);text-align:right;font-weight:700;word-break:break-all;}
+
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;}
+
+.fi{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-size:12px;outline:none;font-family:inherit;transition:border-color .2s;width:100%;}
+.fi:focus{border-color:var(--violet);}
+select.fi{width:auto;}
+textarea.fi{resize:vertical;font-size:12px;line-height:1.7;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fl{font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+
+.search-bar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.search-inp{flex:1;min-width:180px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:10px 14px;color:var(--text);font-size:13px;outline:none;font-family:inherit;}
+.search-inp:focus{border-color:var(--violet);}
+
+.client-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:14px;}
+.client-card:hover{border-color:var(--violet);transform:translateX(2px);}
+.avatar{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;font-weight:800;color:#fff;}
+
+.badge{display:inline-flex;align-items:center;gap:3px;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;border:1px solid transparent;}
+.tag-chip{display:inline-flex;align-items:center;background:rgba(139,92,246,.13);color:var(--violet3);border:1px solid rgba(139,92,246,.25);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;margin:2px 3px 0 0;}
+
+.comm-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.comm-dot{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:var(--bg5);}
+
+.overlay{position:fixed;inset:0;background:#00000099;z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;}
+.dialog{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;}
+.dialog-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.form-section{font-size:10px;font-weight:700;color:var(--violet);border-left:3px solid var(--violet);padding-left:10px;margin:18px 0 10px;letter-spacing:.06em;}
+
+.empty{text-align:center;padding:50px 20px;color:var(--text4);}
+.empty-ico{font-size:44px;margin-bottom:12px;opacity:.35;}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px;color:var(--text3);}
+.spinner{width:36px;height:36px;border:3px solid var(--bg5);border-top-color:var(--violet);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.7);}
+.login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
+
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--violet);color:var(--violet3);padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;}
+
+.bnav{display:none;}
+@media(max-width:640px){
+  .bnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:200;}
+  .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 4px;font-size:9px;color:var(--text3);cursor:pointer;gap:2px;border:none;background:transparent;font-family:inherit;}
+  .bnav-btn.active{color:var(--violet);}
+  .bnav-icon{font-size:18px;}
+  .app{padding-bottom:72px;}
+  .content{padding:12px 14px;}
+}
+a{color:var(--blue);}
+</style>
+</head>
+<body>
+<script src="shared/sys-nav.js" data-active="clients"></script>
+<div id="root"></div>
+<div id="toast"></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getFirestore,collection,onSnapshot,doc,setDoc,deleteDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+const cfg={apiKey:"AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",authDomain:"legalcasemanageer.firebaseapp.com",projectId:"legalcasemanageer",storageBucket:"legalcasemanageer.firebasestorage.app",messagingSenderId:"559838504556",appId:"1:559838504556:web:ba10c071a12650bbd85a49"};
+const app=initializeApp(cfg);
+const db=getFirestore(app);
+const auth=getAuth(app);
+
+// ══════════════════════════════════════════
+// 常數
+// ══════════════════════════════════════════
+const CLIENT_TYPES=["個人","公司/法人","政府機關","其他"];
+const CLIENT_SOURCES=["親友介紹","舊客戶","同業轉介","網路搜尋","社群媒體","廣告","公會指派","其他"];
+const CLIENT_STATUS=[
+  {k:"active",  label:"往來中", color:"var(--green)"},
+  {k:"potential",label:"潛在客戶",color:"var(--gold)"},
+  {k:"closed",  label:"已結案", color:"var(--text3)"},
+];
+const COMM_TYPES=[
+  {k:"phone",  ico:"📞",label:"電話"},
+  {k:"meeting",ico:"🤝",label:"會議"},
+  {k:"email",  ico:"✉️",label:"Email"},
+  {k:"line",   ico:"💬",label:"Line/通訊"},
+  {k:"court",  ico:"⚖",label:"開庭"},
+  {k:"other",  ico:"📝",label:"其他"},
+];
+const AVATAR_COLORS=["#8b5cf6","#ec4899","#38bdf8","#22c55e","#f59e0b","#f97316","#ef4444","#14b8a6","#6366f1","#a855f7"];
+
+// ══════════════════════════════════════════
+// 工具
+// ══════════════════════════════════════════
+function twToday(){return new Date(new Date().getTime()+8*3600000).toISOString().split("T")[0];}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400);}
+function avatarColor(name){let h=0;for(let i=0;i<String(name).length;i++)h=String(name).charCodeAt(i)+((h<<5)-h);return AVATAR_COLORS[Math.abs(h)%AVATAR_COLORS.length];}
+function statusOf(k){return CLIENT_STATUS.find(s=>s.k===k)||CLIENT_STATUS[0];}
+function commTypeOf(k){return COMM_TYPES.find(c=>c.k===k)||COMM_TYPES[COMM_TYPES.length-1];}
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let S={
+  user:null,authChecked:false,
+  clients:[],cases:[],loading:true,
+  tab:"dashboard",
+  search:"",filterStatus:"all",
+  // 詳情
+  viewId:null,
+  // 表單
+  showForm:false,editId:null,
+  form:newForm(),
+  // 溝通記錄
+  showCommForm:false,commForm:{date:twToday(),type:"phone",content:""},
+  delConfirm:null,delComm:null,
+};
+function newForm(){return{name:"",type:"個人",idNumber:"",phone:"",mobile:"",email:"",address:"",contactPerson:"",source:"親友介紹",status:"active",tags:"",note:""};}
+
+// ══════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════
+onAuthStateChanged(auth,u=>{
+  S.user=u;S.authChecked=true;
+  if(u){
+    try{const c=localStorage.getItem("clients_cache");if(c)S.clients=JSON.parse(c);}catch(_){}
+    try{const c=localStorage.getItem("clients_cases_cache");if(c)S.cases=JSON.parse(c);}catch(_){}
+    S.loading=false;render();
+    onSnapshot(collection(db,"clients"),snap=>{
+      S.clients=snap.docs.map(d=>({...d.data(),id:d.id}));
+      try{localStorage.setItem("clients_cache",JSON.stringify(S.clients));}catch(_){}
+      render();
+    });
+    onSnapshot(collection(db,"cases"),snap=>{
+      S.cases=snap.docs.map(d=>({...d.data(),id:d.id}));
+      try{localStorage.setItem("clients_cases_cache",JSON.stringify(S.cases));}catch(_){}
+      render();
+    });
+  }else{S.loading=false;render();}
+});
+
+async function saveClient(){
+  const f=S.form;
+  if(!f.name||!f.name.trim()){toast("⚠️ 請輸入客戶名稱");return;}
+  const id=S.editId||uid();
+  const existing=S.clients.find(c=>c.id===id);
+  await setDoc(doc(db,"clients",id),{
+    ...f,name:f.name.trim(),id,
+    comms:existing?.comms||[],
+    createdAt:existing?.createdAt||new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+  });
+  toast(S.editId?"✅ 客戶已更新":"✅ 客戶已新增");
+  S.showForm=false;S.editId=null;S.form=newForm();render();
+}
+async function delClient(id){
+  await deleteDoc(doc(db,"clients",id));
+  toast("🗑 已刪除客戶");S.delConfirm=null;if(S.viewId===id){S.viewId=null;S.tab="clients";}render();
+}
+async function saveComm(){
+  const c=S.clients.find(x=>x.id===S.viewId);if(!c)return;
+  const f=S.commForm;
+  if(!f.content||!f.content.trim()){toast("⚠️ 請輸入溝通內容");return;}
+  const comms=[...(c.comms||[]),{id:uid(),date:f.date,type:f.type,content:f.content.trim()}];
+  await setDoc(doc(db,"clients",c.id),{...c,comms,updatedAt:new Date().toISOString()});
+  toast("✅ 已記錄溝通");S.showCommForm=false;S.commForm={date:twToday(),type:"phone",content:""};render();
+}
+async function delCommItem(commId){
+  const c=S.clients.find(x=>x.id===S.viewId);if(!c)return;
+  const comms=(c.comms||[]).filter(x=>x.id!==commId);
+  await setDoc(doc(db,"clients",c.id),{...c,comms,updatedAt:new Date().toISOString()});
+  toast("🗑 已刪除記錄");S.delComm=null;render();
+}
+
+// ══════════════════════════════════════════
+// 關聯資料
+// ══════════════════════════════════════════
+function casesOfClient(c){
+  if(!c)return[];
+  const name=(c.name||"").trim();
+  if(!name)return[];
+  return S.cases.filter(cs=>(cs.clientName||"").trim()===name);
+}
+function feeStats(cases){
+  let totalFee=0,received=0;
+  cases.forEach(cs=>{
+    totalFee+=Number(cs.totalFee||0);
+    received+=(cs.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+  });
+  return{totalFee,received,outstanding:Math.max(0,totalFee-received)};
+}
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+function render(){
+  const root=document.getElementById("root");
+  if(!root)return;
+  if(!S.authChecked){root.innerHTML=`<div class="loading"><div class="spinner"></div><div>連線中…</div></div>`;return;}
+  if(!S.user){root.innerHTML=renderLogin();bindLogin();return;}
+  if(S.loading){root.innerHTML=`<div class="app"><div class="loading"><div class="spinner"></div><div>載入中…</div></div></div>`;return;}
+  root.innerHTML=renderApp();
+  bindApp();
+}
+
+// ── Login ──
+function renderLogin(){return`
+<div class="login-wrap"><div class="login-box">
+  <div style="font-size:48px;text-align:center;margin-bottom:8px">👥</div>
+  <div style="font-family:'Noto Serif TC',serif;font-size:1.2rem;color:var(--violet);text-align:center;margin-bottom:3px">客戶管理系統</div>
+  <div style="font-size:10px;color:var(--text3);text-align:center;letter-spacing:.1em;margin-bottom:24px;text-transform:uppercase">Client Management</div>
+  <div id="lerr" style="display:none" class="login-err"></div>
+  <div class="fg" style="margin-bottom:12px"><label class="fl">帳號</label><input class="fi" id="lem" type="email" placeholder="office@yourfirm.com" autocomplete="email"></div>
+  <div class="fg" style="margin-bottom:22px"><label class="fl">密碼</label>
+    <div style="position:relative"><input class="fi" id="lpw" type="password" placeholder="••••••••" style="padding-right:40px">
+    <button id="spw" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px">👁</button></div>
+  </div>
+  <button id="lbtn" class="btn btn-violet" style="width:100%;justify-content:center;font-size:14px;padding:12px">🔐 登入</button>
+</div></div>`;}
+function bindLogin(){
+  const go=async()=>{
+    const em=document.getElementById("lem")?.value.trim();
+    const pw=document.getElementById("lpw")?.value;
+    const err=document.getElementById("lerr");
+    if(!em||!pw){if(err){err.style.display="block";err.textContent="請輸入帳號密碼";}return;}
+    document.getElementById("lbtn").textContent="登入中…";
+    try{await signInWithEmailAndPassword(auth,em,pw);}
+    catch(e){if(err){err.style.display="block";err.textContent={"auth/invalid-credential":"帳號或密碼錯誤","auth/too-many-requests":"嘗試次數過多","auth/user-disabled":"此帳號已停用","auth/unauthorized-domain":"此網域未獲 Firebase 授權","auth/network-request-failed":"網路連線問題，請確認網路後再試"}[e.code]||("登入失敗（"+e.code+"）");}document.getElementById("lbtn").textContent="🔐 登入";}
+  };
+  document.getElementById("lbtn")?.addEventListener("click",go);
+  document.getElementById("lpw")?.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+  document.getElementById("spw")?.addEventListener("click",()=>{const i=document.getElementById("lpw");i.type=i.type==="password"?"text":"password";});
+}
+
+// ── App ──
+function renderApp(){
+  const tabs=[["dashboard","🏠 總覽"],["clients","👥 客戶名單"],["source","📊 案源分析"]];
+  return`
+<div class="app">
+  <div class="hdr">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:22px">👥</div>
+      <div><div class="hdr-title">客戶管理系統</div><div class="hdr-sub">Client Management · ${S.clients.length} 位客戶</div></div>
+    </div>
+    <div class="hdr-actions">
+      <button class="btn btn-violet btn-sm" id="btn-add">＋ 新增客戶</button>
+      <button class="btn btn-ghost" style="padding:7px 10px" id="btn-logout">🚪</button>
+    </div>
+  </div>
+  <div class="tab-bar">${tabs.map(([k,l])=>`<button class="tab${S.tab===k&&!S.viewId?" active":""}" data-tab="${k}">${l}</button>`).join("")}</div>
+  <div class="content">
+    ${S.viewId?renderDetail():
+      S.tab==="dashboard"?renderDashboard():
+      S.tab==="clients"?renderClients():
+      S.tab==="source"?renderSource():""}
+  </div>
+  <div class="bnav">
+    ${[["dashboard","🏠","總覽"],["clients","👥","客戶"],["source","📊","案源"]]
+      .map(([k,ico,l])=>`<button class="bnav-btn${S.tab===k&&!S.viewId?" active":""}" data-tab="${k}"><span class="bnav-icon">${ico}</span>${l}</button>`).join("")}
+  </div>
+  ${S.showForm?renderForm():""}
+  ${S.showCommForm?renderCommForm():""}
+  ${S.delConfirm?renderDelDialog("確認刪除此客戶？","客戶資料與所有溝通記錄將永久刪除（其關聯案件不受影響）。","dc-client"):""}
+  ${S.delComm?renderDelDialog("刪除此溝通記錄？","此操作無法復原。","dc-comm"):""}
+</div>`;}
+
+// ── Dashboard ──
+function renderDashboard(){
+  const total=S.clients.length;
+  const active=S.clients.filter(c=>c.status==="active").length;
+  const potential=S.clients.filter(c=>c.status==="potential").length;
+  const companies=S.clients.filter(c=>c.type==="公司/法人").length;
+  // 全所費用（依關聯案件）
+  let totalFee=0,outstanding=0;
+  S.clients.forEach(c=>{const fs=feeStats(casesOfClient(c));totalFee+=fs.totalFee;outstanding+=fs.outstanding;});
+  // 未連結案件：cases 中 clientName 找不到對應客戶
+  const clientNames=new Set(S.clients.map(c=>(c.name||"").trim()));
+  const unlinked=[...new Set(S.cases.map(cs=>(cs.clientName||"").trim()).filter(n=>n&&!clientNames.has(n)))];
+  // 近期溝通
+  const recentComms=[];
+  S.clients.forEach(c=>(c.comms||[]).forEach(m=>recentComms.push({...m,clientId:c.id,clientName:c.name})));
+  recentComms.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const recent=recentComms.slice(0,8);
+
+  return`
+  <div class="stat-grid">
+    ${[
+      [total,"客戶總數","var(--violet)"],
+      [active,"往來中","var(--green)"],
+      [potential,"潛在客戶","var(--gold)"],
+      [companies,"公司/法人","var(--blue)"],
+    ].map(([v,l,c])=>`<div class="stat-card"><div class="stat-val" style="color:${c}">${v}</div><div class="stat-lbl">${l}</div></div>`).join("")}
+    <div class="stat-card"><div class="stat-val" style="color:var(--gold3);font-size:16px">NT$ ${Math.round(totalFee).toLocaleString("zh-TW")}</div><div class="stat-lbl">委任費用合計</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--red);font-size:16px">NT$ ${Math.round(outstanding).toLocaleString("zh-TW")}</div><div class="stat-lbl">未收款合計</div></div>
+  </div>
+
+  ${unlinked.length?`<div class="card" style="border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.04)">
+    <div class="card-hdr" style="color:var(--gold)">🔗 案件系統中有 ${unlinked.length} 位當事人尚未建立客戶檔案</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${unlinked.slice(0,30).map(n=>`<button class="tag-chip" style="cursor:pointer;background:rgba(245,158,11,.12);color:var(--gold3);border-color:rgba(245,158,11,.3)" data-quick-add="${esc(n)}">＋ ${esc(n)}</button>`).join("")}
+    </div>
+    <div style="font-size:10px;color:var(--text4);margin-top:8px">點擊姓名即可快速建檔並自動連結其案件</div>
+  </div>`:""}
+
+  <div class="detail-grid">
+    <div class="card">
+      <div class="card-hdr">🕑 近期溝通記錄</div>
+      ${recent.length?recent.map(m=>{
+        const ct=commTypeOf(m.type);
+        return`<div class="comm-item" style="cursor:pointer" data-view="${m.clientId}">
+          <div class="comm-dot">${ct.ico}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:12px;font-weight:700;color:var(--text)">${esc(m.clientName)}</span><span style="font-size:10px;color:var(--text4)">${m.date}</span></div>
+            <div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.content)}</div>
+          </div>
+        </div>`;
+      }).join(""):`<div style="font-size:12px;color:var(--text4);padding:8px 0">尚無溝通記錄</div>`}
+    </div>
+    <div class="card">
+      <div class="card-hdr">📊 案源分布</div>
+      ${(()=>{
+        const counts={};S.clients.forEach(c=>{const s=c.source||"其他";counts[s]=(counts[s]||0)+1;});
+        const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+        const max=Math.max(...entries.map(e=>e[1]),1);
+        if(!entries.length)return`<div style="font-size:12px;color:var(--text4);padding:8px 0">尚無資料</div>`;
+        return entries.map(([s,n])=>`<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="color:var(--text3)">${esc(s)}</span><span style="color:var(--violet3)">${n} 位</span></div>
+          <div style="height:8px;background:var(--bg5);border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;width:${Math.round(n/max*100)}%;background:linear-gradient(90deg,var(--violet),var(--violet3))"></div></div>
+        </div>`).join("");
+      })()}
+    </div>
+  </div>`;}
+
+// ── 客戶名單 ──
+function renderClients(){
+  const q=S.search.trim().toLowerCase();
+  let list=S.clients.slice();
+  if(S.filterStatus!=="all")list=list.filter(c=>c.status===S.filterStatus);
+  if(q)list=list.filter(c=>[c.name,c.phone,c.mobile,c.email,c.idNumber,c.contactPerson,c.tags,c.note].some(v=>String(v||"").toLowerCase().includes(q)));
+  list.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+  const fbtns=[["all","全部"],...CLIENT_STATUS.map(s=>[s.k,s.label])];
+  return`
+  <div class="search-bar">
+    <input class="search-inp" id="search" placeholder="🔍 搜尋姓名、電話、Email、統編、標籤…" value="${esc(S.search)}">
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+    ${fbtns.map(([k,l])=>`<button class="btn btn-sm ${S.filterStatus===k?"btn-violet":"btn-outline"}" data-filter="${k}">${l}</button>`).join("")}
+    <span style="margin-left:auto;font-size:12px;color:var(--text3);align-self:center">共 ${list.length} 位</span>
+  </div>
+  ${list.length===0?`<div class="empty"><div class="empty-ico">👥</div><div>${q||S.filterStatus!=="all"?"查無符合的客戶":"尚無客戶，點擊右上角「＋ 新增客戶」"}</div></div>`:""}
+  ${list.map(c=>{
+    const st=statusOf(c.status);
+    const cases=casesOfClient(c);
+    const initial=(c.name||"?").trim().charAt(0);
+    return`<div class="client-card" data-view="${c.id}">
+      <div class="avatar" style="background:${avatarColor(c.name)}">${esc(initial)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px">
+          <span style="font-size:15px;font-weight:800;color:var(--text)">${esc(c.name)}</span>
+          <span class="badge" style="background:${st.color}22;color:${st.color};border-color:${st.color}55">${st.label}</span>
+          ${c.type&&c.type!=="個人"?`<span class="badge" style="background:rgba(56,189,248,.15);color:var(--blue);border-color:rgba(56,189,248,.3)">${esc(c.type)}</span>`:""}
+          ${cases.length?`<span class="badge" style="background:rgba(139,92,246,.15);color:var(--violet3);border-color:rgba(139,92,246,.3)">📁 ${cases.length} 案</span>`:""}
+        </div>
+        <div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${c.mobile||c.phone?`📱 ${esc(c.mobile||c.phone)}`:""}${c.email?` · ✉️ ${esc(c.email)}`:""}${c.source?` · 案源：${esc(c.source)}`:""}
+        </div>
+      </div>
+      <div style="color:var(--text4);font-size:18px;flex-shrink:0">›</div>
+    </div>`;
+  }).join("")}`;}
+
+// ── 客戶詳情 ──
+function renderDetail(){
+  const c=S.clients.find(x=>x.id===S.viewId);
+  if(!c)return`<div class="empty"><div class="empty-ico">❓</div><div>找不到此客戶</div></div>`;
+  const st=statusOf(c.status);
+  const cases=casesOfClient(c);
+  const fs=feeStats(cases);
+  const comms=(c.comms||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const initial=(c.name||"?").trim().charAt(0);
+  return`
+  <button class="btn btn-ghost btn-sm" id="btn-back" style="margin-bottom:12px">‹ 返回名單</button>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
+      <div class="avatar" style="width:56px;height:56px;font-size:26px;background:${avatarColor(c.name)}">${esc(initial)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:20px;font-weight:800;color:var(--text)">${esc(c.name)}</span>
+          <span class="badge" style="background:${st.color}22;color:${st.color};border-color:${st.color}55">${st.label}</span>
+          <span class="badge" style="background:rgba(56,189,248,.15);color:var(--blue);border-color:rgba(56,189,248,.3)">${esc(c.type||"個人")}</span>
+        </div>
+        ${c.tags?`<div style="margin-top:4px">${c.tags.split(/[,，、\s]+/).filter(Boolean).map(t=>`<span class="tag-chip">${esc(t)}</span>`).join("")}</div>`:""}
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-outline btn-sm" id="btn-edit">✏️ 編輯</button>
+        <button class="btn btn-danger btn-sm" id="btn-del">🗑</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <div class="card">
+      <div class="card-hdr">📇 聯絡資訊</div>
+      ${[
+        ["手機",c.mobile],["市話",c.phone],["Email",c.email],
+        [c.type==="個人"?"身分證字號":"統一編號",c.idNumber],
+        ["聯絡人",c.contactPerson],["地址",c.address],["案源",c.source],
+      ].map(([l,v])=>`<div class="info-row"><div class="info-lbl">${l}</div><div class="info-val">${v?esc(v):"—"}</div></div>`).join("")}
+      ${c.note?`<div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--violet)"><div style="font-size:9px;color:var(--text3);margin-bottom:4px;letter-spacing:.06em">備註</div><div style="font-size:12px;color:var(--text2);white-space:pre-wrap">${esc(c.note)}</div></div>`:""}
+    </div>
+
+    <div class="card">
+      <div class="card-hdr">📁 關聯案件（${cases.length}）</div>
+      ${cases.length?`
+      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px;gap:6px">
+        <div class="stat-card" style="padding:8px 10px"><div class="stat-val" style="font-size:13px;color:var(--gold3)">NT$ ${Math.round(fs.totalFee).toLocaleString("zh-TW")}</div><div class="stat-lbl">委任費用</div></div>
+        <div class="stat-card" style="padding:8px 10px"><div class="stat-val" style="font-size:13px;color:var(--green)">NT$ ${Math.round(fs.received).toLocaleString("zh-TW")}</div><div class="stat-lbl">已收</div></div>
+        <div class="stat-card" style="padding:8px 10px"><div class="stat-val" style="font-size:13px;color:var(--red)">NT$ ${Math.round(fs.outstanding).toLocaleString("zh-TW")}</div><div class="stat-lbl">未收</div></div>
+      </div>
+      ${cases.map(cs=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div style="min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${esc(cs.caseType||cs.caseName||"案件")}${cs.opposingParty?` <span style="color:var(--text3);font-weight:400">v. ${esc(cs.opposingParty)}</span>`:""}</div>
+            <div style="font-size:11px;color:var(--text3)">${esc(cs.firmCaseNo||"")}${cs.currentAgency?` · ${esc(cs.currentAgency)}`:""}${cs.caseReason?` · ${esc(cs.caseReason)}`:""}</div>
+          </div>
+          ${cs.status?`<span class="badge" style="background:var(--bg5);color:var(--text2);flex-shrink:0">${esc(cs.status)}</span>`:""}
+        </div>
+      </div>`).join("")}
+      <a href="index.html" class="btn btn-outline btn-sm" style="margin-top:10px;text-decoration:none">⚖ 前往案件系統</a>
+      `:`<div style="text-align:center;padding:24px 10px;color:var(--text4)"><div style="font-size:32px;opacity:.3;margin-bottom:8px">📁</div><div style="font-size:12px">此客戶尚無關聯案件</div><div style="font-size:10px;margin-top:4px">於案件系統建立「當事人姓名 = ${esc(c.name)}」的案件後將自動顯示</div></div>`}
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:12px">
+      <span style="font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase">💬 溝通記錄（${comms.length}）</span>
+      <button class="btn btn-violet btn-xs" id="btn-add-comm">＋ 新增記錄</button>
+    </div>
+    ${comms.length?comms.map(m=>{
+      const ct=commTypeOf(m.type);
+      return`<div class="comm-item">
+        <div class="comm-dot">${ct.ico}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+            <span style="font-size:11px;font-weight:700;color:var(--violet3)">${ct.label}</span>
+            <span style="font-size:10px;color:var(--text4)">${m.date}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text2);white-space:pre-wrap;margin-top:2px">${esc(m.content)}</div>
+        </div>
+        <button class="btn btn-ghost btn-xs" data-del-comm="${m.id}" style="flex-shrink:0;color:var(--text4)">🗑</button>
+      </div>`;
+    }).join(""):`<div style="text-align:center;padding:20px;color:var(--text4);font-size:12px">尚無溝通記錄，點擊「＋ 新增記錄」開始追蹤</div>`}
+  </div>`;}
+
+// ── 案源分析 ──
+function renderSource(){
+  const bySource={};
+  S.clients.forEach(c=>{
+    const s=c.source||"其他";
+    if(!bySource[s])bySource[s]={count:0,cases:0,fee:0,clients:[]};
+    bySource[s].count++;
+    bySource[s].clients.push(c);
+    const cs=casesOfClient(c);
+    bySource[s].cases+=cs.length;
+    bySource[s].fee+=feeStats(cs).totalFee;
+  });
+  const entries=Object.entries(bySource).sort((a,b)=>b[1].count-a[1].count);
+  const maxFee=Math.max(...entries.map(e=>e[1].fee),1);
+  if(!S.clients.length)return`<div class="empty"><div class="empty-ico">📊</div><div>尚無客戶資料可供分析</div></div>`;
+  return`
+  <div style="font-size:12px;color:var(--text3);margin-bottom:14px">依案源統計客戶數、承接案件數與委任費用，協助評估行銷與轉介成效</div>
+  ${entries.map(([s,d])=>`
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:15px;font-weight:800;color:var(--violet3)">${esc(s)}</span>
+      <span style="font-size:11px;color:var(--text3)">${d.count} 位客戶 · ${d.cases} 件案件</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:var(--text3)">委任費用貢獻</span><span style="color:var(--gold3);font-weight:700">NT$ ${Math.round(d.fee).toLocaleString("zh-TW")}</span></div>
+    <div style="height:8px;background:var(--bg5);border-radius:4px;overflow:hidden;margin-bottom:10px"><div style="height:100%;border-radius:4px;width:${Math.round(d.fee/maxFee*100)}%;background:linear-gradient(90deg,var(--gold2),var(--gold3))"></div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px">
+      ${d.clients.slice(0,20).map(c=>`<button class="tag-chip" style="cursor:pointer" data-view="${c.id}">${esc(c.name)}</button>`).join("")}
+    </div>
+  </div>`).join("")}`;}
+
+// ── 客戶表單 ──
+function renderForm(){
+  const f=S.form;
+  return`<div class="overlay"><div class="dialog">
+  <div class="dialog-title">👤 ${S.editId?"編輯客戶":"新增客戶"}</div>
+  <div class="form-section">基本資料</div>
+  <div class="form-grid">
+    <div class="fg"><label class="fl">客戶名稱 *</label><input class="fi" id="f-name" value="${esc(f.name)}" placeholder="姓名 / 公司名稱"></div>
+    <div class="fg"><label class="fl">類型</label><select class="fi" id="f-type" style="width:100%">${CLIENT_TYPES.map(t=>`<option${f.type===t?" selected":""}>${t}</option>`).join("")}</select></div>
+    <div class="fg"><label class="fl">身分證 / 統一編號</label><input class="fi" id="f-id" value="${esc(f.idNumber)}" placeholder="選填"></div>
+    <div class="fg"><label class="fl">狀態</label><select class="fi" id="f-status" style="width:100%">${CLIENT_STATUS.map(s=>`<option value="${s.k}"${f.status===s.k?" selected":""}>${s.label}</option>`).join("")}</select></div>
+  </div>
+  <div class="form-section">聯絡方式</div>
+  <div class="form-grid">
+    <div class="fg"><label class="fl">手機</label><input class="fi" id="f-mobile" value="${esc(f.mobile)}" placeholder="0912-345-678"></div>
+    <div class="fg"><label class="fl">市話</label><input class="fi" id="f-phone" value="${esc(f.phone)}" placeholder="02-1234-5678"></div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="f-email" value="${esc(f.email)}" placeholder="選填"></div>
+    <div class="fg"><label class="fl">聯絡人</label><input class="fi" id="f-contact" value="${esc(f.contactPerson)}" placeholder="公司聯絡窗口"></div>
+  </div>
+  <div class="fg" style="margin-top:10px"><label class="fl">地址</label><input class="fi" id="f-address" value="${esc(f.address)}" placeholder="選填"></div>
+  <div class="form-section">分類與備註</div>
+  <div class="form-grid">
+    <div class="fg"><label class="fl">案源</label><select class="fi" id="f-source" style="width:100%">${CLIENT_SOURCES.map(s=>`<option${f.source===s?" selected":""}>${s}</option>`).join("")}</select></div>
+    <div class="fg"><label class="fl">標籤（逗號分隔）</label><input class="fi" id="f-tags" value="${esc(f.tags)}" placeholder="VIP, 企業法務, 長期"></div>
+  </div>
+  <div class="fg" style="margin-top:10px;margin-bottom:18px"><label class="fl">備註</label><textarea class="fi" id="f-note" rows="2" placeholder="客戶偏好、注意事項…">${esc(f.note)}</textarea></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-outline btn-sm" id="f-cancel">取消</button>
+    <button class="btn btn-violet btn-sm" id="f-save">💾 儲存</button>
+  </div>
+</div></div>`;}
+
+// ── 溝通記錄表單 ──
+function renderCommForm(){
+  const f=S.commForm;
+  return`<div class="overlay"><div class="dialog" style="max-width:420px">
+  <div class="dialog-title">💬 新增溝通記錄</div>
+  <div class="form-grid">
+    <div class="fg"><label class="fl">日期</label><input class="fi" type="date" id="cf-date" value="${f.date}"></div>
+    <div class="fg"><label class="fl">方式</label><select class="fi" id="cf-type" style="width:100%">${COMM_TYPES.map(c=>`<option value="${c.k}"${f.type===c.k?" selected":""}>${c.ico} ${c.label}</option>`).join("")}</select></div>
+  </div>
+  <div class="fg" style="margin-top:10px;margin-bottom:18px"><label class="fl">內容</label><textarea class="fi" id="cf-content" rows="4" placeholder="溝通要點、當事人指示、後續待辦…">${esc(f.content)}</textarea></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-outline btn-sm" id="cf-cancel">取消</button>
+    <button class="btn btn-violet btn-sm" id="cf-save">💾 儲存</button>
+  </div>
+</div></div>`;}
+
+function renderDelDialog(title,msg,id){return`<div class="overlay"><div class="dialog" style="max-width:380px">
+  <div class="dialog-title">${title}</div>
+  <div style="color:var(--text3);margin-bottom:20px;font-size:13px">${msg}</div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-outline btn-sm" id="${id}-cancel">取消</button>
+    <button class="btn btn-sm" style="background:var(--red);color:#fff" id="${id}-ok">確認刪除</button>
+  </div>
+</div></div>`;}
+
+// ══════════════════════════════════════════
+// BIND
+// ══════════════════════════════════════════
+function bindApp(){
+  document.getElementById("btn-logout")?.addEventListener("click",async()=>{if(confirm("確認登出？"))await signOut(auth);});
+  document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{S.tab=b.dataset.tab;S.viewId=null;render();}));
+  document.getElementById("btn-add")?.addEventListener("click",()=>{S.form=newForm();S.editId=null;S.showForm=true;render();});
+
+  // 檢視詳情
+  document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{S.viewId=b.dataset.view;render();window.scrollTo(0,0);}));
+
+  // 篩選 / 搜尋
+  document.querySelectorAll("[data-filter]").forEach(b=>b.addEventListener("click",()=>{S.filterStatus=b.dataset.filter;render();}));
+  const sb=document.getElementById("search");
+  if(sb)sb.addEventListener("input",e=>{S.search=e.target.value;const pos=e.target.selectionStart;render();const n=document.getElementById("search");if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(_){}}});
+
+  // 快速建檔（從未連結當事人）
+  document.querySelectorAll("[data-quick-add]").forEach(b=>b.addEventListener("click",()=>{S.form={...newForm(),name:b.dataset.quickAdd};S.editId=null;S.showForm=true;render();}));
+
+  // 詳情頁
+  document.getElementById("btn-back")?.addEventListener("click",()=>{S.viewId=null;S.tab="clients";render();});
+  document.getElementById("btn-edit")?.addEventListener("click",()=>{const c=S.clients.find(x=>x.id===S.viewId);if(c){S.form={...newForm(),...c};S.editId=c.id;S.showForm=true;render();}});
+  document.getElementById("btn-del")?.addEventListener("click",()=>{S.delConfirm=S.viewId;render();});
+  document.getElementById("btn-add-comm")?.addEventListener("click",()=>{S.commForm={date:twToday(),type:"phone",content:""};S.showCommForm=true;render();});
+  document.querySelectorAll("[data-del-comm]").forEach(b=>b.addEventListener("click",()=>{S.delComm=b.dataset.delComm;render();}));
+
+  // 客戶表單
+  document.getElementById("f-cancel")?.addEventListener("click",()=>{S.showForm=false;S.editId=null;render();});
+  document.getElementById("f-save")?.addEventListener("click",()=>{
+    S.form={
+      name:document.getElementById("f-name")?.value||"",
+      type:document.getElementById("f-type")?.value||"個人",
+      idNumber:document.getElementById("f-id")?.value||"",
+      status:document.getElementById("f-status")?.value||"active",
+      mobile:document.getElementById("f-mobile")?.value||"",
+      phone:document.getElementById("f-phone")?.value||"",
+      email:document.getElementById("f-email")?.value||"",
+      contactPerson:document.getElementById("f-contact")?.value||"",
+      address:document.getElementById("f-address")?.value||"",
+      source:document.getElementById("f-source")?.value||"其他",
+      tags:document.getElementById("f-tags")?.value||"",
+      note:document.getElementById("f-note")?.value||"",
+    };
+    saveClient();
+  });
+
+  // 溝通記錄表單
+  document.getElementById("cf-cancel")?.addEventListener("click",()=>{S.showCommForm=false;render();});
+  document.getElementById("cf-save")?.addEventListener("click",()=>{
+    S.commForm={
+      date:document.getElementById("cf-date")?.value||twToday(),
+      type:document.getElementById("cf-type")?.value||"phone",
+      content:document.getElementById("cf-content")?.value||"",
+    };
+    saveComm();
+  });
+
+  // 刪除確認
+  document.getElementById("dc-client-cancel")?.addEventListener("click",()=>{S.delConfirm=null;render();});
+  document.getElementById("dc-client-ok")?.addEventListener("click",()=>delClient(S.delConfirm));
+  document.getElementById("dc-comm-cancel")?.addEventListener("click",()=>{S.delComm=null;render();});
+  document.getElementById("dc-comm-ok")?.addEventListener("click",()=>delCommItem(S.delComm));
+}
+
+render();
+</script>
+</body>
+</html>

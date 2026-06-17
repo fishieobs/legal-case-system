@@ -1,4 +1,4 @@
-const CACHE = "case-mgr-v15";
+const CACHE = "case-mgr-v16";
 
 const PRECACHE = [
   "./",
@@ -70,7 +70,7 @@ self.addEventListener("fetch", e => {
       if (cached) return cached;
       return fetch(e.request).then(res => {
         if (res && res.status === 200 && res.type === "basic") {
-          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+          caches.open(CACHE).then(c => c.put(e.request, res.clone())).catch(() => {});
         }
         return res;
       }).catch(() => {

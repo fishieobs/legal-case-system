@@ -1,12 +1,15 @@
-const CACHE = "case-mgr-v14";
+const CACHE = "case-mgr-v15";
 
 const PRECACHE = [
   "./",
   "./shared/sys-nav.js",
   "./index.html",
+  "./clients.html",
   "./letters.html",
   "./templates.html",
   "./judgments.html",
+  "./tax.html",
+  "./court_nav.html",
   "./widget.html",
   "./deadline.html",
   "./checklist.html",

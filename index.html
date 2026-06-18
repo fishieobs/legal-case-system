@@ -696,7 +696,7 @@ function App({user}){
         const q=search.toLowerCase();
         const searchFields=[
             c.clientName, c.firmCaseNo, c.opposingParty, c.attorney,
-            c.currentAgency, c.court, c.division, c.notes, c.judgementLink, c.caseReason||"",
+            c.currentAgency, c.court, c.division, c.notes, c.judgementLink, ...(c.judgementLinks||[]), c.caseReason||"",
             ...(c.courtCaseNos||[]),
             ...(c.hearings||[]).map(h=>[h.agency,h.note,h.courtroom].filter(Boolean).join(" ")),
             ...(c.todos||[]).map(t=>t.text),
@@ -792,6 +792,11 @@ function App({user}){
     const addCaseNo=()=>sf("courtCaseNos",[...(formData.courtCaseNos||[]),""]); 
     const updateCaseNo=(i,v)=>{const a=[...(formData.courtCaseNos||[])];a[i]=v;sf("courtCaseNos",a);};
     const removeCaseNo=i=>sf("courtCaseNos",formData.courtCaseNos.filter((_,idx)=>idx!==i));
+    // 判決書連結（多筆；相容舊版單筆 judgementLink 字串）
+    const getJudgements=()=>(formData.judgementLinks&&formData.judgementLinks.length)?formData.judgementLinks:(formData.judgementLink?[formData.judgementLink]:[""]);
+    const addJudgement=()=>sf("judgementLinks",[...getJudgements(),""]);
+    const updateJudgement=(i,v)=>{const a=[...getJudgements()];a[i]=v;sf("judgementLinks",a);};
+    const removeJudgement=i=>sf("judgementLinks",getJudgements().filter((_,idx)=>idx!==i));
 
     const openAdd=()=>{ setFormData({...emptyCase,id:""}); setEditId(null); setView("form"); };
     const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
@@ -1878,12 +1883,17 @@ function App({user}){
                             <div className="info-val" style={{color:"var(--purple)",fontWeight:700}}>{fmt(selected.disbursements)}</div>
                         </div>
                         <hr className="divider"/>
-                        {selected.judgementLink && (
-                            <div className="info-row">
-                                <div className="info-lbl">判決連結</div>
-                                <div className="info-val"><a href={selected.judgementLink} target="_blank" rel="noreferrer">開啟 🔗</a></div>
-                            </div>
-                        )}
+                        {(()=>{
+                            const links=((selected.judgementLinks&&selected.judgementLinks.length)?selected.judgementLinks:(selected.judgementLink?[selected.judgementLink]:[])).filter(Boolean);
+                            return links.length>0 && (
+                                <div className="info-row">
+                                    <div className="info-lbl">判決連結</div>
+                                    <div className="info-val" style={{display:"flex",flexWrap:"wrap",gap:10,justifyContent:"flex-end"}}>
+                                        {links.map((u,i)=><a key={i} href={u} target="_blank" rel="noreferrer">判決{links.length>1?i+1:""} 🔗</a>)}
+                                    </div>
+                                </div>
+                            );
+                        })()}
                         <div className="info-row" style={{alignItems:"flex-start"}}>
                             <div className="info-lbl">備註</div>
                             <div className="info-val" style={{color:"var(--text2)",whiteSpace:"pre-wrap",textAlign:"left"}}>{selected.notes||"—"}</div>
@@ -2777,8 +2787,16 @@ function App({user}){
                 {/* 判決連結 & 備註 */}
                 <div className="section-hdr" style={{marginTop:24}}>📝 其他資訊</div>
                 <div className="fg" style={{marginBottom:12}}>
-                    <label className="fl">判決書連結（可貼司法院裁判書網址）</label>
-                    <input className="fi" type="url" value={F.judgementLink||""} onChange={e=>sf("judgementLink",e.target.value)} placeholder="https://..."/>
+                    <label className="fl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span>判決書連結（可貼司法院裁判書網址）</span>
+                        <button className="btn btn-outline btn-sm" onClick={addJudgement}>＋ 新增判決</button>
+                    </label>
+                    {getJudgements().map((url,i)=>(
+                        <div key={i} style={{display:"flex",gap:8,marginBottom:8}}>
+                            <input className="fi" style={{flex:1}} type="url" value={url} placeholder="https://..." onChange={e=>updateJudgement(i,e.target.value)}/>
+                            {getJudgements().length>1 && <button className="btn btn-danger btn-icon" onClick={()=>removeJudgement(i)}>✕</button>}
+                        </div>
+                    ))}
                 </div>
                 {/* Tags in form */}
                 {allTags.length>0 && (

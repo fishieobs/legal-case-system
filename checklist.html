@@ -174,9 +174,13 @@ select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='
     <div class="fg">
       <label class="fl">身份</label>
       <select class="fi" id="f-role">
-        <option value="plaintiff">原告 / 告訴人</option>
-        <option value="defendant">被告 / 相對人</option>
-        <option value="both">雙方均代理 / 不確定</option>
+        <option value="plaintiff">原告</option>
+        <option value="defendant">被告</option>
+        <option value="accuser">告訴人</option>
+        <option value="petitioner">聲請人</option>
+        <option value="respondent">相對人</option>
+        <option value="appellant">上訴人</option>
+        <option value="appellee">被上訴人</option>
       </select>
     </div>
 
@@ -275,9 +279,15 @@ const TYPES = {
   },
 };
 
+// ── 身份選項 ─────────────────────────────────────────────
+// 每個身份對應其訴訟陣營（原告方／被告方），用於比對清單項目的 roles
+const ROLE_LABEL = { plaintiff:"原告", defendant:"被告", accuser:"告訴人", petitioner:"聲請人", respondent:"相對人", appellant:"上訴人", appellee:"被上訴人" };
+const ROLE_SIDE  = { plaintiff:"plaintiff", accuser:"plaintiff", petitioner:"plaintiff", appellant:"plaintiff",
+                      defendant:"defendant", respondent:"defendant", appellee:"defendant" };
+
 // ── 清單定義 ─────────────────────────────────────────────
 // 每個項目：{ text, note, cat, roles }
-// roles: 'plaintiff'|'defendant'|'both' (省略 = 所有人)
+// roles: 'plaintiff'|'defendant' (省略 = 所有人)
 const ITEMS = {
   // ── 通用 ──────────────
   common: [
@@ -526,7 +536,7 @@ function generateChecklist(){
   const subtype = document.getElementById("f-subtype").value;
   if(!date){ alert("請選擇庭期日期"); return; }
 
-  const roleLabel = {plaintiff:"原告／告訴人",defendant:"被告／相對人",both:"雙方"}[role];
+  const roleLabel = ROLE_LABEL[role];
   state.caseInfo = { caseno, court, date, time, party, role, roleLabel,
     typeLabel: TYPES[state.selectedType].label,
     subtypeLabel: TYPES[state.selectedType].subs[subtype],
@@ -534,13 +544,12 @@ function generateChecklist(){
   state.editingId = null;
 
   // 收集項目
+  const roleSide = ROLE_SIDE[role];
   const base = [...(ITEMS.common||[])];
   const specific = [...(ITEMS[subtype]||[])];
   const all = [...base, ...specific].filter(item => {
     if(!item.roles) return true;
-    if(item.roles === "both") return true;
-    if(role === "both") return true;
-    return item.roles === role;
+    return item.roles === roleSide;
   });
 
   state.items = all.map(item => ({

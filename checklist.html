@@ -194,6 +194,7 @@ select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='
         <span id="cl-title">準備清單</span>
         <div class="btn-row no-print">
           <button class="btn btn-outline btn-sm" onclick="window.print()">🖨 列印</button>
+          <button class="btn btn-outline btn-sm no-print" onclick="toggleEditCaseInfo()">✏️ 編輯內容</button>
           <button class="btn btn-outline btn-sm" onclick="saveChecklist()">💾 儲存</button>
           <button class="btn btn-outline btn-sm" onclick="closeChecklist()">✕ 關閉</button>
         </div>
@@ -494,6 +495,7 @@ let state = {
   items: [],           // { id, cat, text, note, checked, custom }
   caseInfo: {},
   editingId: null,     // id of saved checklist being edited
+  editingCaseInfo: false, // 是否正在編輯案件內容
 };
 
 // ── 初始化 ───────────────────────────────────────────────
@@ -542,6 +544,7 @@ function generateChecklist(){
     subtypeLabel: TYPES[state.selectedType].subs[subtype],
     subtype };
   state.editingId = null;
+  state.editingCaseInfo = false;
 
   // 收集項目
   const roleSide = ROLE_SIDE[role];
@@ -567,6 +570,7 @@ function closeChecklist(){
   state.items = [];
   state.caseInfo = {};
   state.editingId = null;
+  state.editingCaseInfo = false;
 }
 
 // ── 渲染清單 ─────────────────────────────────────────────
@@ -576,18 +580,78 @@ function renderChecklistCard(){
     `${ci.typeLabel} · ${ci.subtypeLabel}`;
 
   // case header
-  const fmtDate = ci.date ? ci.date.replace(/-/g,"/") : "—";
-  const fmtTime = ci.time || "—";
-  document.getElementById("cl-case-header").innerHTML = `
-    <div class="ch-row"><span class="ch-label">案號</span><span class="ch-val highlight">${ci.caseno||"—"}</span></div>
-    <div class="ch-row"><span class="ch-label">法院 / 庭別</span><span class="ch-val">${ci.court||"—"}</span></div>
-    <div class="ch-row"><span class="ch-label">庭期</span><span class="ch-val">${fmtDate} ${fmtTime}</span></div>
-    <div class="ch-row"><span class="ch-label">對造 / 案件</span><span class="ch-val">${ci.party||"—"}</span></div>
-    <div class="ch-row"><span class="ch-label">身份</span><span class="ch-val">${ci.roleLabel}</span></div>
-  `;
+  if(state.editingCaseInfo){
+    document.getElementById("cl-case-header").innerHTML = `
+      <div class="no-print">
+        <div class="grid2">
+          <div class="fg"><label class="fl">案號</label><input class="fi" id="ch-edit-caseno" value="${escHtml(ci.caseno||"")}"></div>
+          <div class="fg"><label class="fl">法院 / 庭別</label><input class="fi" id="ch-edit-court" value="${escHtml(ci.court||"")}"></div>
+        </div>
+        <div class="grid2">
+          <div class="fg"><label class="fl">庭期日期</label><input class="fi" type="date" id="ch-edit-date" value="${ci.date||""}"></div>
+          <div class="fg"><label class="fl">庭期時間</label><input class="fi" type="time" id="ch-edit-time" value="${ci.time||""}"></div>
+        </div>
+        <div class="fg"><label class="fl">對造 / 案件</label><input class="fi" id="ch-edit-party" value="${escHtml(ci.party||"")}"></div>
+        <div class="fg">
+          <label class="fl">身份</label>
+          <select class="fi" id="ch-edit-role">
+            ${Object.entries(ROLE_LABEL).map(([v,l])=>`<option value="${v}"${ci.role===v?" selected":""}>${l}</option>`).join("")}
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-outline btn-sm" onclick="cancelEditCaseInfo()">取消</button>
+          <button class="btn btn-gold btn-sm" onclick="saveCaseInfoEdit()">💾 儲存內容</button>
+        </div>
+      </div>
+    `;
+  } else {
+    const fmtDate = ci.date ? ci.date.replace(/-/g,"/") : "—";
+    const fmtTime = ci.time || "—";
+    document.getElementById("cl-case-header").innerHTML = `
+      <div class="ch-row"><span class="ch-label">案號</span><span class="ch-val highlight">${ci.caseno||"—"}</span></div>
+      <div class="ch-row"><span class="ch-label">法院 / 庭別</span><span class="ch-val">${ci.court||"—"}</span></div>
+      <div class="ch-row"><span class="ch-label">庭期</span><span class="ch-val">${fmtDate} ${fmtTime}</span></div>
+      <div class="ch-row"><span class="ch-label">對造 / 案件</span><span class="ch-val">${ci.party||"—"}</span></div>
+      <div class="ch-row"><span class="ch-label">身份</span><span class="ch-val">${ci.roleLabel}</span></div>
+    `;
+  }
 
   renderItems();
   updateProgress();
+}
+
+function toggleEditCaseInfo(){
+  state.editingCaseInfo = !state.editingCaseInfo;
+  renderChecklistCard();
+}
+
+function cancelEditCaseInfo(){
+  state.editingCaseInfo = false;
+  renderChecklistCard();
+}
+
+function saveCaseInfoEdit(){
+  const caseno = document.getElementById("ch-edit-caseno").value.trim();
+  const court  = document.getElementById("ch-edit-court").value.trim();
+  const date   = document.getElementById("ch-edit-date").value;
+  const time   = document.getElementById("ch-edit-time").value;
+  const party  = document.getElementById("ch-edit-party").value.trim();
+  const role   = document.getElementById("ch-edit-role").value;
+  if(!date){ alert("請選擇庭期日期"); return; }
+  state.caseInfo = { ...state.caseInfo, caseno, court, date, time, party, role, roleLabel: ROLE_LABEL[role] };
+  state.editingCaseInfo = false;
+  renderChecklistCard();
+  if(state.editingId){
+    const arr = loadSaved();
+    const idx = arr.findIndex(x=>x.id===state.editingId);
+    if(idx>=0){
+      arr[idx].caseInfo = state.caseInfo;
+      arr[idx].updatedAt = new Date().toISOString();
+      writeSaved(arr);
+      renderSaved();
+    }
+  }
+  showNotice("案件內容已更新");
 }
 
 function renderItems(){
@@ -702,6 +766,7 @@ function loadChecklist(id){
   state.caseInfo = entry.caseInfo;
   state.items = entry.items.map(it=>({...it}));
   state.editingId = id;
+  state.editingCaseInfo = false;
   // also set selectedType for tag highlight
   const typeMap = {civil:"civil",criminal:"criminal",admin:"admin",family:"family",labor:"labor"};
   const sub = entry.caseInfo.subtype||"";

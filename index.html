@@ -606,6 +606,10 @@ function App({user}){
     const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
     const [calTodoInput, setCalTodoInput] = useState("");
     const [calTodoTime, setCalTodoTime] = useState("");
+    const [calEditHearing, setCalEditHearing] = useState(null); // {id, caseId, isWidget, clientName, date, time, agency, courtroom, note}
+    const [calEditTodoId, setCalEditTodoId] = useState(null);
+    const [calEditTodoText, setCalEditTodoText] = useState("");
+    const [calEditTodoTime, setCalEditTodoTime] = useState("");
     const [filterTag, setFilterTag] = useState("全部");
     const [sortBy, setSortBy] = useState("retainerDate"); // retainerDate | feeReceived | feeUnpaid | nextHearing
     const [sortDir, setSortDir] = useState("desc");
@@ -817,6 +821,56 @@ function App({user}){
     const deleteCalTodo=(id)=>{
         const updated=calTodos.filter(t=>t.id!==id);
         saveCalTodos(updated);
+    };
+    const startEditCalTodo=(t)=>{ setCalEditTodoId(t.id); setCalEditTodoText(t.text); setCalEditTodoTime(t.time||""); };
+    const cancelEditCalTodo=()=>{ setCalEditTodoId(null); setCalEditTodoText(""); setCalEditTodoTime(""); };
+    const saveEditCalTodo=()=>{
+        if(!calEditTodoText.trim()) return;
+        saveCalTodos(calTodos.map(t=>t.id===calEditTodoId?{...t,text:calEditTodoText.trim(),time:calEditTodoTime||""}:t));
+        cancelEditCalTodo();
+    };
+    const closeCalTodoModal=()=>{ setCalTodoModal(null); setCalEditHearing(null); cancelEditCalTodo(); };
+
+    // ── Calendar hearings (case hearings + 臨時庭期) ──
+    const saveWidgetHearings=(updated)=>{
+        setWidgetHearings(updated);
+        try{ localStorage.setItem("widgetHearings",JSON.stringify(updated)); }catch(_){}
+        window.fbMethods.setDoc(
+            window.fbMethods.doc(window.db,"widgetHearings","shared"),
+            {items:updated, updatedAt:new Date().toISOString()}
+        ).catch(e=>console.warn("widgetHearings save failed:",e));
+    };
+    const startEditHearing=(h)=>setCalEditHearing(h);
+    const cancelEditHearing=()=>setCalEditHearing(null);
+    const saveEditHearing=async()=>{
+        const h=calEditHearing;
+        if(!h) return;
+        if(h.isWidget){
+            saveWidgetHearings(widgetHearings.map(w=>w.id===h.id?{...w,clientName:h.clientName,date:h.date,time:h.time,agency:h.agency,courtroom:h.courtroom,note:h.note}:w));
+            setCalEditHearing(null);
+            return;
+        }
+        const c=cases.find(c=>c.id===h.caseId);
+        if(!c) return;
+        const hearings=(c.hearings||[]).map(x=>x.id===h.id?{...x,date:h.date,time:h.time,agency:h.agency,courtroom:h.courtroom,note:h.note}:x);
+        try{
+            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{hearings});
+            toast("✅ 庭期已更新");
+        }catch(e){ toast("❌ 更新失敗："+e.message); }
+        setCalEditHearing(null);
+    };
+    const deleteHearingFromCal=async(h)=>{
+        if(!confirm("確認刪除此庭期？")) return;
+        if(h.isWidget){
+            saveWidgetHearings(widgetHearings.filter(w=>w.id!==h.id));
+            return;
+        }
+        const c=cases.find(c=>c.id===h.caseId);
+        if(!c) return;
+        try{
+            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{hearings:(c.hearings||[]).filter(x=>x.id!==h.id)});
+            toast("🗑 庭期已刪除");
+        }catch(e){ toast("❌ 刪除失敗"); }
     };
 
     // ── Note helpers ──
@@ -1334,7 +1388,7 @@ function App({user}){
                         return (hm[ds]||[]).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
                     })();
                     return(
-                        <div className="cal-todo-modal" onClick={()=>setCalTodoModal(null)}>
+                        <div className="cal-todo-modal" onClick={closeCalTodoModal}>
                             <div className="cal-todo-sheet" onClick={e=>e.stopPropagation()}>
                                 {/* Header */}
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
@@ -1342,7 +1396,7 @@ function App({user}){
                                         <div style={{fontWeight:800,fontSize:17,color:"var(--text)"}}>{label}</div>
                                         {TW_HOLIDAYS[ds] && <div style={{fontSize:12,color:"var(--red)",marginTop:2}}>🎌 {TW_HOLIDAYS[ds]}</div>}
                                     </div>
-                                    <button onClick={()=>setCalTodoModal(null)} style={{background:"var(--bg4)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",color:"var(--text2)",fontSize:16}}>✕</button>
+                                    <button onClick={closeCalTodoModal} style={{background:"var(--bg4)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",color:"var(--text2)",fontSize:16}}>✕</button>
                                 </div>
 
                                 {/* Hearings on this day */}
@@ -1353,16 +1407,49 @@ function App({user}){
                                         const label=h.isWidget?"臨時庭期":h.caseType;
                                         const agency=h.agency||h.note||"";
                                         const detail=[h.time,agency,h.courtroom].filter(Boolean).join(" · ");
+                                        const fieldStyle={background:"var(--bg)",border:"1px solid var(--border)",borderRadius:7,padding:"7px 10px",color:"var(--text)",fontSize:12,outline:"none",fontFamily:"inherit"};
+                                        if(calEditHearing && calEditHearing.id===h.id) return(
+                                            <div key={i} style={{background:"var(--bg3)",border:`1px solid ${color}55`,borderRadius:10,padding:"10px 12px",marginBottom:8}}>
+                                                {h.isWidget && <input
+                                                    style={{...fieldStyle,width:"100%",marginBottom:6}}
+                                                    placeholder="當事人姓名"
+                                                    value={calEditHearing.clientName||""}
+                                                    onChange={e=>setCalEditHearing(s=>({...s,clientName:e.target.value}))}/>}
+                                                <div style={{display:"flex",gap:6,marginBottom:6}}>
+                                                    <input type="date" style={{...fieldStyle,flex:1}}
+                                                        value={calEditHearing.date||""} onChange={e=>setCalEditHearing(s=>({...s,date:e.target.value}))}/>
+                                                    <input type="time" style={{...fieldStyle,width:100}}
+                                                        value={calEditHearing.time||""} onChange={e=>setCalEditHearing(s=>({...s,time:e.target.value}))}/>
+                                                </div>
+                                                <div style={{display:"flex",gap:6,marginBottom:6}}>
+                                                    <input placeholder="法院／機關" style={{...fieldStyle,flex:1}}
+                                                        value={calEditHearing.agency||""} onChange={e=>setCalEditHearing(s=>({...s,agency:e.target.value}))}/>
+                                                    <input placeholder="法庭" style={{...fieldStyle,width:100}}
+                                                        value={calEditHearing.courtroom||""} onChange={e=>setCalEditHearing(s=>({...s,courtroom:e.target.value}))}/>
+                                                </div>
+                                                <input placeholder="庭期備註" style={{...fieldStyle,width:"100%",marginBottom:8}}
+                                                    value={calEditHearing.note||""} onChange={e=>setCalEditHearing(s=>({...s,note:e.target.value}))}/>
+                                                <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                                                    <button className="btn btn-sm" onClick={cancelEditHearing}>取消</button>
+                                                    <button className="btn btn-gold btn-sm" onClick={saveEditHearing}>💾 儲存</button>
+                                                </div>
+                                            </div>
+                                        );
                                         return(
                                         <div key={i}
-                                            onClick={h.isWidget?undefined:()=>{openDetail(h.caseId);setCalTodoModal(null);}}
-                                            style={{background:"var(--bg3)",border:`1px solid ${color}33`,borderRadius:10,padding:"10px 12px",marginBottom:8,cursor:h.isWidget?"default":"pointer",display:"flex",gap:10,alignItems:"center"}}>
-                                            <span style={{fontSize:15,color}}>{h.isWidget?"⚡":"🏛"}</span>
-                                            <div style={{flex:1}}>
+                                            style={{background:"var(--bg3)",border:`1px solid ${color}33`,borderRadius:10,padding:"10px 12px",marginBottom:8,display:"flex",gap:10,alignItems:"center"}}>
+                                            <span onClick={h.isWidget?undefined:()=>{openDetail(h.caseId);closeCalTodoModal();}}
+                                                style={{fontSize:15,color,cursor:h.isWidget?"default":"pointer"}}>{h.isWidget?"⚡":"🏛"}</span>
+                                            <div style={{flex:1,cursor:h.isWidget?"default":"pointer"}}
+                                                onClick={h.isWidget?undefined:()=>{openDetail(h.caseId);closeCalTodoModal();}}>
                                                 <div style={{fontWeight:700,color:"var(--text)",fontSize:13}}>{h.clientName}</div>
                                                 <div style={{fontSize:11,color:"var(--text3)"}}>{detail}</div>
                                             </div>
                                             <Badge label={label} color={color}/>
+                                            <button onClick={e=>{e.stopPropagation();startEditHearing({id:h.id,caseId:h.caseId,isWidget:!!h.isWidget,clientName:h.clientName,date:h.date||ds,time:h.time||"",agency:h.agency||"",courtroom:h.courtroom||"",note:h.note||""});}}
+                                                style={{background:"none",border:"none",color:"var(--text4)",cursor:"pointer",fontSize:13,padding:"2px 4px"}} title="編輯">✏️</button>
+                                            <button onClick={e=>{e.stopPropagation();deleteHearingFromCal(h);}}
+                                                style={{background:"none",border:"none",color:"var(--text4)",cursor:"pointer",fontSize:13,padding:"2px 4px"}} title="刪除">🗑</button>
                                         </div>
                                         );
                                     })}
@@ -1373,6 +1460,22 @@ function App({user}){
                                 <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>✅ 待辦事項</div>
                                 {todosForDay.length===0 && <div style={{color:"var(--text4)",fontSize:13,padding:"8px 0 14px"}}>尚無待辦，在下方新增</div>}
                                 {todosForDay.sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99")).map(t=>(
+                                    calEditTodoId===t.id ? (
+                                        <div key={t.id} style={{display:"flex",flexDirection:"column",gap:6,padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+                                            <input
+                                                style={{background:"var(--bg)",border:"1px solid var(--gold)",borderRadius:7,padding:"7px 10px",color:"var(--text)",fontSize:13,outline:"none",fontFamily:"inherit"}}
+                                                value={calEditTodoText}
+                                                onChange={e=>setCalEditTodoText(e.target.value)}
+                                                onKeyDown={e=>{ if(e.key==="Enter") saveEditCalTodo(); if(e.key==="Escape") cancelEditCalTodo(); }}
+                                                autoFocus/>
+                                            <div style={{display:"flex",gap:6}}>
+                                                <input type="time" style={{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:7,padding:"7px 10px",color:"var(--text)",fontSize:13,outline:"none",fontFamily:"inherit"}}
+                                                    value={calEditTodoTime} onChange={e=>setCalEditTodoTime(e.target.value)}/>
+                                                <button className="btn btn-sm" onClick={cancelEditCalTodo} style={{marginLeft:"auto"}}>取消</button>
+                                                <button className="btn btn-gold btn-sm" onClick={saveEditCalTodo}>💾 儲存</button>
+                                            </div>
+                                        </div>
+                                    ) : (
                                     <div key={t.id} className="cal-todo-item" onClick={()=>toggleCalTodo(t.id)}>
                                         <div className={`cal-todo-check${t.done?" done":""}`}>
                                             {t.done && <span style={{color:"#fff",fontSize:11,fontWeight:900}}>✓</span>}
@@ -1381,8 +1484,10 @@ function App({user}){
                                             {t.time && <div style={{fontSize:11,color:"#8b5cf6",fontWeight:700,marginBottom:2}}>⏰ {t.time}</div>}
                                             <div style={{color:t.done?"var(--text4)":"var(--text)",textDecoration:t.done?"line-through":"none",fontSize:14}}>{t.text}</div>
                                         </div>
-                                        <button className="cal-todo-del" onClick={e=>{e.stopPropagation();deleteCalTodo(t.id);}}>🗑</button>
+                                        <button className="cal-todo-del" onClick={e=>{e.stopPropagation();startEditCalTodo(t);}} title="編輯">✏️</button>
+                                        <button className="cal-todo-del" onClick={e=>{e.stopPropagation();deleteCalTodo(t.id);}} title="刪除">🗑</button>
                                     </div>
+                                    )
                                 ))}
 
                                 {/* Add new todo */}

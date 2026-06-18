@@ -916,39 +916,41 @@ function buildWidget(){
                 ...state.widgetHearings].filter(h=>h.date===ds).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
             // Todos
             const todos=(state.calTodos||[]).filter(t=>t.date===ds);
-            return `<div class="day-modal" onclick="if(event.target===this){state.dayDetail=null;render();}">
+            return `<div class="day-modal" onclick="if(event.target===this){state.dayDetail=null;state.editingHearingId=null;state.editingTodoId=null;render();}">
                 <div class="day-sheet">
                     <div class="day-hdr">
                         <div class="day-title">${label}</div>
-                        <button class="day-close" onclick="state.dayDetail=null;render();">✕</button>
+                        <button class="day-close" onclick="state.dayDetail=null;state.editingHearingId=null;state.editingTodoId=null;render();">✕</button>
                     </div>
                     ${hearings.length>0?`
                     <div class="day-section">
                         <div class="day-section-title">🏛 庭期（${hearings.length}場）</div>
                         ${hearings.map(h=>{
                             const tc=TYPE_COLOR[h.caseType]||"#64748b";
-                            return `<div class="day-item">
+                            const isWidgetHearing=!h.caseId;
+                            const itemClick=h.caseId?` onclick="openCase('${h.caseId}')"`:"";
+                            const editForm=(isWidgetHearing && state.editingHearingId===h.id)?buildHearingEditForm(h):"";
+                            const actions=isWidgetHearing?`
+                                <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+                                    <button class="btn-small" data-edit-widget-hearing="${h.id}" type="button" style="background:var(--bg4)">✏️ 編輯</button>
+                                    <button class="btn-small danger delete-hearing" data-delete-widget-hearing="${h.id}" type="button">🗑 刪除</button>
+                                </div>`:"";
+                            return `<div class="day-item"${editForm?"":itemClick}>
                                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
                                     <span style="color:${tc};font-size:16px">${h.time||"—"}</span>
                                     <span style="font-weight:700;color:var(--text);flex:1">${esc(h.clientName||"")}</span>
                                     <span class="badge" style="background:${tc}22;color:${tc};border:1px solid ${tc}44">${h.caseType||""}</span>
                                 </div>
                                 <div style="font-size:11px;color:var(--text3)">${esc([h.agency,h.courtroom,h.note].filter(Boolean).join(" · "))}</div>
+                                ${actions}
+                                ${editForm}
                             </div>`;
                         }).join("")}
                     </div>`:""}
                     ${todos.length>0?`
                     <div class="day-section">
                         <div class="day-section-title">✅ 待辦事項（${todos.length}項）</div>
-                        ${todos.sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99")).map(t=>`<div class="day-item" style="display:flex;align-items:flex-start;gap:10px">
-                            <div class="todo-check-box${t.done?" done":""}" onclick="event.stopPropagation();toggleTodo('${t.id}')">
-                                ${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}
-                            </div>
-                            <div style="flex:1">
-                                ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
-                                <div style="color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"};font-size:13px">${esc(t.text)}</div>
-                            </div>
-                        </div>`).join("")}
+                        ${todos.sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99")).map(t=>buildTodoItem(t)).join("")}
                     </div>`:""}
                     ${hearings.length===0&&todos.length===0?`
                     <div style="text-align:center;padding:30px 20px;color:var(--text4)">
@@ -961,6 +963,31 @@ function buildWidget(){
 
         <!-- Calendar Todos section -->
         ${buildTodoSection()}
+    </div>`;
+}
+
+function buildTodoItem(t){
+    const isOverdue=!t.done && daysUntil(t.date)<0;
+    const isEditing=state.editingTodoId===t.id;
+    const checkBox=`<div class="todo-check-box${t.done?" done":""}" onclick="window.toggleTodo('${t.id}')">${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}</div>`;
+    if(isEditing){
+        return `<div class="todo-item${t.done?" done":""}${isOverdue?" overdue":""}">
+            ${checkBox}
+            <div class="todo-edit-form">
+                <input class="todo-edit-input" id="etid-${t.id}" value="${esc(state.editTodoText)}" onkeydown="if(event.key==='Enter')window.saveEditTodo('${t.id}');if(event.key==='Escape')window.cancelEditTodo();">
+                <button class="todo-edit-btn" onclick="window.saveEditTodo('${t.id}')" style="color:var(--green)">✓</button>
+                <button class="todo-edit-btn" onclick="window.cancelEditTodo()">✕</button>
+            </div>
+        </div>`;
+    }
+    return `<div class="todo-item${t.done?" done":""}${isOverdue?" overdue":""}">
+        ${checkBox}
+        <div style="flex:1">
+            ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
+            <div style="font-size:13px;color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
+        </div>
+        <button class="todo-edit-btn" onclick="window.startEditTodo('${t.id}',\`${esc(t.text)}\`)" title="編輯">✏️</button>
+        <button class="todo-edit-btn" onclick="window.deleteTodo('${t.id}')" title="刪除" style="color:var(--text4)">🗑</button>
     </div>`;
 }
 
@@ -980,29 +1007,7 @@ function buildTodoSection(){
         const dColor=isOverdue?"#f59e0b":d===0?"var(--green)":"#8b5cf6";
         const dd=new Date(date+"T00:00:00+08:00");
         const wd=["日","一","二","三","四","五","六"][dd.getDay()];
-        const items=todos.map(t=>{
-            const isEditing=state.editingTodoId===t.id;
-            const checkBox=`<div class="todo-check-box${t.done?" done":""}" onclick="window.toggleTodo('${t.id}')">${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}</div>`;
-            if(isEditing){
-                return `<div class="todo-item${t.done?" done":""}${isOverdue&&!t.done?" overdue":""}">
-                    ${checkBox}
-                    <div class="todo-edit-form">
-                        <input class="todo-edit-input" id="etid-${t.id}" value="${esc(state.editTodoText)}" onkeydown="if(event.key==='Enter')window.saveEditTodo('${t.id}');if(event.key==='Escape')window.cancelEditTodo();">
-                        <button class="todo-edit-btn" onclick="window.saveEditTodo('${t.id}')" style="color:var(--green)">✓</button>
-                        <button class="todo-edit-btn" onclick="window.cancelEditTodo()">✕</button>
-                    </div>
-                </div>`;
-            }
-            return `<div class="todo-item${t.done?" done":""}${isOverdue&&!t.done?" overdue":""}">
-                ${checkBox}
-                <div style="flex:1">
-                    ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
-                    <div style="font-size:13px;color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
-                </div>
-                <button class="todo-edit-btn" onclick="window.startEditTodo('${t.id}',\`${esc(t.text)}\`)" title="編輯">✏️</button>
-                <button class="todo-edit-btn" onclick="window.deleteTodo('${t.id}')" title="刪除" style="color:var(--text4)">🗑</button>
-            </div>`;
-        }).join("");
+        const items=todos.map(t=>buildTodoItem(t)).join("");
         return `<div style="margin-bottom:12px">
             <div style="font-size:11px;color:var(--text4);margin-bottom:6px;display:flex;gap:8px;align-items:center">
                 <span>${dd.getMonth()+1}/${dd.getDate()}（${wd}）</span>
@@ -1026,6 +1031,25 @@ function buildTodoSection(){
     </div>`;
 }
 
+
+function buildHearingEditForm(h){
+    return `<div class="edit-form">
+        <div class="edit-row-3">
+            <input class="fi-sm" id="ef-client" value="${esc(h.clientName||"")}" placeholder="當事人姓名">
+            <input class="fi-sm" id="ef-date" type="date" value="${esc(h.date||"")}">
+            <input class="fi-sm" id="ef-time" type="time" value="${esc(h.time||"")}">
+        </div>
+        <div class="edit-row">
+            <input class="fi-sm" id="ef-agency" value="${esc(h.agency||"")}" placeholder="法院 / 機關">
+            <input class="fi-sm" id="ef-room" value="${esc(h.courtroom||h.room||"")}" placeholder="法庭">
+        </div>
+        <input class="fi-sm" id="ef-note" value="${esc(h.note||"")}" placeholder="庭期備註">
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+            <button class="btn-small" id="btn-cancel-edit" type="button">取消</button>
+            <button class="btn-small gold" data-confirm-edit="${h.id}" type="button">💾 儲存</button>
+        </div>
+    </div>`;
+}
 
 function buildCard(h){
     const color = TYPE_COLOR[h.caseType]||"#64748b";
@@ -1056,23 +1080,7 @@ function buildCard(h){
     const deleteAction = h.source==="widget" ? `
         <button class="btn-small" data-edit-widget-hearing="${h.id}" type="button" style="background:var(--bg3)">✏️ 編輯</button>
         <button class="btn-small danger delete-hearing" data-delete-widget-hearing="${h.id}" type="button">🗑 刪除</button>` : "";
-    const editForm = (h.source==="widget" && state.editingHearingId===h.id) ? `
-        <div class="edit-form">
-            <div class="edit-row-3">
-                <input class="fi-sm" id="ef-client" value="${esc(h.clientName||"")}" placeholder="當事人姓名">
-                <input class="fi-sm" id="ef-date" type="date" value="${esc(h.date||"")}">
-                <input class="fi-sm" id="ef-time" type="time" value="${esc(h.time||"")}">
-            </div>
-            <div class="edit-row">
-                <input class="fi-sm" id="ef-agency" value="${esc(h.agency||"")}" placeholder="法院 / 機關">
-                <input class="fi-sm" id="ef-room" value="${esc(h.courtroom||h.room||"")}" placeholder="法庭">
-            </div>
-            <input class="fi-sm" id="ef-note" value="${esc(h.note||"")}" placeholder="庭期備註">
-            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
-                <button class="btn-small" id="btn-cancel-edit" type="button">取消</button>
-                <button class="btn-small gold" data-confirm-edit="${h.id}" type="button">💾 儲存</button>
-            </div>
-        </div>` : "";
+    const editForm = (h.source==="widget" && state.editingHearingId===h.id) ? buildHearingEditForm(h) : "";
 
     return `
     <div class="${cardClass}"${cardAction}>
@@ -1145,12 +1153,16 @@ function bindEvents(){
             state.showQR=false;
             state.dayDetail=null;
             state.selectedDate=null;
+            state.editingHearingId=null;
+            state.editingTodoId=null;
             render();
         }
     };
     const closeDayModal = ()=>{
         state.selectedDate=null;
         state.dayDetail=null;
+        state.editingHearingId=null;
+        state.editingTodoId=null;
         render();
     };
 

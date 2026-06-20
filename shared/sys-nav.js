@@ -5,6 +5,7 @@
     { id: "clients",   href: "clients.html",     label: "👥 客戶管理" },
     { id: "judgments", href: "judgments.html",   label: "🔨 判決書管理" },
     { id: "letters",   href: "letters.html",     label: "📮 信函管理" },
+    { id: "documents", href: "documents.html",   label: "📁 文件管理" },
     { id: "templates", href: "templates.html",   label: "📚 文書範本" },
     { id: "tax",       href: "tax.html",         label: "💰 稅務管理" },
     { id: "court",     href: "court_nav.html",   label: "🗺 開庭助理" },

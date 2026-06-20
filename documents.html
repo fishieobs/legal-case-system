@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="文件管理">
+<meta name="theme-color" content="#04120f">
+<title>📁 律師事務所文件管理系統</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%81%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04120f;--bg2:#081c19;--bg3:#0d2622;--bg4:#12302b;--bg5:#1a3d36;
+  --teal:#14b8a6;--teal2:#0d9488;--teal3:#2dd4bf;
+  --gold:#f59e0b;--gold2:#d97706;--gold3:#fbbf24;
+  --text:#e3f5f1;--text2:#a8c9c3;--text3:#6a9690;--text4:#3d5f5a;
+  --red:#ef4444;--blue:#38bdf8;--green:#22c55e;--orange:#f97316;
+  --border:#12302b;--border2:#1a3d36;
+  --shadow:0 4px 20px rgba(0,0,0,.6);
+}
+:root.light{
+  --bg:#f0faf8;--bg2:#fff;--bg3:#fff;--bg4:#e8f7f4;--bg5:#d3eee8;
+  --teal:#0d9488;--teal2:#0f766e;--teal3:#14b8a6;
+  --gold:#b45309;--gold2:#92400e;--gold3:#d97706;
+  --text:#0a2421;--text2:#1f4742;--text3:#5a8983;--text4:#8ab5af;
+  --border:#d0ece6;--border2:#b8e0d8;--shadow:0 2px 10px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.6;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px;}
+
+.app{min-height:100vh;padding-top:41px;}
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;position:sticky;top:41px;z-index:200;}
+.hdr-title{font-family:'Noto Serif TC',serif;font-size:1.05rem;color:var(--teal3);}
+.hdr-sub{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
+.hdr-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+
+.tab-bar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;position:sticky;top:93px;z-index:150;}
+.tab-bar::-webkit-scrollbar{display:none;}
+.tab{padding:10px 16px;border:none;background:transparent;color:var(--text3);font-weight:500;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;}
+.tab.active{color:var(--teal3);font-weight:700;border-bottom-color:var(--teal3);}
+
+.btn{padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-family:inherit;transition:all .15s;white-space:nowrap;}
+.btn:active{opacity:.8;}
+.btn-teal{background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal3);}
+.btn-ghost{background:transparent;color:var(--text3);border:none;}
+.btn-ghost:hover{color:var(--text);background:var(--bg4);}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.btn-sm{padding:6px 11px;font-size:11px;}
+.btn-xs{padding:4px 8px;font-size:10px;}
+
+.content{padding:16px 18px;max-width:1000px;margin:0 auto;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);}
+.stat-val{font-size:20px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+.stat-lbl{font-size:9px;color:var(--text4);margin-top:4px;letter-spacing:.04em;text-transform:uppercase;}
+
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:12px;}
+.card-hdr{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--border);}
+.info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03);gap:10px;}
+.info-row:last-child{border-bottom:none;}
+.info-lbl{font-size:11px;color:var(--text4);min-width:84px;flex-shrink:0;}
+.info-val{font-size:12px;color:var(--text);text-align:right;font-weight:700;word-break:break-all;}
+
+.fi{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-size:12px;outline:none;font-family:inherit;transition:border-color .2s;width:100%;}
+.fi:focus{border-color:var(--teal);}
+select.fi{width:100%;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fl{font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+
+.search-bar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.search-inp{flex:1;min-width:180px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:10px 14px;color:var(--text);font-size:13px;outline:none;font-family:inherit;}
+.search-inp:focus{border-color:var(--teal);}
+
+.badge{display:inline-flex;align-items:center;gap:3px;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;border:1px solid transparent;}
+.chip{display:inline-flex;align-items:center;background:rgba(20,184,166,.13);color:var(--teal3);border:1px solid rgba(20,184,166,.25);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;margin:2px 3px 0 0;}
+
+.doc-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.doc-row:last-child{border-bottom:none;}
+.doc-row-main{display:flex;align-items:flex-start;gap:10px;min-width:0;flex:1;}
+.doc-type-ico{font-size:18px;flex-shrink:0;margin-top:1px;}
+.doc-row-info{min-width:0;}
+.doc-row-label{font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.doc-row-meta{font-size:10px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.doc-row-actions{display:flex;gap:4px;flex-shrink:0;}
+
+.drive-btn{display:flex;align-items:center;gap:10px;background:rgba(66,133,244,.1);border:1px solid rgba(66,133,244,.35);border-radius:10px;padding:11px 14px;cursor:pointer;text-decoration:none;transition:background .2s;flex:1;min-width:0;}
+.drive-btn:hover{background:rgba(66,133,244,.2);}
+.drive-icon{font-size:22px;flex-shrink:0;}
+.folder-row{display:flex;align-items:center;gap:10px;padding:6px 0;}
+
+.overlay{position:fixed;inset:0;background:#00000099;z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;}
+.dialog{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;}
+.dialog-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.form-section{font-size:10px;font-weight:700;color:var(--teal3);border-left:3px solid var(--teal);padding-left:10px;margin:18px 0 10px;letter-spacing:.06em;}
+
+.empty{text-align:center;padding:50px 20px;color:var(--text4);}
+.empty-ico{font-size:44px;margin-bottom:12px;opacity:.35;}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px;color:var(--text3);}
+.spinner{width:36px;height:36px;border:3px solid var(--bg5);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.7);}
+.login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
+
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--teal);color:var(--teal3);padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;}
+
+.bnav{display:none;}
+@media(max-width:640px){
+  .bnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:200;}
+  .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 4px;font-size:9px;color:var(--text3);cursor:pointer;gap:2px;border:none;background:transparent;font-family:inherit;}
+  .bnav-btn.active{color:var(--teal3);}
+  .bnav-icon{font-size:18px;}
+  .app{padding-bottom:72px;}
+  .content{padding:12px 14px;}
+}
+a{color:var(--blue);}
+</style>
+</head>
+<body>
+<script src="shared/sys-nav.js" data-active="documents"></script>
+<div id="root"></div>
+<div id="toast"></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getFirestore,collection,onSnapshot,doc,setDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+const cfg={apiKey:"AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",authDomain:"legalcasemanageer.firebaseapp.com",projectId:"legalcasemanageer",storageBucket:"legalcasemanageer.firebasestorage.app",messagingSenderId:"559838504556",appId:"1:559838504556:web:ba10c071a12650bbd85a49"};
+const app=initializeApp(cfg);
+const db=getFirestore(app);
+const auth=getAuth(app);
+
+// ══════════════════════════════════════════
+// 常數
+// ══════════════════════════════════════════
+const DOC_TYPES=["筆錄","書狀","證物","判決","其他"];
+const DOC_TYPE_META={
+  "筆錄":{ico:"📝",color:"var(--blue)"},
+  "書狀":{ico:"📄",color:"var(--teal3)"},
+  "證物":{ico:"🗂",color:"var(--gold3)"},
+  "判決":{ico:"⚖",color:"var(--orange)"},
+  "其他":{ico:"🔗",color:"var(--text3)"},
+};
+function docTypeMeta(t){return DOC_TYPE_META[t]||DOC_TYPE_META["其他"];}
+
+// ══════════════════════════════════════════
+// 工具
+// ══════════════════════════════════════════
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400);}
+function caseTitle(c){return(c.clientName||"未命名當事人")+(c.opposingParty?` v. ${c.opposingParty}`:"");}
+function caseSub(c){return[c.firmCaseNo||"無案號",c.caseType,c.caseReason].filter(Boolean).join(" · ");}
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let S={
+  user:null,authChecked:false,
+  cases:[],loading:true,
+  tab:"docs",
+  search:"",filterType:"all",filterCase:"all",
+  showForm:false,editTarget:null,form:newForm(),
+  delConfirm:null,
+  folderEditId:null,folderInput:"",
+};
+function newForm(){return{caseId:"",label:"",url:"",type:"筆錄"};}
+
+// ══════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════
+onAuthStateChanged(auth,u=>{
+  S.user=u;S.authChecked=true;
+  if(u){
+    try{const c=localStorage.getItem("documents_cases_cache");if(c)S.cases=JSON.parse(c);}catch(_){}
+    S.loading=false;render();
+    onSnapshot(collection(db,"cases"),snap=>{
+      S.cases=snap.docs.map(d=>({...d.data(),id:d.id}));
+      try{localStorage.setItem("documents_cases_cache",JSON.stringify(S.cases));}catch(_){}
+      render();
+    });
+  }else{S.loading=false;render();}
+});
+
+// ══════════════════════════════════════════
+// 文件（docs[]）操作
+// ══════════════════════════════════════════
+function allDocsFlat(){
+  const out=[];
+  S.cases.forEach(c=>{
+    (c.docs||[]).forEach((d,idx)=>{
+      out.push({...d,caseId:c.id,idx,clientName:c.clientName||"",firmCaseNo:c.firmCaseNo||"",caseTypeLabel:c.caseType||""});
+    });
+  });
+  return out;
+}
+function filteredDocs(){
+  const q=S.search.trim().toLowerCase();
+  let list=allDocsFlat();
+  if(S.filterType!=="all")list=list.filter(d=>(d.type||"其他")===S.filterType);
+  if(S.filterCase!=="all")list=list.filter(d=>d.caseId===S.filterCase);
+  if(q)list=list.filter(d=>[d.label,d.url,d.clientName,d.firmCaseNo].some(v=>String(v||"").toLowerCase().includes(q)));
+  list.sort((a,b)=>(a.clientName||"").localeCompare(b.clientName||"")||(a.label||"").localeCompare(b.label||""));
+  return list;
+}
+async function saveDocForm(){
+  const f=S.form;
+  if(!f.caseId){toast("⚠️ 請選擇案件");return;}
+  if(!f.url||!f.url.trim()){toast("⚠️ 請輸入文件連結");return;}
+  const entry={label:f.label.trim(),url:f.url.trim(),type:f.type};
+  if(S.editTarget){
+    const{caseId:oldCaseId,idx}=S.editTarget;
+    if(oldCaseId===f.caseId){
+      const c=S.cases.find(x=>x.id===oldCaseId);
+      const docs=(c.docs||[]).slice();
+      entry.id=docs[idx]?.id||uid();
+      docs[idx]={...docs[idx],...entry};
+      await setDoc(doc(db,"cases",oldCaseId),{...c,docs,updatedAt:new Date().toISOString()});
+    }else{
+      const oldC=S.cases.find(x=>x.id===oldCaseId);
+      const newC=S.cases.find(x=>x.id===f.caseId);
+      const oldDocs=(oldC.docs||[]).filter((_,i)=>i!==idx);
+      entry.id=uid();
+      const newDocs=[...(newC.docs||[]),entry];
+      await setDoc(doc(db,"cases",oldCaseId),{...oldC,docs:oldDocs,updatedAt:new Date().toISOString()});
+      await setDoc(doc(db,"cases",f.caseId),{...newC,docs:newDocs,updatedAt:new Date().toISOString()});
+    }
+    toast("✅ 文件已更新");
+  }else{
+    entry.id=uid();
+    const c=S.cases.find(x=>x.id===f.caseId);
+    const docs=[...(c.docs||[]),entry];
+    await setDoc(doc(db,"cases",f.caseId),{...c,docs,updatedAt:new Date().toISOString()});
+    toast("✅ 文件已新增");
+  }
+  S.showForm=false;S.editTarget=null;S.form=newForm();render();
+}
+async function delDocConfirmed(){
+  const{caseId,idx}=S.delConfirm;
+  const c=S.cases.find(x=>x.id===caseId);
+  if(!c){S.delConfirm=null;render();return;}
+  const docs=(c.docs||[]).filter((_,i)=>i!==idx);
+  await setDoc(doc(db,"cases",caseId),{...c,docs,updatedAt:new Date().toISOString()});
+  toast("🗑 已刪除文件");S.delConfirm=null;render();
+}
+
+// ══════════════════════════════════════════
+// 雲端資料夾（driveFolderUrl）操作
+// ══════════════════════════════════════════
+async function saveFolder(caseId){
+  const c=S.cases.find(x=>x.id===caseId);if(!c)return;
+  await setDoc(doc(db,"cases",caseId),{...c,driveFolderUrl:S.folderInput.trim(),updatedAt:new Date().toISOString()});
+  toast("✅ 雲端資料夾連結已更新");S.folderEditId=null;S.folderInput="";render();
+}
+async function removeFolder(caseId){
+  const c=S.cases.find(x=>x.id===caseId);if(!c)return;
+  await setDoc(doc(db,"cases",caseId),{...c,driveFolderUrl:"",updatedAt:new Date().toISOString()});
+  toast("🗑 已移除雲端資料夾連結");render();
+}
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+function render(){
+  const root=document.getElementById("root");
+  if(!root)return;
+  if(!S.authChecked){root.innerHTML=`<div class="loading"><div class="spinner"></div><div>連線中…</div></div>`;return;}
+  if(!S.user){root.innerHTML=renderLogin();bindLogin();return;}
+  if(S.loading){root.innerHTML=`<div class="app"><div class="loading"><div class="spinner"></div><div>載入中…</div></div></div>`;return;}
+  root.innerHTML=renderApp();
+  bindApp();
+}
+
+// ── Login ──
+function renderLogin(){return`
+<div class="login-wrap"><div class="login-box">
+  <div style="font-size:48px;text-align:center;margin-bottom:8px">📁</div>
+  <div style="font-family:'Noto Serif TC',serif;font-size:1.2rem;color:var(--teal3);text-align:center;margin-bottom:3px">文件管理系統</div>
+  <div style="font-size:10px;color:var(--text3);text-align:center;letter-spacing:.1em;margin-bottom:24px;text-transform:uppercase">Document Library</div>
+  <div id="lerr" style="display:none" class="login-err"></div>
+  <div class="fg" style="margin-bottom:12px"><label class="fl">帳號</label><input class="fi" id="lem" type="email" placeholder="office@yourfirm.com" autocomplete="email"></div>
+  <div class="fg" style="margin-bottom:22px"><label class="fl">密碼</label>
+    <div style="position:relative"><input class="fi" id="lpw" type="password" placeholder="••••••••" style="padding-right:40px">
+    <button id="spw" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px">👁</button></div>
+  </div>
+  <button id="lbtn" class="btn btn-teal" style="width:100%;justify-content:center;font-size:14px;padding:12px">🔐 登入</button>
+</div></div>`;}
+function bindLogin(){
+  const go=async()=>{
+    const em=document.getElementById("lem")?.value.trim();
+    const pw=document.getElementById("lpw")?.value;
+    const err=document.getElementById("lerr");
+    if(!em||!pw){if(err){err.style.display="block";err.textContent="請輸入帳號密碼";}return;}
+    document.getElementById("lbtn").textContent="登入中…";
+    try{await signInWithEmailAndPassword(auth,em,pw);}
+    catch(e){if(err){err.style.display="block";err.textContent={"auth/invalid-credential":"帳號或密碼錯誤","auth/too-many-requests":"嘗試次數過多","auth/user-disabled":"此帳號已停用","auth/unauthorized-domain":"此網域未獲 Firebase 授權","auth/network-request-failed":"網路連線問題，請確認網路後再試"}[e.code]||("登入失敗（"+e.code+"）");}document.getElementById("lbtn").textContent="🔐 登入";}
+  };
+  document.getElementById("lbtn")?.addEventListener("click",go);
+  document.getElementById("lpw")?.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+  document.getElementById("spw")?.addEventListener("click",()=>{const i=document.getElementById("lpw");i.type=i.type==="password"?"text":"password";});
+}
+
+// ── App ──
+function renderApp(){
+  const tabs=[["docs","📁 文件列表"],["folders","☁️ 雲端資料夾"]];
+  const totalDocs=allDocsFlat().length;
+  return`
+<div class="app">
+  <div class="hdr">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:22px">📁</div>
+      <div><div class="hdr-title">文件管理系統</div><div class="hdr-sub">Document Library · ${totalDocs} 份文件 · ${S.cases.length} 件案件</div></div>
+    </div>
+    <div class="hdr-actions">
+      <button class="btn btn-teal btn-sm" id="btn-add-doc">＋ 新增文件</button>
+      <button class="btn btn-ghost" style="padding:7px 10px" id="btn-logout">🚪</button>
+    </div>
+  </div>
+  <div class="tab-bar">${tabs.map(([k,l])=>`<button class="tab${S.tab===k?" active":""}" data-tab="${k}">${l}</button>`).join("")}</div>
+  <div class="content">
+    ${S.tab==="docs"?renderDocsTab():renderFoldersTab()}
+  </div>
+  <div class="bnav">
+    ${tabs.map(([k,l])=>`<button class="bnav-btn${S.tab===k?" active":""}" data-tab="${k}"><span class="bnav-icon">${l.split(" ")[0]}</span>${l.split(" ")[1]}</button>`).join("")}
+  </div>
+  ${S.showForm?renderForm():""}
+  ${S.delConfirm?renderDelDialog():""}
+</div>`;}
+
+// ── 文件列表 ──
+function renderDocsTab(){
+  const all=allDocsFlat();
+  const casesNoDocs=S.cases.filter(c=>!(c.docs||[]).length);
+  const casesNoFolder=S.cases.filter(c=>!c.driveFolderUrl);
+  const list=filteredDocs();
+  const caseOptions=S.cases.slice().sort((a,b)=>caseTitle(a).localeCompare(caseTitle(b)));
+
+  return`
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-val" style="color:var(--teal3)">${all.length}</div><div class="stat-lbl">文件總數</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--blue)">${S.cases.length-casesNoDocs.length}</div><div class="stat-lbl">已建文件案件</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--gold3)">${casesNoDocs.length}</div><div class="stat-lbl">尚無文件案件</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--red)">${casesNoFolder.length}</div><div class="stat-lbl">尚無雲端資料夾</div></div>
+  </div>
+
+  ${casesNoDocs.length?`<div class="card" style="border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.04)">
+    <div class="card-hdr" style="color:var(--gold)">📭 有 ${casesNoDocs.length} 件案件尚未建立任何文件連結</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${casesNoDocs.slice(0,30).map(c=>`<button class="chip" style="cursor:pointer;background:rgba(245,158,11,.12);color:var(--gold3);border-color:rgba(245,158,11,.3)" data-quick-add="${esc(c.id)}">＋ ${esc(caseTitle(c))}</button>`).join("")}
+    </div>
+    <div style="font-size:10px;color:var(--text4);margin-top:8px">點擊案件即可快速新增文件</div>
+  </div>`:""}
+
+  <div class="search-bar">
+    <input class="search-inp" id="search" placeholder="🔍 搜尋文件名稱、連結、當事人、案號…" value="${esc(S.search)}">
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+    ${[["all","全部類型"],...DOC_TYPES.map(t=>[t,t])].map(([k,l])=>`<button class="btn btn-sm ${S.filterType===k?"btn-teal":"btn-outline"}" data-type-filter="${k}">${l}</button>`).join("")}
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+    <select class="fi" id="case-filter" style="max-width:280px">
+      <option value="all"${S.filterCase==="all"?" selected":""}>全部案件</option>
+      ${caseOptions.map(c=>`<option value="${c.id}"${S.filterCase===c.id?" selected":""}>${esc(caseTitle(c))}</option>`).join("")}
+    </select>
+    <span style="font-size:12px;color:var(--text3)">共 ${list.length} 份</span>
+  </div>
+
+  ${list.length===0?`<div class="empty"><div class="empty-ico">📁</div><div>${S.search||S.filterType!=="all"||S.filterCase!=="all"?"查無符合的文件":"尚無文件，點擊右上角「＋ 新增文件」"}</div></div>`:`
+  <div class="card">
+    ${list.map(d=>{
+      const tm=docTypeMeta(d.type);
+      return`<div class="doc-row">
+        <div class="doc-row-main">
+          <span class="doc-type-ico">${tm.ico}</span>
+          <div class="doc-row-info">
+            <div class="doc-row-label">${esc(d.label||d.url)}</div>
+            <div class="doc-row-meta">
+              <span>${esc(d.clientName||"未命名當事人")}</span>
+              ${d.firmCaseNo?`<span>· ${esc(d.firmCaseNo)}</span>`:""}
+              <span class="badge" style="background:${tm.color}22;color:${tm.color};border-color:${tm.color}55">${esc(d.type||"其他")}</span>
+            </div>
+          </div>
+        </div>
+        <div class="doc-row-actions">
+          <a href="${esc(d.url)}" target="_blank" rel="noreferrer" class="btn btn-outline btn-xs">🔗 開啟</a>
+          <button class="btn btn-ghost btn-xs" data-edit-doc="${d.caseId}|${d.idx}">✏️</button>
+          <button class="btn btn-ghost btn-xs" data-del-doc="${d.caseId}|${d.idx}">🗑</button>
+        </div>
+      </div>`;
+    }).join("")}
+  </div>`}`;
+}
+
+// ── 雲端資料夾 ──
+function renderFoldersTab(){
+  const list=S.cases.slice().sort((a,b)=>caseTitle(a).localeCompare(caseTitle(b)));
+  if(!list.length)return`<div class="empty"><div class="empty-ico">☁️</div><div>尚無案件，請先於案件系統建立案件</div></div>`;
+  return`
+  <div style="font-size:12px;color:var(--text3);margin-bottom:14px">管理各案件的雲端資料夾連結（如 Google Drive 整批存證資料夾），僅存連結，不上傳實際檔案</div>
+  <div class="card">
+    ${list.map(c=>{
+      const editing=S.folderEditId===c.id;
+      return`<div class="folder-row" style="border-bottom:1px solid var(--border);padding:10px 0">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:700;color:var(--text)">${esc(caseTitle(c))}</span>
+            <span style="font-size:10px;color:var(--text4)">${esc(caseSub(c))}</span>
+          </div>
+          ${editing?`
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="fi" id="folder-input" value="${esc(S.folderInput)}" placeholder="https://drive.google.com/...">
+            <button class="btn btn-teal btn-xs" data-folder-save="${c.id}">💾</button>
+            <button class="btn btn-outline btn-xs" data-folder-cancel="1">取消</button>
+          </div>`:
+          c.driveFolderUrl?`
+          <div style="display:flex;gap:6px;align-items:center">
+            <a class="drive-btn" href="${esc(c.driveFolderUrl)}" target="_blank" rel="noreferrer">
+              <span class="drive-icon">📂</span>
+              <span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.driveFolderUrl)}</span>
+            </a>
+            <button class="btn btn-ghost btn-xs" data-folder-edit="${c.id}">✏️</button>
+            <button class="btn btn-ghost btn-xs" data-folder-remove="${c.id}">🗑</button>
+          </div>`:
+          `<button class="btn btn-outline btn-xs" data-folder-edit="${c.id}">＋ 設定資料夾連結</button>`}
+        </div>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+// ── 新增/編輯文件表單 ──
+function renderForm(){
+  const f=S.form;
+  const caseOptions=S.cases.slice().sort((a,b)=>caseTitle(a).localeCompare(caseTitle(b)));
+  return`<div class="overlay"><div class="dialog">
+  <div class="dialog-title">📁 ${S.editTarget?"編輯文件":"新增文件"}</div>
+  <div class="form-grid">
+    <div class="fg" style="grid-column:1/-1"><label class="fl">所屬案件 *</label>
+      <select class="fi" id="f-doc-case">
+        <option value="">請選擇案件</option>
+        ${caseOptions.map(c=>`<option value="${c.id}"${f.caseId===c.id?" selected":""}>${esc(caseTitle(c))}（${esc(c.firmCaseNo||"無案號")}）</option>`).join("")}
+      </select>
+    </div>
+    <div class="fg"><label class="fl">文件類型</label>
+      <select class="fi" id="f-doc-type">${DOC_TYPES.map(t=>`<option${f.type===t?" selected":""}>${t}</option>`).join("")}</select>
+    </div>
+    <div class="fg"><label class="fl">文件名稱</label><input class="fi" id="f-doc-label" value="${esc(f.label)}" placeholder="如：第一次開庭筆錄"></div>
+  </div>
+  <div class="fg" style="margin-top:10px;margin-bottom:18px"><label class="fl">文件連結 *</label><input class="fi" id="f-doc-url" type="url" value="${esc(f.url)}" placeholder="https://drive.google.com/..."></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-outline btn-sm" id="f-doc-cancel">取消</button>
+    <button class="btn btn-teal btn-sm" id="f-doc-save">💾 儲存</button>
+  </div>
+</div></div>`;}
+
+function renderDelDialog(){return`<div class="overlay"><div class="dialog" style="max-width:380px">
+  <div class="dialog-title">刪除此文件連結？</div>
+  <div style="color:var(--text3);margin-bottom:20px;font-size:13px">「${esc(S.delConfirm.label||"")}」將從該案件移除，此操作無法復原（不影響外部實際檔案）。</div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-outline btn-sm" id="dc-doc-cancel">取消</button>
+    <button class="btn btn-sm" style="background:var(--red);color:#fff" id="dc-doc-ok">確認刪除</button>
+  </div>
+</div></div>`;}
+
+// ══════════════════════════════════════════
+// BIND
+// ══════════════════════════════════════════
+function bindApp(){
+  document.getElementById("btn-logout")?.addEventListener("click",async()=>{if(confirm("確認登出？"))await signOut(auth);});
+  document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{S.tab=b.dataset.tab;render();}));
+  document.getElementById("btn-add-doc")?.addEventListener("click",()=>{S.form=newForm();S.editTarget=null;S.showForm=true;render();});
+
+  // 搜尋 / 篩選
+  const sb=document.getElementById("search");
+  if(sb)sb.addEventListener("input",e=>{S.search=e.target.value;const pos=e.target.selectionStart;render();const n=document.getElementById("search");if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(_){}}});
+  document.querySelectorAll("[data-type-filter]").forEach(b=>b.addEventListener("click",()=>{S.filterType=b.dataset.typeFilter;render();}));
+  document.getElementById("case-filter")?.addEventListener("change",e=>{S.filterCase=e.target.value;render();});
+
+  // 快速新增（從無文件案件清單）
+  document.querySelectorAll("[data-quick-add]").forEach(b=>b.addEventListener("click",()=>{S.form={...newForm(),caseId:b.dataset.quickAdd};S.editTarget=null;S.showForm=true;render();}));
+
+  // 文件列表動作
+  document.querySelectorAll("[data-edit-doc]").forEach(b=>b.addEventListener("click",()=>{
+    const[caseId,idxStr]=b.dataset.editDoc.split("|");
+    const idx=Number(idxStr);
+    const c=S.cases.find(x=>x.id===caseId);
+    const d=c&&(c.docs||[])[idx];
+    if(!d)return;
+    S.editTarget={caseId,idx};
+    S.form={caseId,label:d.label||"",url:d.url||"",type:d.type||"筆錄"};
+    S.showForm=true;render();
+  }));
+  document.querySelectorAll("[data-del-doc]").forEach(b=>b.addEventListener("click",()=>{
+    const[caseId,idxStr]=b.dataset.delDoc.split("|");
+    const idx=Number(idxStr);
+    const c=S.cases.find(x=>x.id===caseId);
+    const d=c&&(c.docs||[])[idx];
+    S.delConfirm={caseId,idx,label:d?(d.label||d.url):""};
+    render();
+  }));
+
+  // 文件表單
+  document.getElementById("f-doc-cancel")?.addEventListener("click",()=>{S.showForm=false;S.editTarget=null;render();});
+  document.getElementById("f-doc-save")?.addEventListener("click",()=>{
+    S.form={
+      caseId:document.getElementById("f-doc-case")?.value||"",
+      type:document.getElementById("f-doc-type")?.value||"筆錄",
+      label:document.getElementById("f-doc-label")?.value||"",
+      url:document.getElementById("f-doc-url")?.value||"",
+    };
+    saveDocForm();
+  });
+
+  // 刪除確認
+  document.getElementById("dc-doc-cancel")?.addEventListener("click",()=>{S.delConfirm=null;render();});
+  document.getElementById("dc-doc-ok")?.addEventListener("click",delDocConfirmed);
+
+  // 雲端資料夾
+  document.querySelectorAll("[data-folder-edit]").forEach(b=>b.addEventListener("click",()=>{
+    const caseId=b.dataset.folderEdit;
+    const c=S.cases.find(x=>x.id===caseId);
+    S.folderEditId=caseId;S.folderInput=c?.driveFolderUrl||"";render();
+  }));
+  document.querySelectorAll("[data-folder-cancel]").forEach(b=>b.addEventListener("click",()=>{S.folderEditId=null;S.folderInput="";render();}));
+  document.querySelectorAll("[data-folder-save]").forEach(b=>b.addEventListener("click",()=>{
+    S.folderInput=document.getElementById("folder-input")?.value||"";
+    saveFolder(b.dataset.folderSave);
+  }));
+  document.querySelectorAll("[data-folder-remove]").forEach(b=>b.addEventListener("click",()=>{
+    if(confirm("確認移除此案件的雲端資料夾連結？"))removeFolder(b.dataset.folderRemove);
+  }));
+}
+
+render();
+</script>
+</body>
+</html>

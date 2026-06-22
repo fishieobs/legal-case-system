@@ -109,6 +109,13 @@ input:checked+.tog-slider:before{transform:translateX(16px);background:var(--bg)
 .empty{text-align:center;padding:28px;color:var(--text4);font-size:13px;}
 .hint{font-size:11px;color:var(--text4);margin-bottom:12px;}
 
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px;color:var(--text3);}
+.spinner{width:36px;height:36px;border:3px solid var(--bg5);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.7);}
+.login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
+
 /* ── invoice (screen) ── */
 .invoice{background:#fff;color:#1a1a2e;border-radius:10px;padding:28px 32px;font-family:'Noto Serif TC',serif;line-height:1.8;font-size:13px;}
 .inv-header{text-align:center;padding-bottom:14px;border-bottom:2px solid #1a1a2e;margin-bottom:14px;}
@@ -144,9 +151,30 @@ input:checked+.tog-slider:before{transform:translateX(16px);background:var(--bg)
 <body>
 <script src="shared/sys-nav.js" data-active="fees"></script>
 <div id="toast"></div>
-<div class="page">
 
-  <h1>💰 律師費計算與請款單</h1>
+<div id="auth-loading" class="loading"><div class="spinner"></div><div>連線中…</div></div>
+
+<div id="login-screen" class="login-wrap" style="display:none">
+  <div class="login-box">
+    <div style="font-size:48px;text-align:center;margin-bottom:8px">💰</div>
+    <div style="font-family:'Noto Serif TC',serif;font-size:1.2rem;color:var(--gold);text-align:center;margin-bottom:3px">律師費計算與請款單</div>
+    <div style="font-size:10px;color:var(--text3);text-align:center;letter-spacing:.1em;margin-bottom:24px;text-transform:uppercase">Fee Calculator &amp; Invoicing</div>
+    <div id="lerr" style="display:none" class="login-err"></div>
+    <div class="fg" style="margin-bottom:12px"><label class="fl">帳號</label><input class="fi" id="lem" type="email" placeholder="office@yourfirm.com" autocomplete="email"></div>
+    <div class="fg" style="margin-bottom:22px"><label class="fl">密碼</label>
+      <div style="position:relative"><input class="fi" id="lpw" type="password" placeholder="••••••••" style="padding-right:40px">
+      <button id="spw" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px">👁</button></div>
+    </div>
+    <button id="lbtn" type="button" class="btn btn-gold btn-full" style="font-size:14px;padding:12px">🔐 登入</button>
+  </div>
+</div>
+
+<div class="page" id="app-page" style="display:none">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <h1>💰 律師費計算與請款單</h1>
+    <button class="btn btn-outline btn-sm" id="btn-logout">🚪 登出</button>
+  </div>
   <div class="subtitle">計費計算器 · 費用明細 · 請款單產生器</div>
 
   <!-- ── 計費計算器 ── -->
@@ -434,6 +462,18 @@ input:checked+.tog-slider:before{transform:translateX(16px);background:var(--bg)
 
 </div>
 
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getFirestore,doc,onSnapshot,setDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+const cfg={apiKey:"AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",authDomain:"legalcasemanageer.firebaseapp.com",projectId:"legalcasemanageer",storageBucket:"legalcasemanageer.firebasestorage.app",messagingSenderId:"559838504556",appId:"1:559838504556:web:ba10c071a12650bbd85a49"};
+const app=initializeApp(cfg);
+window.db=getFirestore(app);
+window.auth=getAuth(app);
+window.fbMethods={doc,onSnapshot,setDoc};
+window.fbAuth={signInWithEmailAndPassword,signOut,onAuthStateChanged};
+window.firebaseReady=true;
+</script>
 <script>
 // ── state ─────────────────────────────────────────────
 let items   = [];
@@ -529,8 +569,7 @@ function move(id,dir){
   const j=i+dir; if(j<0||j>=items.length) return;
   [items[i],items[j]]=[items[j],items[i]]; save(); renderItems();
 }
-function save(){ localStorage.setItem("feeItems",JSON.stringify(items)); }
-function load(){ try{ return JSON.parse(localStorage.getItem("feeItems")||"[]"); }catch(e){ return []; } }
+function save(){ persistAll(); }
 
 function renderItems(){
   renderTotals();
@@ -577,16 +616,11 @@ function saveManual(){
 
 // ── attorney info (auto-save on blur) ─────────────────
 const ATTY_IDS=["a-firm","a-lawyer","a-addr","a-tel","a-email","a-bank","a-branch","a-acct","a-acctname","a-taxid"];
-function saveAtty(){
-  const d={}; ATTY_IDS.forEach(id=>{ d[id]=document.getElementById(id)?.value||""; });
-  localStorage.setItem("feeAtty",JSON.stringify(d));
-}
-function loadAtty(){
-  try{ const d=JSON.parse(localStorage.getItem("feeAtty")||"{}");
-    ATTY_IDS.forEach(id=>{ const el=document.getElementById(id); if(el&&d[id]) el.value=d[id]; });
-  }catch(e){}
-}
+function saveAtty(){ persistAll(); }
 document.querySelectorAll(".fi.atty").forEach(el=>el.addEventListener("blur",saveAtty));
+const INV_META_IDS=["i-client","i-case","i-date","i-due","i-no","i-notes"];
+INV_META_IDS.forEach(id=>document.getElementById(id)?.addEventListener("blur",()=>persistAll()));
+document.getElementById("tax-chk")?.addEventListener("change",()=>persistAll());
 
 // ── invoice defaults ──────────────────────────────────
 function initDefaults(){
@@ -664,11 +698,107 @@ function n(v){ return Math.round(v).toLocaleString("zh-TW"); }
 function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function toast(msg,dur=2200){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),dur); }
 
-// ── init ──────────────────────────────────────────────
-items = load();
-loadAtty();
-initDefaults();
-renderItems();
+// ── cloud sync (Firestore) ─────────────────────────────
+let cloudBootstrapped = false;
+
+function persistAll(){
+  if(!window.auth || !window.auth.currentUser) return;
+  const data = {
+    atty: ATTY_IDS.reduce((o,id)=>{ o[id]=document.getElementById(id)?.value||""; return o; },{}),
+    items,
+    invoice: {
+      client:g("i-client"), caseName:g("i-case"), invDate:g("i-date"), dueDate:g("i-due"),
+      invNo:g("i-no"), notes:g("i-notes"), taxOn:!!document.getElementById("tax-chk")?.checked,
+    },
+    updatedAt: new Date().toISOString(),
+  };
+  window.fbMethods.setDoc(window.fbMethods.doc(window.db,"feesData","main"),data).catch(e=>console.error(e));
+  try{ localStorage.setItem("feesData_cache",JSON.stringify(data)); }catch(e){}
+}
+
+function applyCloudData(data){
+  items = data.items || [];
+  const atty = data.atty || {};
+  ATTY_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=atty[id]||""; });
+  const inv = data.invoice || {};
+  const setIf=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||""; };
+  setIf("i-client",inv.client); setIf("i-case",inv.caseName);
+  setIf("i-date",inv.invDate); setIf("i-due",inv.dueDate);
+  setIf("i-no",inv.invNo); setIf("i-notes",inv.notes);
+  document.getElementById("tax-chk").checked = !!inv.taxOn;
+  initDefaults();
+  renderItems();
+}
+
+// 將舊版僅存於本機 localStorage 的草稿，於雲端尚無資料時一次性搬移上雲
+function migrateLegacyLocalData(){
+  let legacyItems=[]; try{ legacyItems=JSON.parse(localStorage.getItem("feeItems")||"[]"); }catch(e){}
+  let legacyAtty={}; try{ legacyAtty=JSON.parse(localStorage.getItem("feeAtty")||"{}"); }catch(e){}
+  items = legacyItems;
+  ATTY_IDS.forEach(id=>{ const el=document.getElementById(id); if(el&&legacyAtty[id]) el.value=legacyAtty[id]; });
+  initDefaults();
+  renderItems();
+  persistAll();
+}
+
+function initAppData(){
+  try{
+    const c=localStorage.getItem("feesData_cache");
+    if(c) applyCloudData(JSON.parse(c));
+  }catch(e){}
+  window.fbMethods.onSnapshot(window.fbMethods.doc(window.db,"feesData","main"), snap=>{
+    if(snap.exists()){
+      applyCloudData(snap.data());
+    }else if(!cloudBootstrapped){
+      migrateLegacyLocalData();
+    }
+    cloudBootstrapped = true;
+  });
+}
+
+// ── auth gate ───────────────────────────────────────────
+function waitForFirebase(cb){
+  if(window.firebaseReady){ cb(); return; }
+  const t=setInterval(()=>{ if(window.firebaseReady){ clearInterval(t); cb(); } },100);
+}
+function showLogin(){
+  document.getElementById("auth-loading").style.display="none";
+  document.getElementById("app-page").style.display="none";
+  document.getElementById("login-screen").style.display="flex";
+}
+function showApp(){
+  document.getElementById("auth-loading").style.display="none";
+  document.getElementById("login-screen").style.display="none";
+  document.getElementById("app-page").style.display="";
+  initAppData();
+}
+async function doLogin(){
+  const em=document.getElementById("lem")?.value.trim();
+  const pw=document.getElementById("lpw")?.value;
+  const err=document.getElementById("lerr");
+  if(!em||!pw){ if(err){ err.style.display="block"; err.textContent="請輸入帳號密碼"; } return; }
+  const btn=document.getElementById("lbtn");
+  btn.textContent="登入中…"; btn.disabled=true;
+  if(err) err.style.display="none";
+  try{
+    await window.fbAuth.signInWithEmailAndPassword(window.auth, em, pw);
+  }catch(e){
+    if(err){ err.style.display="block"; err.textContent={"auth/invalid-credential":"帳號或密碼錯誤","auth/too-many-requests":"嘗試次數過多","auth/user-disabled":"此帳號已停用","auth/unauthorized-domain":"此網域未獲 Firebase 授權","auth/network-request-failed":"網路連線問題，請確認網路後再試"}[e.code]||("登入失敗（"+e.code+"）"); }
+  }
+  btn.textContent="🔐 登入"; btn.disabled=false;
+}
+document.getElementById("lbtn")?.addEventListener("click",doLogin);
+document.getElementById("lpw")?.addEventListener("keydown",e=>{ if(e.key==="Enter") doLogin(); });
+document.getElementById("spw")?.addEventListener("click",()=>{ const i=document.getElementById("lpw"); i.type = i.type==="password" ? "text" : "password"; });
+document.getElementById("btn-logout")?.addEventListener("click",async()=>{
+  if(confirm("確認登出？")) await window.fbAuth.signOut(window.auth);
+});
+
+waitForFirebase(()=>{
+  window.fbAuth.onAuthStateChanged(window.auth, u=>{
+    if(u) showApp(); else showLogin();
+  });
+});
 </script>
 </body>
 </html>

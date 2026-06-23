@@ -117,34 +117,55 @@ input:checked+.tog-slider:before{transform:translateX(16px);background:var(--bg)
 .login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
 
 /* ── invoice (screen) ── */
-.invoice{background:#fff;color:#1a1a2e;border-radius:10px;padding:28px 32px;font-family:'Noto Serif TC',serif;line-height:1.8;font-size:13px;}
-.inv-header{text-align:center;padding-bottom:14px;border-bottom:2px solid #1a1a2e;margin-bottom:14px;}
-.inv-firm{font-size:17px;font-weight:700;color:#1a1a2e;letter-spacing:.05em;}
-.inv-contact{font-size:11px;color:#607090;margin-top:4px;line-height:1.7;}
-.inv-title{font-size:20px;font-weight:700;margin:14px 0 4px;text-align:center;letter-spacing:.12em;color:#1a1a2e;}
-.inv-meta{font-size:11px;color:#607090;text-align:center;}
-.inv-sec{margin:12px 0;}
-.inv-sec-lbl{font-size:10px;font-weight:700;color:#607090;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
-.inv-sec-val{font-size:13px;color:#1a1a2e;}
-.inv-table{width:100%;border-collapse:collapse;margin-top:10px;}
-.inv-table th{font-size:11px;font-weight:700;color:#607090;text-align:left;padding:5px 8px;border-bottom:1px solid #bbc;letter-spacing:.05em;}
-.inv-table th:last-child,.inv-table td:last-child{text-align:right;}
-.inv-table td{padding:7px 8px;border-bottom:1px solid #eef;font-size:13px;color:#1a1a2e;}
-.inv-table .sub-row td{padding-top:10px;border-top:1px solid #bbc;font-weight:600;color:#1a1a2e;}
-.inv-table .grand-row td{border-top:2px solid #1a1a2e;border-bottom:none;font-size:15px;font-weight:700;padding-top:8px;color:#1a1a2e;}
-.inv-payment{background:#f5f6fa;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:12px;color:#1a1a2e;line-height:1.8;}
-.inv-payment-ttl{font-weight:700;font-size:13px;margin-bottom:4px;}
-.inv-notes{margin-top:14px;font-size:12px;color:#607090;border-left:3px solid #bbc;padding-left:10px;line-height:1.8;}
-.inv-footer{margin-top:18px;padding-top:12px;border-top:1px solid #bbc;font-size:11px;color:#999;text-align:center;letter-spacing:.04em;}
+.invoice{background:#fff;color:#222;border-radius:12px;padding:0;font-family:'Noto Serif TC',serif;line-height:1.7;font-size:13px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);max-width:700px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.inv-topbar{height:6px;background:linear-gradient(90deg,#1a2e4a 0%,#1a2e4a 55%,#b08d4f 100%);}
+.inv-body{padding:30px 34px 26px;}
+.inv-head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;border-bottom:2px solid #1a2e4a;padding-bottom:16px;margin-bottom:18px;}
+.inv-firm{font-size:19px;font-weight:700;color:#1a2e4a;letter-spacing:.04em;}
+.inv-lawyer{font-size:13px;font-weight:700;color:#33445e;margin-top:3px;}
+.inv-contact{font-size:11px;color:#6a7686;margin-top:7px;line-height:1.75;}
+.inv-title-block{text-align:right;flex-shrink:0;margin-left:auto;}
+.inv-title{font-size:26px;font-weight:700;letter-spacing:.18em;color:#1a2e4a;}
+.inv-title-en{font-size:8.5px;letter-spacing:.22em;color:#b08d4f;text-transform:uppercase;margin-top:3px;font-weight:700;}
+.inv-meta-line{font-size:11px;color:#6a7686;margin-top:9px;line-height:1.85;}
+.inv-meta-line b{color:#1a2e4a;font-weight:700;}
+.inv-billto{background:#f6f7f9;border-left:3px solid #b08d4f;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:18px;}
+.inv-billto-lbl{font-size:8.5px;font-weight:700;color:#b08d4f;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px;}
+.inv-billto-name{font-size:16px;font-weight:700;color:#1a2e4a;}
+.inv-billto-case{font-size:12px;color:#52607a;margin-top:3px;}
+.inv-table{width:100%;border-collapse:collapse;margin-bottom:2px;}
+.inv-table th{font-size:11px;font-weight:700;color:#fff;background:#1a2e4a;text-align:left;padding:9px 13px;letter-spacing:.06em;}
+.inv-table th:first-child{border-radius:6px 0 0 6px;}
+.inv-table th:last-child{border-radius:0 6px 6px 0;text-align:right;}
+.inv-table td{padding:9px 13px;border-bottom:1px solid #eceef2;font-size:13px;color:#2a3343;vertical-align:top;}
+.inv-table td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.inv-table tbody tr:nth-child(even){background:#fafbfc;}
+.inv-item-note{font-size:11px;color:#8a93a3;margin-top:2px;}
+.inv-summary{margin-top:14px;display:flex;justify-content:flex-end;}
+.inv-summary-box{width:min(290px,100%);}
+.inv-sum-row{display:flex;justify-content:space-between;padding:6px 14px;font-size:13px;color:#52607a;}
+.inv-sum-row span:last-child{font-variant-numeric:tabular-nums;color:#2a3343;font-weight:600;}
+.inv-grand{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;margin-top:7px;background:#1a2e4a;border-radius:8px;}
+.inv-grand-lbl{font-size:13px;font-weight:700;color:#fff;letter-spacing:.05em;}
+.inv-grand-val{font-size:22px;font-weight:700;color:#e7c98a;font-variant-numeric:tabular-nums;}
+.inv-pay{display:flex;gap:14px;flex-wrap:wrap;margin-top:22px;}
+.inv-pay-box{flex:1;min-width:200px;background:#f6f7f9;border-radius:8px;padding:13px 16px;}
+.inv-pay-ttl{font-size:8.5px;font-weight:700;color:#b08d4f;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;}
+.inv-pay-body{font-size:12px;color:#2a3343;line-height:1.9;}
+.inv-notes{margin-top:16px;font-size:12px;color:#52607a;background:#fffbf2;border:1px solid #f0e3c8;border-radius:8px;padding:12px 15px;line-height:1.85;}
+.inv-notes-ttl{font-size:8.5px;font-weight:700;color:#b08d4f;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.inv-footer{margin-top:24px;padding-top:14px;border-top:1px solid #e2e5ea;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;}
+.inv-foot-firm{font-size:11px;color:#8a93a3;letter-spacing:.03em;}
+.inv-seal{text-align:center;font-size:9px;color:#aab0bb;letter-spacing:.1em;}
+.inv-seal-box{width:62px;height:62px;border:1px dashed #c8cdd6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#bcc2cc;font-size:9.5px;line-height:1.4;margin:0 auto 4px;}
 
 /* ── print ── */
 @media print{
   body *{visibility:hidden;}
   #invoice-area,#invoice-area *{visibility:visible;}
   #invoice-area{position:absolute;left:0;top:0;width:100%;}
-  .invoice{border-radius:0;padding:16px 24px;font-size:11pt;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  .inv-firm{font-size:14pt;}
-  .inv-title{font-size:16pt;}
+  .invoice{border-radius:0;box-shadow:none;max-width:100%;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .inv-body{padding:10mm 12mm;}
 }
 </style>
 </head>
@@ -429,12 +450,18 @@ input:checked+.tog-slider:before{transform:translateX(16px);background:var(--bg)
     </div>
     <div class="grid3">
       <div class="fg">
-        <label class="fl">請款日期</label>
-        <input class="fi" type="date" id="i-date">
+        <label class="fl">請款日期（選填）</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input class="fi" type="date" id="i-date">
+          <button type="button" class="btn btn-outline btn-sm" title="清除日期" onclick="clearDate('i-date')">✕</button>
+        </div>
       </div>
       <div class="fg">
-        <label class="fl">付款期限</label>
-        <input class="fi" type="date" id="i-due">
+        <label class="fl">付款期限（選填）</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input class="fi" type="date" id="i-due">
+          <button type="button" class="btn btn-outline btn-sm" title="清除日期" onclick="clearDate('i-due')">✕</button>
+        </div>
       </div>
       <div class="fg">
         <label class="fl">請款單號</label>
@@ -623,13 +650,25 @@ INV_META_IDS.forEach(id=>document.getElementById(id)?.addEventListener("blur",()
 document.getElementById("tax-chk")?.addEventListener("change",()=>persistAll());
 
 // ── invoice defaults ──────────────────────────────────
-function initDefaults(){
+// 僅在全新建檔（雲端尚無資料）時帶入預設日期；之後若使用者清空日期會被尊重保留
+function initFreshDefaults(){
   const t=new Date(), due=new Date(t); due.setDate(t.getDate()+30);
   const fmt=d=>d.toISOString().slice(0,10);
   if(!document.getElementById("i-date").value) document.getElementById("i-date").value=fmt(t);
   if(!document.getElementById("i-due").value)  document.getElementById("i-due").value=fmt(due);
-  if(!document.getElementById("i-no").value)
-    document.getElementById("i-no").value="INV-"+t.getFullYear()+(""+(t.getMonth()+1)).padStart(2,"0")+(""+t.getDate()).padStart(2,"0");
+  ensureInvNo();
+}
+function ensureInvNo(){
+  const el=document.getElementById("i-no");
+  if(el && !el.value){
+    const t=new Date();
+    el.value="INV-"+t.getFullYear()+(""+(t.getMonth()+1)).padStart(2,"0")+(""+t.getDate()).padStart(2,"0");
+  }
+}
+// 清除日期欄位（請款日期 / 付款期限可留白）
+function clearDate(id){
+  const el=document.getElementById(id);
+  if(el){ el.value=""; persistAll(); renderInvoice(); }
 }
 
 // ── invoice render ────────────────────────────────────
@@ -648,12 +687,12 @@ function renderInvoice(){
   const grand=sub+tax;
 
   const rows=items.length
-    ? items.map(x=>`<tr><td>${esc(x.label)}${x.note?`<br><span style="font-size:11px;color:#888;">${esc(x.note)}</span>`:""}</td><td>NT$${n(x.amt)}</td></tr>`).join("")
-    : `<tr><td colspan="2" style="text-align:center;color:#aaa;">（無費用項目）</td></tr>`;
+    ? items.map(x=>`<tr><td>${esc(x.label)}${x.note?`<div class="inv-item-note">${esc(x.note)}</div>`:""}</td><td>NT$ ${n(x.amt)}</td></tr>`).join("")
+    : `<tr><td colspan="2" style="text-align:center;color:#aaa;padding:18px 0;">（尚無費用項目）</td></tr>`;
 
   const contactParts=[];
   if(addr) contactParts.push(addr);
-  const telEmail=[tel,email].filter(Boolean).join("　｜　");
+  const telEmail=[tel?("電話："+tel):"",email?("E-mail："+email):""].filter(Boolean).join("　｜　");
   if(telEmail) contactParts.push(telEmail);
   if(taxid) contactParts.push("統一編號："+taxid);
 
@@ -662,30 +701,56 @@ function renderInvoice(){
   if(acct)     bankLines.push("帳號："+acct);
   if(acctname) bankLines.push("戶名："+acctname);
 
+  const metaLines=[];
+  if(invNo)   metaLines.push(`單號：<b>${esc(invNo)}</b>`);
+  if(invDate) metaLines.push(`請款日期：<b>${roc(invDate)}</b>`);
+
   document.getElementById("invoice-area").innerHTML=`
   <div class="invoice">
-    <div class="inv-header">
-      <div class="inv-firm">${firm||"（事務所名稱）"}</div>
-      ${lawyer?`<div class="inv-contact" style="font-size:13px;font-weight:700;margin-top:2px;">${esc(lawyer)}</div>`:""}
-      ${contactParts.length?`<div class="inv-contact">${contactParts.map(esc).join("<br>")}</div>`:""}
+    <div class="inv-topbar"></div>
+    <div class="inv-body">
+      <div class="inv-head-row">
+        <div style="min-width:0">
+          <div class="inv-firm">${esc(firm)||"（事務所名稱）"}</div>
+          ${lawyer?`<div class="inv-lawyer">${esc(lawyer)}</div>`:""}
+          ${contactParts.length?`<div class="inv-contact">${contactParts.map(esc).join("<br>")}</div>`:""}
+        </div>
+        <div class="inv-title-block">
+          <div class="inv-title">請款單</div>
+          <div class="inv-title-en">律師費用 · Statement of Fees</div>
+          ${metaLines.length?`<div class="inv-meta-line">${metaLines.join("<br>")}</div>`:""}
+        </div>
+      </div>
+
+      <div class="inv-billto">
+        <div class="inv-billto-lbl">致 ／ Bill To</div>
+        <div class="inv-billto-name">${esc(client)||"（委任人姓名／公司）"}</div>
+        ${caseName?`<div class="inv-billto-case">案件：${esc(caseName)}</div>`:""}
+      </div>
+
+      <table class="inv-table">
+        <thead><tr><th>費用項目</th><th>金額（NTD）</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+
+      <div class="inv-summary"><div class="inv-summary-box">
+        <div class="inv-sum-row"><span>小計</span><span>NT$ ${n(sub)}</span></div>
+        ${taxOn?`<div class="inv-sum-row"><span>營業稅（5%）</span><span>NT$ ${n(tax)}</span></div>`:""}
+        <div class="inv-grand"><span class="inv-grand-lbl">請款總金額</span><span class="inv-grand-val">NT$ ${n(grand)}</span></div>
+      </div></div>
+
+      ${(bankLines.length||dueDate)?`<div class="inv-pay">
+        ${bankLines.length?`<div class="inv-pay-box"><div class="inv-pay-ttl">付款方式 ／ Payment</div><div class="inv-pay-body">${bankLines.map(esc).join("<br>")}</div></div>`:""}
+        ${dueDate?`<div class="inv-pay-box" style="flex:0 1 auto"><div class="inv-pay-ttl">付款期限 ／ Due Date</div><div class="inv-pay-body" style="font-size:14px;font-weight:700;color:#1a2e4a">${roc(dueDate)}</div></div>`:""}
+      </div>`:""}
+
+      ${notes?`<div class="inv-notes"><div class="inv-notes-ttl">備註 ／ Notes</div>${esc(notes).replace(/\n/g,"<br>")}</div>`:""}
+
+      <div class="inv-footer">
+        <div class="inv-foot-firm">${[firm,lawyer].filter(Boolean).map(esc).join("　")}${invDate?`　·　${roc(invDate)}`:""}</div>
+        <div class="inv-seal"><div class="inv-seal-box">事務所<br>用印處</div>簽章 ／ 用印</div>
+      </div>
     </div>
-    <div class="inv-title">律師費用請款單</div>
-    <div class="inv-meta">${invNo?"No. "+esc(invNo)+"　":""}日期：${roc(invDate)||"——"}</div>
-    <div class="inv-sec"><div class="inv-sec-lbl">委任人</div><div class="inv-sec-val">${esc(client)||"（委任人姓名／公司）"}</div></div>
-    ${caseName?`<div class="inv-sec"><div class="inv-sec-lbl">案件</div><div class="inv-sec-val">${esc(caseName)}</div></div>`:""}
-    <table class="inv-table">
-      <thead><tr><th>費用項目</th><th>金額（NTD）</th></tr></thead>
-      <tbody>
-        ${rows}
-        <tr class="sub-row"><td>小計</td><td>NT$${n(sub)}</td></tr>
-        ${taxOn?`<tr><td>營業稅（5%）</td><td>NT$${n(tax)}</td></tr>`:""}
-        <tr class="grand-row"><td><strong>請款總金額</strong></td><td><strong>NT$${n(grand)}</strong></td></tr>
-      </tbody>
-    </table>
-    ${bankLines.length?`<div class="inv-payment"><div class="inv-payment-ttl">付款方式</div>${bankLines.map(esc).join("<br>")}</div>`:""}
-    ${dueDate?`<div class="inv-sec" style="margin-top:12px;"><div class="inv-sec-lbl">付款期限</div><div class="inv-sec-val">${roc(dueDate)}</div></div>`:""}
-    ${notes?`<div class="inv-notes">${esc(notes).replace(/\n/g,"<br>")}</div>`:""}
-    <div class="inv-footer">${[firm,lawyer].filter(Boolean).map(esc).join("　")}　　請款日期：${roc(invDate)||"——"}</div>
   </div>`;
 }
 
@@ -726,7 +791,7 @@ function applyCloudData(data){
   setIf("i-date",inv.invDate); setIf("i-due",inv.dueDate);
   setIf("i-no",inv.invNo); setIf("i-notes",inv.notes);
   document.getElementById("tax-chk").checked = !!inv.taxOn;
-  initDefaults();
+  ensureInvNo(); // 僅補請款單號；日期維持雲端值（含使用者刻意清空的留白）
   renderItems();
 }
 
@@ -736,7 +801,7 @@ function migrateLegacyLocalData(){
   let legacyAtty={}; try{ legacyAtty=JSON.parse(localStorage.getItem("feeAtty")||"{}"); }catch(e){}
   items = legacyItems;
   ATTY_IDS.forEach(id=>{ const el=document.getElementById(id); if(el&&legacyAtty[id]) el.value=legacyAtty[id]; });
-  initDefaults();
+  initFreshDefaults();
   renderItems();
   persistAll();
 }

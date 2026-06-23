@@ -117,47 +117,43 @@ input:checked+.tog-slider:before{transform:translateX(16px);background:var(--bg)
 .login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
 
 /* ── invoice (screen) ── */
-.invoice{background:#fff;color:#222;border-radius:12px;padding:0;font-family:'Noto Serif TC',serif;line-height:1.7;font-size:13px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);max-width:700px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.inv-topbar{height:6px;background:linear-gradient(90deg,#1a2e4a 0%,#1a2e4a 55%,#b08d4f 100%);}
-.inv-body{padding:30px 34px 26px;}
-.inv-head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;border-bottom:2px solid #1a2e4a;padding-bottom:16px;margin-bottom:18px;}
-.inv-firm{font-size:19px;font-weight:700;color:#1a2e4a;letter-spacing:.04em;}
-.inv-lawyer{font-size:13px;font-weight:700;color:#33445e;margin-top:3px;}
-.inv-contact{font-size:11px;color:#6a7686;margin-top:7px;line-height:1.75;}
+.invoice{background:#fff;color:#1a1a1a;border-radius:4px;padding:0;font-family:'Noto Sans TC',sans-serif;line-height:1.7;font-size:13px;overflow:hidden;border:1px solid #e3e3e3;box-shadow:0 1px 3px rgba(0,0,0,.1);max-width:700px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.inv-body{padding:34px 36px 28px;}
+.inv-head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;border-bottom:2px solid #1a1a1a;padding-bottom:18px;margin-bottom:20px;}
+.inv-firm{font-size:18px;font-weight:700;color:#1a1a1a;letter-spacing:.04em;}
+.inv-lawyer{font-size:12.5px;font-weight:700;color:#444;margin-top:3px;}
+.inv-contact{font-size:11px;color:#8a8a8a;margin-top:7px;line-height:1.75;}
 .inv-title-block{text-align:right;flex-shrink:0;margin-left:auto;}
-.inv-title{font-size:26px;font-weight:700;letter-spacing:.18em;color:#1a2e4a;}
-.inv-title-en{font-size:8.5px;letter-spacing:.22em;color:#b08d4f;text-transform:uppercase;margin-top:3px;font-weight:700;}
-.inv-meta-line{font-size:11px;color:#6a7686;margin-top:9px;line-height:1.85;}
-.inv-meta-line b{color:#1a2e4a;font-weight:700;}
-.inv-billto{background:#f6f7f9;border-left:3px solid #b08d4f;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:18px;}
-.inv-billto-lbl{font-size:8.5px;font-weight:700;color:#b08d4f;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px;}
-.inv-billto-name{font-size:16px;font-weight:700;color:#1a2e4a;}
-.inv-billto-case{font-size:12px;color:#52607a;margin-top:3px;}
+.inv-title{font-size:24px;font-weight:700;letter-spacing:.22em;color:#1a1a1a;}
+.inv-title-en{font-size:8.5px;letter-spacing:.22em;color:#9a9a9a;text-transform:uppercase;margin-top:3px;font-weight:700;}
+.inv-meta-line{font-size:11px;color:#6b6b6b;margin-top:9px;line-height:1.85;}
+.inv-meta-line b{color:#1a1a1a;font-weight:700;}
+.inv-billto{border:1px solid #e3e3e3;border-radius:6px;padding:12px 16px;margin-bottom:20px;}
+.inv-billto-lbl{font-size:8.5px;font-weight:700;color:#9a9a9a;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px;}
+.inv-billto-name{font-size:15px;font-weight:700;color:#1a1a1a;}
+.inv-billto-case{font-size:12px;color:#6b6b6b;margin-top:3px;}
 .inv-table{width:100%;border-collapse:collapse;margin-bottom:2px;}
-.inv-table th{font-size:11px;font-weight:700;color:#fff;background:#1a2e4a;text-align:left;padding:9px 13px;letter-spacing:.06em;}
-.inv-table th:first-child{border-radius:6px 0 0 6px;}
-.inv-table th:last-child{border-radius:0 6px 6px 0;text-align:right;}
-.inv-table td{padding:9px 13px;border-bottom:1px solid #eceef2;font-size:13px;color:#2a3343;vertical-align:top;}
+.inv-table th{font-size:11px;font-weight:700;color:#1a1a1a;background:transparent;text-align:left;padding:9px 4px;letter-spacing:.06em;border-bottom:2px solid #1a1a1a;}
+.inv-table th:last-child{text-align:right;}
+.inv-table td{padding:10px 4px;border-bottom:1px solid #ececec;font-size:13px;color:#2a2a2a;vertical-align:top;}
 .inv-table td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
-.inv-table tbody tr:nth-child(even){background:#fafbfc;}
-.inv-item-note{font-size:11px;color:#8a93a3;margin-top:2px;}
+.inv-table tbody tr:nth-child(even){background:#fafafa;}
+.inv-item-note{font-size:11px;color:#9a9a9a;margin-top:2px;}
 .inv-summary{margin-top:14px;display:flex;justify-content:flex-end;}
-.inv-summary-box{width:min(290px,100%);}
-.inv-sum-row{display:flex;justify-content:space-between;padding:6px 14px;font-size:13px;color:#52607a;}
-.inv-sum-row span:last-child{font-variant-numeric:tabular-nums;color:#2a3343;font-weight:600;}
-.inv-grand{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;margin-top:7px;background:#1a2e4a;border-radius:8px;}
-.inv-grand-lbl{font-size:13px;font-weight:700;color:#fff;letter-spacing:.05em;}
-.inv-grand-val{font-size:22px;font-weight:700;color:#e7c98a;font-variant-numeric:tabular-nums;}
-.inv-pay{display:flex;gap:14px;flex-wrap:wrap;margin-top:22px;}
-.inv-pay-box{flex:1;min-width:200px;background:#f6f7f9;border-radius:8px;padding:13px 16px;}
-.inv-pay-ttl{font-size:8.5px;font-weight:700;color:#b08d4f;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;}
-.inv-pay-body{font-size:12px;color:#2a3343;line-height:1.9;}
-.inv-notes{margin-top:16px;font-size:12px;color:#52607a;background:#fffbf2;border:1px solid #f0e3c8;border-radius:8px;padding:12px 15px;line-height:1.85;}
-.inv-notes-ttl{font-size:8.5px;font-weight:700;color:#b08d4f;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
-.inv-footer{margin-top:24px;padding-top:14px;border-top:1px solid #e2e5ea;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;}
-.inv-foot-firm{font-size:11px;color:#8a93a3;letter-spacing:.03em;}
-.inv-seal{text-align:center;font-size:9px;color:#aab0bb;letter-spacing:.1em;}
-.inv-seal-box{width:62px;height:62px;border:1px dashed #c8cdd6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#bcc2cc;font-size:9.5px;line-height:1.4;margin:0 auto 4px;}
+.inv-summary-box{width:min(280px,100%);}
+.inv-sum-row{display:flex;justify-content:space-between;padding:6px 4px;font-size:13px;color:#6b6b6b;}
+.inv-sum-row span:last-child{font-variant-numeric:tabular-nums;color:#2a2a2a;font-weight:600;}
+.inv-grand{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;margin-top:9px;border:2px solid #1a1a1a;border-radius:6px;}
+.inv-grand-lbl{font-size:13px;font-weight:700;color:#1a1a1a;letter-spacing:.05em;}
+.inv-grand-val{font-size:21px;font-weight:700;color:#1a1a1a;font-variant-numeric:tabular-nums;}
+.inv-pay{display:flex;gap:14px;flex-wrap:wrap;margin-top:24px;}
+.inv-pay-box{flex:1;min-width:200px;border:1px solid #e3e3e3;border-radius:6px;padding:13px 16px;}
+.inv-pay-ttl{font-size:8.5px;font-weight:700;color:#9a9a9a;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;}
+.inv-pay-body{font-size:12px;color:#2a2a2a;line-height:1.9;}
+.inv-notes{margin-top:18px;font-size:12px;color:#6b6b6b;border:1px solid #e3e3e3;border-radius:6px;padding:12px 15px;line-height:1.85;}
+.inv-notes-ttl{font-size:8.5px;font-weight:700;color:#9a9a9a;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.inv-footer{margin-top:26px;padding-top:14px;border-top:1px solid #e3e3e3;text-align:center;}
+.inv-foot-firm{font-size:11px;color:#9a9a9a;letter-spacing:.03em;}
 
 /* ── print ── */
 @media print{
@@ -707,7 +703,6 @@ function renderInvoice(){
 
   document.getElementById("invoice-area").innerHTML=`
   <div class="invoice">
-    <div class="inv-topbar"></div>
     <div class="inv-body">
       <div class="inv-head-row">
         <div style="min-width:0">
@@ -748,7 +743,6 @@ function renderInvoice(){
 
       <div class="inv-footer">
         <div class="inv-foot-firm">${[firm,lawyer].filter(Boolean).map(esc).join("　")}${invDate?`　·　${roc(invDate)}`:""}</div>
-        <div class="inv-seal"><div class="inv-seal-box">事務所<br>用印處</div>簽章 ／ 用印</div>
       </div>
     </div>
   </div>`;

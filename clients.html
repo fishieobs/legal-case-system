@@ -67,6 +67,8 @@ html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'No
 .info-row:last-child{border-bottom:none;}
 .info-lbl{font-size:11px;color:var(--text4);min-width:84px;flex-shrink:0;}
 .info-val{font-size:12px;color:var(--text);text-align:right;font-weight:700;word-break:break-all;}
+.tel-link{color:var(--blue);text-decoration:none;}
+.tel-link:hover{text-decoration:underline;}
 
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;}
 
@@ -430,7 +432,7 @@ function renderClients(){
           ${cases.length?`<span class="badge" style="background:rgba(139,92,246,.15);color:var(--violet3);border-color:rgba(139,92,246,.3)">📁 ${cases.length} 案</span>`:""}
         </div>
         <div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-          ${c.mobile||c.phone?`📱 ${esc(c.mobile||c.phone)}`:""}${c.email?` · ✉️ ${esc(c.email)}`:""}${c.source?` · 案源：${esc(c.source)}`:""}
+          ${c.mobile||c.phone?`📱 <a class="tel-link" href="tel:${esc((c.mobile||c.phone).replace(/[^0-9+]/g,""))}">${esc(c.mobile||c.phone)}</a>`:""}${c.email?` · ✉️ ${esc(c.email)}`:""}${c.source?` · 案源：${esc(c.source)}`:""}
         </div>
       </div>
       <div style="color:var(--text4);font-size:18px;flex-shrink:0">›</div>
@@ -470,10 +472,10 @@ function renderDetail(){
     <div class="card">
       <div class="card-hdr">📇 聯絡資訊</div>
       ${[
-        ["手機",c.mobile],["市話",c.phone],["Email",c.email],
+        ["手機",c.mobile,true],["市話",c.phone,true],["Email",c.email],
         [c.type==="個人"?"身分證字號":"統一編號",c.idNumber],
         ["聯絡人",c.contactPerson],["地址",c.address],["案源",c.source],
-      ].map(([l,v])=>`<div class="info-row"><div class="info-lbl">${l}</div><div class="info-val">${v?esc(v):"—"}</div></div>`).join("")}
+      ].map(([l,v,isTel])=>`<div class="info-row"><div class="info-lbl">${l}</div><div class="info-val">${v?(isTel?`<a class="tel-link" href="tel:${esc(v.replace(/[^0-9+]/g,""))}">${esc(v)}</a>`:esc(v)):"—"}</div></div>`).join("")}
       ${c.note?`<div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--violet)"><div style="font-size:9px;color:var(--text3);margin-bottom:4px;letter-spacing:.06em">備註</div><div style="font-size:12px;color:var(--text2);white-space:pre-wrap">${esc(c.note)}</div></div>`:""}
     </div>
 
@@ -617,6 +619,9 @@ function bindApp(){
 
   // 檢視詳情
   document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{S.viewId=b.dataset.view;render();window.scrollTo(0,0);}));
+
+  // 電話連結：點擊撥號，不要連動觸發父層的「檢視詳情」
+  document.querySelectorAll(".tel-link").forEach(a=>a.addEventListener("click",e=>e.stopPropagation()));
 
   // 篩選 / 搜尋
   document.querySelectorAll("[data-filter]").forEach(b=>b.addEventListener("click",()=>{S.filterStatus=b.dataset.filter;render();}));

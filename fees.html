@@ -117,7 +117,8 @@ input:checked+.tog-slider:before{transform:translateX(16px);background:var(--bg)
 .login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
 
 /* ── invoice (screen) ── */
-.invoice{background:#fff;color:#1f2430;border-radius:0;padding:0;font-family:'Noto Serif TC',serif;line-height:1.8;font-size:13px;overflow:hidden;border:1px solid #d8d2c4;box-shadow:0 1px 3px rgba(0,0,0,.1);max-width:700px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.invoice{position:relative;background:#fff;color:#1f2430;border-radius:0;padding:0;font-family:'Noto Serif TC',serif;line-height:1.8;font-size:13px;overflow:hidden;border:1px solid #d8d2c4;box-shadow:0 1px 3px rgba(0,0,0,.1);max-width:700px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.inv-watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:-1;font-family:'Noto Serif TC',serif;font-weight:700;font-size:clamp(120px,30vw,240px);line-height:1;color:rgba(154,143,111,.12);user-select:none;pointer-events:none;white-space:nowrap;}
 .inv-body{padding:38px 44px 30px;}
 .inv-head-row{display:block;text-align:center;border-bottom:3px double #1f2430;padding-bottom:18px;margin-bottom:22px;}
 .inv-firm{font-size:22px;font-weight:700;letter-spacing:.18em;color:#1f2430;}
@@ -702,6 +703,7 @@ function renderInvoice(){
 
   document.getElementById("invoice-area").innerHTML=`
   <div class="invoice">
+    <div class="inv-watermark">禹</div>
     <div class="inv-body">
       <div class="inv-head-row">
         <div style="min-width:0">

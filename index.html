@@ -408,6 +408,7 @@ const emptyCase = {
     clientName:"", phone:"", totalFee:0, payments:[], disbursements:0,
     caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
     attorney:"", retainerDate:"", opposingParty:"", caseReason:"", judgementLink:"", notes:"",
+    judgmentReceivedDate:"", appealDeadline:"",
     hearings:[], todos:[], driveFolderUrl:"", docs:[]
 };
 
@@ -729,7 +730,7 @@ function App({user}){
     cases.forEach(c=>{
         (c.hearings||[]).forEach(h=>{
             const d=daysUntil(h.date);
-            if(d>=0&&d<=30) upcoming.push({...h,caseId:c.id,clientName:c.clientName,firmCaseNo:c.firmCaseNo});
+            if(d>=0&&d<=30) upcoming.push({...h,caseId:c.id,clientName:c.clientName,firmCaseNo:c.firmCaseNo,appealDeadline:c.appealDeadline});
         });
     });
     upcoming.sort((a,b)=>a.date.localeCompare(b.date));
@@ -943,6 +944,8 @@ function App({user}){
             todos:[],
             notes:"（由 "+c.firmCaseNo+" 複製）\n"+(c.notes||""),
             judgementLink:"",
+            judgmentReceivedDate:"",
+            appealDeadline:"",
             driveFolderUrl:"",
             docs:[],
         };
@@ -1190,6 +1193,7 @@ function App({user}){
                                     <div style={{color:d<=3?"var(--red)":"var(--gold)",fontWeight:700,fontSize:12}}>{h.date} {h.time}</div>
                                     <div style={{color:"var(--text)",fontSize:12,marginTop:2}}>{h.clientName} · {h.note||h.agency||"開庭"}</div>
                                     <div style={{color:"var(--text3)",fontSize:11,marginTop:2}}>{d===0?"今天！":d===1?"明天":`${d}天後`}</div>
+                                    {h.appealDeadline && <div style={{color:"var(--purple)",fontSize:11,marginTop:2}}>⏰ 上訴/抗告末日：{h.appealDeadline}</div>}
                                 </div>
                             );
                         })}
@@ -1829,6 +1833,23 @@ function App({user}){
                                 <div className="info-val">{v||"—"}</div>
                             </div>
                         ))}
+                        {selected.judgmentReceivedDate && (
+                            <div className="info-row">
+                                <div className="info-lbl">收受判決/裁定日</div>
+                                <div className="info-val">{selected.judgmentReceivedDate}</div>
+                            </div>
+                        )}
+                        {selected.appealDeadline && (()=>{
+                            const d=daysUntil(selected.appealDeadline);
+                            return(
+                                <div className="info-row">
+                                    <div className="info-lbl">上訴/抗告末日</div>
+                                    <div className="info-val" style={{color:d<0?"var(--text3)":d<=3?"var(--red)":d<=7?"var(--yellow)":"var(--text)",fontWeight:700}}>
+                                        {selected.appealDeadline}{d>=0&&` （${d===0?"今天！":`${d}天後`}）`}
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* 當事人 & 費用 */}
@@ -2787,6 +2808,14 @@ function App({user}){
 
                 {/* 判決連結 & 備註 */}
                 <div className="section-hdr" style={{marginTop:24}}>📝 其他資訊</div>
+                <div className="form-grid" style={{marginBottom:16}}>
+                    {[["judgmentReceivedDate","收受判決/裁定日","date",""],["appealDeadline","上訴/抗告末日","date",""]].map(([k,l,t,p])=>(
+                        <div key={k} className="fg">
+                            <label className="fl">{l}</label>
+                            <input className="fi" type={t} placeholder={p} value={F[k]||""} onChange={e=>sf(k,e.target.value)}/>
+                        </div>
+                    ))}
+                </div>
                 <div className="fg" style={{marginBottom:12}}>
                     <label className="fl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                         <span>判決書連結（可貼司法院裁判書網址）</span>

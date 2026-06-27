@@ -1,4 +1,4 @@
-const CACHE = "case-mgr-v17";
+const CACHE = "case-mgr-v18";
 
 const PRECACHE = [
   "./",
@@ -66,6 +66,22 @@ self.addEventListener("fetch", e => {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
     return;
   }
+  // HTML 頁面採「網路優先」：手機端 PWA 一律取得最新頁面，離線時才退回快取，
+  // 避免改版後因快取優先策略而長期顯示舊版頁面。
+  const isDoc = e.request.mode === "navigate" || e.request.destination === "document";
+  if (isDoc) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res && res.status === 200 && res.type === "basic") {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone)).catch(() => {});
+        }
+        return res;
+      }).catch(() => caches.match(e.request).then(c => c || caches.match("./index.html")))
+    );
+    return;
+  }
+  // 其他靜態資源（JS／圖示等）維持「快取優先」
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;

@@ -612,7 +612,7 @@ function App({user}){
     const [calEditTodoText, setCalEditTodoText] = useState("");
     const [calEditTodoTime, setCalEditTodoTime] = useState("");
     const [filterTag, setFilterTag] = useState("全部");
-    const [sortBy, setSortBy] = useState("retainerDate"); // retainerDate | feeReceived | feeUnpaid | nextHearing
+    const [sortBy, setSortBy] = useState("retainerDate"); // retainerDate | feeReceived | feeUnpaid | nextHearing | todoCount
     const [sortDir, setSortDir] = useState("desc");
     const [allTags, setAllTags] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("caseTags")||"[]"); }catch(e){ return []; } });
     const [tagModal, setTagModal] = useState(false);
@@ -720,6 +720,10 @@ function App({user}){
         else if(sortBy==="nextHearing"){
             va=(a.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((x,y)=>x.date.localeCompare(y.date))[0]?.date||"9999";
             vb=(b.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((x,y)=>x.date.localeCompare(y.date))[0]?.date||"9999";
+        }
+        else if(sortBy==="todoCount"){
+            va=(a.todos||[]).filter(t=>!t.done).length;
+            vb=(b.todos||[]).filter(t=>!t.done).length;
         }
         if(va<vb) return sortDir==="asc"?-1:1;
         if(va>vb) return sortDir==="asc"?1:-1;
@@ -1229,6 +1233,7 @@ function App({user}){
                     <select className="fsel" value={sortBy} onChange={e=>setSortBy(e.target.value)}>
                         <option value="retainerDate">委任日期</option>
                         <option value="nextHearing">最近開庭</option>
+                        <option value="todoCount">待辦事項</option>
                         <option value="feeReceived">已收款</option>
                         <option value="feeUnpaid">未收款</option>
                     </select>

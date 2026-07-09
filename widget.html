@@ -156,6 +156,9 @@ html,body{min-height:100vh;padding-top:40px;background:var(--bg);color:var(--tex
 .wcal-cell.is-sun:not(.other-month) .wcal-num{color:#ef4444;}
 .wcal-cell.is-sat:not(.other-month) .wcal-num{color:#3b82f6;}
 .wcal-dot{width:4px;height:4px;border-radius:50%;margin:1px auto;}
+.wcal-dots{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;align-items:center;}
+.wcal-todo-dot{width:5px;height:5px;border-radius:1px;background:#8b5cf6;transform:rotate(45deg);}
+.wcal-todo-dot.done{background:transparent;border:1px solid #8b5cf6;}
 .mode-toggle{display:flex;gap:4px;background:var(--bg3);border-radius:8px;padding:3px;margin-bottom:12px;}
 .mode-btn{flex:1;padding:7px 12px;border-radius:6px;background:transparent;border:none;color:var(--text3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;}
 .mode-btn.active{background:linear-gradient(135deg,#1a0f6e,#301e90);color:var(--gold);}
@@ -247,6 +250,22 @@ window.deleteTodo = function(id){
     render();
 };
 
+window.archiveTodo = function(id){
+    const updated=(state.calTodos||[]).map(t=>t.id===id?{...t,archived:true,done:true}:t);
+    saveCalTodos(updated);
+    render();
+};
+
+window.unarchiveTodo = function(id){
+    const updated=(state.calTodos||[]).map(t=>t.id===id?{...t,archived:false}:t);
+    saveCalTodos(updated);
+    render();
+};
+
+window.toggleArchivedTodos = function(){
+    state.showArchivedTodos=!state.showArchivedTodos; render();
+};
+
 window.toggleTodosPanel = function(){
     state.showTodos=!state.showTodos; render();
 };
@@ -295,7 +314,7 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 let state = { 
     user:null, authChecked:false, cases:[], calTodos:[], 
     widgetHearings:loadWidgetHearings(), showAddHearing:false, showAddTodo:false, 
-    showQR:false, showInvoice:false, dayDetail:null, editingHearingId:null, editingTodoId:null, editTodoText:"", showTodos:false, 
+    showQR:false, showInvoice:false, dayDetail:null, editingHearingId:null, editingTodoId:null, editTodoText:"", showTodos:false, showArchivedTodos:false,
     reminder:loadReminder(), refreshing:false, notice:"",
     viewMode:localStorage.getItem("widget_view_mode")||"list",
     calDate:new Date(), selectedDate:null
@@ -408,7 +427,7 @@ async function ensureNotificationPermission(){
     return true;
 }function notifyTodayHearings(force=false){
     const todays = getHearings().filter(h=>h.daysUntil===0);
-    const todosToday = (state.calTodos||[]).filter(t=>t.date===today() && !t.done);
+    const todosToday = (state.calTodos||[]).filter(t=>t.date===today() && !t.done && !t.archived);
     if(!force){
         if(!state.reminder.enabled) return;
         if(nowHHMM() < state.reminder.time) return;
@@ -586,13 +605,22 @@ function buildCalendar(){
             hmap[h.date].push(h);
         }
     });
-    
+
+    // Todo map（排除已封存）
+    const tmap={};
+    (state.calTodos||[]).forEach(t=>{
+        if(t.archived) return;
+        if(!tmap[t.date]) tmap[t.date]=[];
+        tmap[t.date].push(t);
+    });
+
     const todayStr=today();
     
     return cells.map((cell,i)=>{
         const dow=i%7;
         const dateStr=cell.cur?`${y}-${pad(m+1)}-${pad(cell.day)}`:"";
         const events=dateStr?hmap[dateStr]||[]:[];
+        const dayTodos=dateStr?tmap[dateStr]||[]:[];
         const isToday=dateStr===todayStr;
         const cls=["wcal-cell",
             !cell.cur?"other-month":"",
@@ -601,12 +629,17 @@ function buildCalendar(){
             dow===6?"is-sat":"",
         ].filter(Boolean).join(" ");
         
+        const hasTodo=dayTodos.length>0;
+        const todoAllDone=hasTodo && dayTodos.every(t=>t.done);
         return `<div class="${cls}" data-date="${dateStr}" style="cursor:${dateStr?'pointer':'default'}">
             <div class="wcal-num">${cell.day}</div>
-            ${events.slice(0,3).map(e=>{
-                const c=TYPE_COLOR[e.caseType]||"#64748b";
-                return `<div class="wcal-dot" style="background:${c}"></div>`;
-            }).join("")}
+            <div class="wcal-dots">
+                ${events.slice(0,3).map(e=>{
+                    const c=TYPE_COLOR[e.caseType]||"#64748b";
+                    return `<div class="wcal-dot" style="background:${c}"></div>`;
+                }).join("")}
+                ${hasTodo?`<div class="wcal-todo-dot${todoAllDone?" done":""}" title="待辦事項"></div>`:""}
+            </div>
             ${events.length>3?`<div style="font-size:8px;color:var(--text4);text-align:center">+${events.length-3}</div>`:""}
         </div>`;
     }).join("");
@@ -702,7 +735,11 @@ function buildWidget(){
         ).join("")}
         ${buildCalendar()}
     </div>
-    <div style="font-size:11px;color:var(--text4);margin-bottom:12px">點選日期檢視該日庭期</div>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:11px;color:var(--text4);margin-bottom:12px">
+        <span>點選日期檢視該日庭期／待辦</span>
+        <span style="display:inline-flex;align-items:center;gap:5px"><span class="wcal-dot" style="background:#64748b;margin:0"></span>庭期</span>
+        <span style="display:inline-flex;align-items:center;gap:5px"><span class="wcal-todo-dot" style="margin:0"></span>待辦</span>
+    </div>
     
     ${state.selectedDate?`
     <div class="day-modal" id="day-modal">
@@ -714,7 +751,7 @@ function buildWidget(){
                 const label=`${d.getMonth()+1}月${d.getDate()}日（${wd}）`;
                 const hearings=[...state.cases.flatMap(c=>(c.hearings||[]).filter(h=>h.date===ds).map(h=>({...h,caseType:c.caseType,clientName:c.clientName,firmCaseNo:c.firmCaseNo,caseId:c.id}))),
                     ...state.widgetHearings.filter(h=>h.date===ds)];
-                const todos=(state.calTodos||[]).filter(t=>t.date===ds);
+                const todos=(state.calTodos||[]).filter(t=>t.date===ds && !t.archived);
                 return `
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                     <div style="font-size:17px;font-weight:700;color:var(--gold)">${label}</div>
@@ -779,6 +816,7 @@ function buildWidget(){
         <div style="font-size:13px;color:var(--text3);margin-bottom:12px">近${DAYS_AHEAD}日待辦事項</div>
         ${(()=>{
             const upcoming=(state.calTodos||[]).filter(t=>{
+                if(t.archived) return false;
                 const d=daysUntil(t.date);
                 return d>=0 && d<=DAYS_AHEAD;
             }).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"99:99").localeCompare(b.time||"99:99"));
@@ -923,7 +961,7 @@ function buildWidget(){
             const hearings=[...state.cases.flatMap(c=>(c.hearings||[]).map(h=>({...h,caseType:c.caseType,clientName:c.clientName,firmCaseNo:c.firmCaseNo,caseId:c.id}))),
                 ...state.widgetHearings].filter(h=>h.date===ds).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
             // Todos
-            const todos=(state.calTodos||[]).filter(t=>t.date===ds);
+            const todos=(state.calTodos||[]).filter(t=>t.date===ds && !t.archived);
             return `<div class="day-modal" onclick="if(event.target===this){state.dayDetail=null;state.editingHearingId=null;state.editingTodoId=null;render();}">
                 <div class="day-sheet">
                     <div class="day-hdr">
@@ -994,19 +1032,50 @@ function buildTodoItem(t){
             ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
             <div style="font-size:13px;color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
         </div>
+        ${t.done?`<button class="todo-edit-btn" onclick="window.archiveTodo('${t.id}')" title="封存" style="color:#8b5cf6">📥</button>`:""}
         <button class="todo-edit-btn" onclick="window.startEditTodo('${t.id}',\`${esc(t.text)}\`)" title="編輯">✏️</button>
         <button class="todo-edit-btn" onclick="window.deleteTodo('${t.id}')" title="刪除" style="color:var(--text4)">🗑</button>
     </div>`;
 }
 
+function buildArchivedTodoItem(t){
+    const dd=new Date(t.date+"T00:00:00+08:00");
+    const wd=["日","一","二","三","四","五","六"][dd.getDay()];
+    return `<div class="todo-item done" style="opacity:.75">
+        <div class="todo-check-box done" style="cursor:default">${'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>'}</div>
+        <div style="flex:1">
+            <div style="font-size:10px;color:var(--text4);margin-bottom:2px">${dd.getMonth()+1}/${dd.getDate()}（${wd}）${t.time?` ⏰ ${t.time}`:""}</div>
+            <div style="font-size:13px;color:var(--text4);text-decoration:line-through">${esc(t.text)}</div>
+        </div>
+        <button class="todo-edit-btn" onclick="window.unarchiveTodo('${t.id}')" title="取消封存" style="color:var(--green)">↩️</button>
+        <button class="todo-edit-btn" onclick="window.deleteTodo('${t.id}')" title="刪除" style="color:var(--text4)">🗑</button>
+    </div>`;
+}
+
 function buildTodoSection(){
-    const allTodos=(state.calTodos||[]).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"99:99").localeCompare(b.time||"99:99"));
-    if(allTodos.length===0) return "";
+    const sorted=(state.calTodos||[]).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"99:99").localeCompare(b.time||"99:99"));
+    const allTodos=sorted.filter(t=>!t.archived);
+    const archivedTodos=sorted.filter(t=>t.archived);
+    if(allTodos.length===0 && archivedTodos.length===0) return "";
     const pendingCount=allTodos.filter(t=>!t.done).length;
     const overdueCount=allTodos.filter(t=>!t.done&&daysUntil(t.date)<0).length;
     const byDate={};
     allTodos.forEach(t=>{ if(!byDate[t.date])byDate[t.date]=[]; byDate[t.date].push(t); });
     const isOpen=state.showTodos;
+
+    const archivedOpen=state.showArchivedTodos;
+    const archivedBlock=archivedTodos.length>0?`
+        <div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:10px">
+            <div class="todo-collapse-hdr${archivedOpen?" open":""}" onclick="window.toggleArchivedTodos()" style="padding:6px 2px">
+                <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:14px">📥</span>
+                    <span style="font-size:12px;font-weight:700;color:var(--text3)">已封存</span>
+                    <span style="background:var(--bg4);color:var(--text3);border-radius:20px;padding:1px 9px;font-size:11px;font-weight:800">${archivedTodos.length}</span>
+                </div>
+                <span class="todo-chevron${archivedOpen?" open":""}">▼</span>
+            </div>
+            ${archivedOpen?`<div class="todo-collapse-body">${archivedTodos.slice().reverse().map(t=>buildArchivedTodoItem(t)).join("")}</div>`:""}
+        </div>`:"";
 
     const inner=Object.entries(byDate).map(([date,todos])=>{
         const d=daysUntil(date);
@@ -1035,7 +1104,7 @@ function buildTodoSection(){
             </div>
             <span class="todo-chevron${isOpen?" open":""}">▼</span>
         </div>
-        ${isOpen?`<div class="todo-collapse-body">${inner}</div>`:""}
+        ${isOpen?`<div class="todo-collapse-body">${inner||`<div style="text-align:center;padding:16px;color:var(--text4);font-size:12px">目前無待辦事項</div>`}${archivedBlock}</div>`:""}
     </div>`;
 }
 
@@ -1374,7 +1443,7 @@ function addTodoFromForm(){
     const note=document.getElementById("todo-note")?.value.trim();
     if(!text){ setNotice("請輸入待辦事項內容"); return; }
     if(!date){ setNotice("請選擇待辦日期"); return; }
-    const item={id:uid(),text,date,time:time||"",note:note||"",done:false,createdAt:new Date().toISOString()};
+    const item={id:uid(),text,date,time:time||"",note:note||"",done:false,archived:false,createdAt:new Date().toISOString()};
     saveCalTodos([...(state.calTodos||[]),item]);
     state.showAddTodo=false;
     state.notice="✅ 待辦事項已新增";

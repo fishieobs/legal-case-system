@@ -754,9 +754,12 @@ function renderForm(){
     <div class="fg"><label class="fl">標籤（逗號分隔）</label><input class="fi" id="f-tags" value="${esc(f.tags)}" placeholder="VIP, 企業法務, 長期"></div>
   </div>
   <div class="fg" style="margin-top:10px;margin-bottom:18px"><label class="fl">備註</label><textarea class="fi" id="f-note" rows="2" placeholder="客戶偏好、注意事項…">${esc(f.note)}</textarea></div>
-  <div style="display:flex;gap:10px;justify-content:flex-end">
-    <button class="btn btn-outline btn-sm" id="f-cancel">取消</button>
-    <button class="btn btn-violet btn-sm" id="f-save">💾 儲存</button>
+  <div style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+    ${S.editId?"<span></span>":`<button class="btn btn-outline btn-sm" id="f-gen-intake" title="產生專屬連結傳給當事人，由其自行填寫資料">🔗 改由當事人自填</button>`}
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline btn-sm" id="f-cancel">取消</button>
+      <button class="btn btn-violet btn-sm" id="f-save">💾 儲存</button>
+    </div>
   </div>
 </div></div>`;}
 
@@ -816,6 +819,12 @@ function bindApp(){
 
   // 客戶表單
   document.getElementById("f-cancel")?.addEventListener("click",()=>{S.showForm=false;S.editId=null;render();});
+  // 新增客戶 → 改由當事人自填（帶入已輸入的名稱與類型）
+  document.getElementById("f-gen-intake")?.addEventListener("click",()=>{
+    S.intakeGenName=document.getElementById("f-name")?.value.trim()||"";
+    S.intakeGenType=document.getElementById("f-type")?.value||"個人";
+    S.showForm=false;S.editId=null;S.showIntakeGen=true;S.tab="intake";render();
+  });
   document.getElementById("f-save")?.addEventListener("click",()=>{
     S.form={
       name:document.getElementById("f-name")?.value||"",

@@ -371,7 +371,7 @@ const CASE_REASONS = {
 };
 const CASE_STATUS = ["進行中","已結案","上訴中","停止中","準備委任"];
 const INSTANCES = ["地院","高院","最高院","地檢署","高檢署","高行院","最高行政法院"];
-const COURTS = ["台北地院","士林地院","新北地院","桃園地院","新竹地院","苗栗地院","台中地院","南投地院","彰化地院","雲林地院","嘉義地院","台南地院","高雄地院","橋頭地院","屏東地院","花蓮地院","台東地院","基隆地院","宜蘭地院","澎湖地院","金門地院","台北地檢","士林地檢","新北地檢","桃園地檢","新竹地檢","台中地檢","台南地檢","高雄地檢","台北高院","台中高院","台南高院","高雄高院","臺灣高等法院","台中高分院","高雄高分院","花蓮高分院","最高法院","台北高行院","台中高行院","高雄高行院","最高行政法院"];
+const COURTS = ["台北地院","士林地院","新北地院","桃園地院","新竹地院","苗栗地院","台中地院","南投地院","彰化地院","雲林地院","嘉義地院","台南地院","高雄地院","橋頭地院","屏東地院","花蓮地院","台東地院","基隆地院","宜蘭地院","澎湖地院","金門地院","台北地檢","士林地檢","新北地檢","桃園地檢","新竹地檢","苗栗地檢","台中地檢","南投地檢","彰化地檢","雲林地檢","嘉義地檢","台南地檢","高雄地檢","橋頭地檢","屏東地檢","花蓮地檢","台東地檢","基隆地檢","宜蘭地檢","澎湖地檢","金門地檢","台北高院","台中高院","台南高院","高雄高院","臺灣高等法院","台中高分院","高雄高分院","花蓮高分院","最高法院","高檢署","台中高分檢","台南高分檢","高雄高分檢","花蓮高分檢","最高檢察署","台北高行院","台中高行院","高雄高行院","最高行政法院"];
 
 
 // ── 台灣國定假日（2024-2027）──
@@ -803,7 +803,22 @@ function App({user}){
     const updateJudgement=(i,v)=>{const a=[...getJudgements()];a[i]=v;sf("judgementLinks",a);};
     const removeJudgement=i=>sf("judgementLinks",getJudgements().filter((_,idx)=>idx!==i));
 
-    const openAdd=()=>{ setFormData({...emptyCase,id:""}); setEditId(null); setView("form"); };
+    // 事務所案件編號自動排序：{民國年}-{類型首字}-{三位流水號}
+    const autoCaseNo=(type)=>{
+        const y=new Date().getFullYear()-1911;
+        const abbr=(type||"民事").charAt(0);
+        let max=0;
+        const re=new RegExp("^"+y+"-"+abbr+"-(\\d+)$");
+        cases.forEach(c=>{
+            const m=(c.firmCaseNo||"").trim().match(re);
+            if(m) max=Math.max(max,parseInt(m[1],10));
+        });
+        return `${y}-${abbr}-${String(max+1).padStart(3,"0")}`;
+    };
+    // 空白或仍是自動編號格式者，切換類型時允許重新編號（手動輸入的特殊編號不覆蓋）
+    const isAutoCaseNo=(v)=>!v||!String(v).trim()||/^\d{2,3}-.-\d{3}$/.test(String(v).trim());
+
+    const openAdd=()=>{ setFormData({...emptyCase,id:"",firmCaseNo:autoCaseNo(emptyCase.caseType)}); setEditId(null); setView("form"); };
     const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
     const openDetail=(id)=>{ setSelectedId(id); setDetailTab("info"); setView("detail"); };
 
@@ -997,7 +1012,7 @@ function App({user}){
 對造：${c.opposingParty||""}
 法院案號：${(c.courtCaseNos||[]).filter(Boolean).join("、")||""}
 股別：${c.division||""}
-法院：${c.court||""} ${c.instance||""}
+法院/檢察署：${c.court||""} ${c.instance||""}
 案件類型：${c.caseType||""}
 案件狀態：${c.status||""}
 承辦律師：${c.attorney||""}
@@ -1064,7 +1079,7 @@ function App({user}){
 
     // ── Excel export ──
     const exportExcel=()=>{
-        const headers=["事務所案件編號","當事人姓名","連絡電話","對造","法院案號","股別","法院","審級","案件類型","案由","狀態","承辦律師","委任日期","本件律師費","已收款合計","未收款","代墊款項","標籤","備註"];
+        const headers=["事務所案件編號","當事人姓名","連絡電話","對造","法院案號","股別","法院/檢察署","審級","案件類型","案由","狀態","承辦律師","委任日期","本件律師費","已收款合計","未收款","代墊款項","標籤","備註"];
         const rows=cases.map(c=>[
             c.firmCaseNo||"", c.clientName||"", c.phone||"", c.opposingParty||"",
             (c.courtCaseNos||[]).filter(Boolean).join("、"), c.division||"", c.court||"", c.instance||"",
@@ -1825,7 +1840,7 @@ function App({user}){
                             ["法院／地檢案號", (selected.courtCaseNos||[]).filter(Boolean).join("、")],
                             ["股別", selected.division],
                             ["現在繫屬機關", selected.currentAgency],
-                            ["法院", selected.court],
+                            ["法院/檢察署", selected.court],
                             ["審級", selected.instance],
                             ["案件類型", selected.caseType],
                             ["案由", selected.caseReason],
@@ -2588,12 +2603,16 @@ function App({user}){
                             <input className="fi" type={t} placeholder={p} value={F[k]||""} onChange={e=>sf(k,e.target.value)}/>
                         </div>
                     ))}
-                    {[["caseType","案件類型",CASE_TYPES],["status","案件狀態",CASE_STATUS],["instance","審級",INSTANCES],["court","法院",COURTS]].map(([k,l,opts])=>(
+                    {[["caseType","案件類型",CASE_TYPES],["status","案件狀態",CASE_STATUS],["instance","審級",INSTANCES],["court","法院/檢察署",COURTS]].map(([k,l,opts])=>(
                         <div key={k} className="fg">
                             <label className="fl">{l}</label>
                             <select className="fi" value={F[k]||""} onChange={e=>{
                                 sf(k,e.target.value);
-                                if(k==="caseType") sf("caseReason",""); // reset reason on type change
+                                if(k==="caseType"){
+                                    sf("caseReason",""); // reset reason on type change
+                                    // 新增案件：依類型自動產生下一個事務所案件編號（不覆蓋手動輸入的特殊編號）
+                                    if(!editId && isAutoCaseNo(F.firmCaseNo)) sf("firmCaseNo",autoCaseNo(e.target.value));
+                                }
                             }}>
                                 {opts.map(o=><option key={o}>{o}</option>)}
                             </select>

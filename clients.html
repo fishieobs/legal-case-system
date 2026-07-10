@@ -162,6 +162,8 @@ const AVATAR_COLORS=["#8b5cf6","#ec4899","#38bdf8","#22c55e","#f59e0b","#f97316"
 // ══════════════════════════════════════════
 function twToday(){return new Date(new Date().getTime()+8*3600000).toISOString().split("T")[0];}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function genToken(){const a=new Uint8Array(18);crypto.getRandomValues(a);return Array.from(a,b=>b.toString(16).padStart(2,"0")).join("");}
+function intakeUrl(token){return new URL("intake.html?t="+token,location.href).href;}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400);}
 function avatarColor(name){let h=0;for(let i=0;i<String(name).length;i++)h=String(name).charCodeAt(i)+((h<<5)-h);return AVATAR_COLORS[Math.abs(h)%AVATAR_COLORS.length];}
@@ -184,6 +186,10 @@ let S={
   // 溝通記錄
   showCommForm:false,commForm:{date:twToday(),type:"phone",content:""},
   delConfirm:null,delComm:null,
+  // 當事人自填連結
+  intakes:[],
+  showIntakeGen:false,intakeGenName:"",intakeGenType:"個人",
+  linkModal:null,previewIntake:null,delIntake:null,
 };
 function newForm(){return{name:"",type:"個人",idNumber:"",phone:"",mobile:"",email:"",address:"",contactPerson:"",source:"親友介紹",status:"active",tags:"",note:""};}
 
@@ -206,6 +212,10 @@ onAuthStateChanged(auth,u=>{
       try{localStorage.setItem("clients_cases_cache",JSON.stringify(S.cases));}catch(_){}
       render();
     });
+    onSnapshot(collection(db,"intakeForms"),snap=>{
+      S.intakes=snap.docs.map(d=>({...d.data(),id:d.id}));
+      render();
+    },err=>{ console.warn("intakeForms 同步失敗：",err.code||err.message); });
   }else{S.loading=false;render();}
 });
 
@@ -240,6 +250,64 @@ async function delCommItem(commId){
   const comms=(c.comms||[]).filter(x=>x.id!==commId);
   await setDoc(doc(db,"clients",c.id),{...c,comms,updatedAt:new Date().toISOString()});
   toast("🗑 已刪除記錄");S.delComm=null;render();
+}
+
+// ══════════════════════════════════════════
+// 當事人自填連結（Intake）
+// ══════════════════════════════════════════
+async function genIntakeLink(){
+  const token=genToken();
+  try{
+    await setDoc(doc(db,"intakeForms",token),{
+      status:"pending",
+      clientName:(S.intakeGenName||"").trim(),
+      clientType:S.intakeGenType||"個人",
+      data:null, submittedAt:null,
+      createdAt:new Date().toISOString(),
+    });
+    S.showIntakeGen=false;S.intakeGenName="";S.intakeGenType="個人";
+    S.linkModal=token;render();
+  }catch(e){
+    console.warn("建立連結失敗：",e.code||e.message);
+    toast(e.code==="permission-denied"?"❌ 權限不足，請確認 Firestore 規則已更新":"❌ 建立連結失敗");
+  }
+}
+async function importIntake(token){
+  const rec=S.intakes.find(x=>x.id===token);
+  if(!rec||!rec.data){toast("⚠️ 尚無回填資料");return;}
+  const d=rec.data;const id=uid();
+  try{
+    await setDoc(doc(db,"clients",id),{
+      name:((d.name||rec.clientName||"").trim())||"未命名",
+      type:d.type||"個人", idNumber:d.idNumber||"",
+      phone:d.phone||"", mobile:d.mobile||"", email:d.email||"",
+      address:d.address||"", contactPerson:d.contactPerson||"",
+      source:"當事人自填", status:"active", tags:"", note:d.note||"",
+      id, comms:[],
+      createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(),
+    });
+    const {id:_ignore,...rest}=rec;
+    await setDoc(doc(db,"intakeForms",token),{...rest,status:"imported",importedAt:new Date().toISOString()});
+    toast("✅ 已匯入為客戶");
+    S.previewIntake=null;render();
+  }catch(e){
+    console.warn("匯入失敗：",e.code||e.message);
+    toast("❌ 匯入失敗");
+  }
+}
+async function deleteIntake(token){
+  try{ await deleteDoc(doc(db,"intakeForms",token)); toast("🗑 已刪除連結"); }
+  catch(e){ toast("❌ 刪除失敗"); }
+  S.delIntake=null;render();
+}
+async function copyIntakeLink(token){
+  const url=intakeUrl(token);
+  try{ await navigator.clipboard.writeText(url); toast("📋 已複製連結"); }
+  catch(_){
+    const ta=document.createElement("textarea");ta.value=url;document.body.appendChild(ta);ta.select();
+    try{document.execCommand("copy");toast("📋 已複製連結");}catch(__){toast("⚠️ 請手動複製");}
+    document.body.removeChild(ta);
+  }
 }
 
 // ══════════════════════════════════════════
@@ -304,7 +372,8 @@ function bindLogin(){
 
 // ── App ──
 function renderApp(){
-  const tabs=[["dashboard","🏠 總覽"],["clients","👥 客戶名單"],["source","📊 案源分析"]];
+  const nSub=S.intakes.filter(i=>i.status==="submitted").length;
+  const tabs=[["dashboard","🏠 總覽"],["clients","👥 客戶名單"],["source","📊 案源分析"],["intake",`🔗 填寫連結${nSub?` (${nSub})`:""}`]];
   return`
 <div class="app">
   <div class="hdr">
@@ -322,16 +391,21 @@ function renderApp(){
     ${S.viewId?renderDetail():
       S.tab==="dashboard"?renderDashboard():
       S.tab==="clients"?renderClients():
-      S.tab==="source"?renderSource():""}
+      S.tab==="source"?renderSource():
+      S.tab==="intake"?renderIntake():""}
   </div>
   <div class="bnav">
-    ${[["dashboard","🏠","總覽"],["clients","👥","客戶"],["source","📊","案源"]]
-      .map(([k,ico,l])=>`<button class="bnav-btn${S.tab===k&&!S.viewId?" active":""}" data-tab="${k}"><span class="bnav-icon">${ico}</span>${l}</button>`).join("")}
+    ${[["dashboard","🏠","總覽"],["clients","👥","客戶"],["source","📊","案源"],["intake","🔗","填寫"]]
+      .map(([k,ico,l])=>`<button class="bnav-btn${S.tab===k&&!S.viewId?" active":""}" data-tab="${k}"><span class="bnav-icon">${ico}</span>${l}${k==="intake"&&nSub?` <span style="background:var(--gold);color:#000;border-radius:8px;font-size:8px;font-weight:800;padding:0 4px">${nSub}</span>`:""}</button>`).join("")}
   </div>
   ${S.showForm?renderForm():""}
   ${S.showCommForm?renderCommForm():""}
+  ${S.showIntakeGen?renderIntakeGen():""}
+  ${S.linkModal?renderLinkModal():""}
+  ${S.previewIntake?renderIntakePreview():""}
   ${S.delConfirm?renderDelDialog("確認刪除此客戶？","客戶資料與所有溝通記錄將永久刪除（其關聯案件不受影響）。","dc-client"):""}
   ${S.delComm?renderDelDialog("刪除此溝通記錄？","此操作無法復原。","dc-comm"):""}
+  ${S.delIntake?renderDelDialog("刪除此填寫連結？","連結將立即失效，已回填但未匯入的資料也會一併刪除。","dc-intake"):""}
 </div>`;}
 
 // ── Dashboard ──
@@ -553,6 +627,108 @@ function renderSource(){
   </div>`).join("")}`;}
 
 // ── 客戶表單 ──
+// ── 當事人自填連結 ──
+function intakeStatusMeta(s){
+  if(s==="submitted")return{label:"待匯入",color:"var(--gold)",bg:"rgba(245,158,11,.14)",bd:"rgba(245,158,11,.35)"};
+  if(s==="imported")return{label:"已匯入",color:"var(--green)",bg:"rgba(34,197,94,.12)",bd:"rgba(34,197,94,.3)"};
+  return{label:"待填寫",color:"var(--violet3)",bg:"rgba(139,92,246,.12)",bd:"rgba(139,92,246,.3)"};
+}
+function renderIntake(){
+  const list=[...S.intakes].sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""));
+  const order={submitted:0,pending:1,imported:2};
+  list.sort((a,b)=>(order[a.status]??9)-(order[b.status]??9));
+  const fmtDate=s=>s?String(s).slice(0,10):"";
+  return`
+  <div class="card" style="border-color:var(--border2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">🔗 當事人自填連結</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">產生專屬連結傳給當事人，由其自行填寫基本資料後回傳，審核後一鍵匯入客戶名單。</div>
+      </div>
+      <button class="btn btn-violet btn-sm" id="btn-gen-intake">＋ 產生填寫連結</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-start;background:var(--bg4);border-radius:10px;padding:10px 13px;font-size:11px;color:var(--text3);margin-top:14px;line-height:1.7">
+      🔒 <div>每個連結皆為隨機專屬網址，僅持有連結者可填寫；沒有連結或未登入管理後台者，無法檢視或存取任何資料。</div>
+    </div>
+  </div>
+  ${list.length===0?`<div class="empty"><div class="empty-ico">🔗</div><div>尚無填寫連結，點擊「產生填寫連結」開始</div></div>`:
+  list.map(rec=>{
+    const m=intakeStatusMeta(rec.status);
+    const url=intakeUrl(rec.id);
+    const nm=rec.clientName||(rec.data&&rec.data.name)||"（未命名）";
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          <span style="font-size:14px;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nm)}</span>
+          <span class="badge" style="background:${m.bg};color:${m.color};border-color:${m.bd}">${m.label}</span>
+        </div>
+        <span style="font-size:11px;color:var(--text4)">建立 ${fmtDate(rec.createdAt)}</span>
+      </div>
+      ${rec.status==="pending"?`
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <input class="fi" style="flex:1;min-width:180px;font-size:11px;color:var(--text3)" value="${esc(url)}" readonly onclick="this.select()">
+          <button class="btn btn-violet btn-sm" data-copy-intake="${rec.id}">📋 複製</button>
+          <button class="btn btn-danger btn-sm" data-del-intake="${rec.id}">刪除</button>
+        </div>
+        <div style="font-size:11px;color:var(--text4);margin-top:8px">尚未回填，可將上方連結傳給當事人。</div>
+      `:rec.status==="submitted"?`
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
+          📱 ${esc(rec.data?.mobile||"—")}　·　回填 ${fmtDate(rec.submittedAt)}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-violet btn-sm" data-preview-intake="${rec.id}">👁 檢視 / 匯入</button>
+          <button class="btn btn-danger btn-sm" data-del-intake="${rec.id}">刪除</button>
+        </div>
+      `:`
+        <div style="font-size:12px;color:var(--text3)">已於 ${fmtDate(rec.importedAt)} 匯入客戶名單。</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn btn-danger btn-sm" data-del-intake="${rec.id}">刪除記錄</button>
+        </div>
+      `}
+    </div>`;
+  }).join("")}
+  `;
+}
+function renderIntakeGen(){
+  return`<div class="overlay"><div class="dialog" style="max-width:420px">
+  <div class="dialog-title">🔗 產生填寫連結</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:16px">為當事人建立一個專屬填寫連結。可先填入稱呼方便辨識（選填）。</div>
+  <div class="fg" style="margin-bottom:12px"><label class="fl">當事人稱呼 / 標記（選填）</label><input class="fi" id="ig-name" value="${esc(S.intakeGenName)}" placeholder="例如：王先生、○○公司"></div>
+  <div class="fg" style="margin-bottom:18px"><label class="fl">預設類型</label><select class="fi" id="ig-type" style="width:100%">${CLIENT_TYPES.map(t=>`<option${t===S.intakeGenType?" selected":""}>${t}</option>`).join("")}</select></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-outline btn-sm" id="ig-cancel">取消</button>
+    <button class="btn btn-violet btn-sm" id="ig-create">🔗 產生連結</button>
+  </div>
+</div></div>`;}
+function renderLinkModal(){
+  const url=intakeUrl(S.linkModal);
+  return`<div class="overlay"><div class="dialog" style="max-width:440px">
+  <div class="dialog-title">✅ 連結已產生</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">將以下專屬連結傳給當事人填寫。當事人送出後，會出現在「待匯入」清單。</div>
+  <input class="fi" style="width:100%;font-size:12px;margin-bottom:12px" value="${esc(url)}" readonly onclick="this.select()">
+  <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+    <button class="btn btn-outline btn-sm" id="lm-close">關閉</button>
+    <button class="btn btn-violet btn-sm" data-copy-intake="${S.linkModal}">📋 複製連結</button>
+  </div>
+</div></div>`;}
+function renderIntakePreview(){
+  const rec=S.intakes.find(x=>x.id===S.previewIntake);
+  if(!rec)return"";
+  const d=rec.data||{};
+  const rows=[["姓名 / 名稱",d.name],["類型",d.type],["身分證 / 統編",d.idNumber],["手機",d.mobile],["市話",d.phone],["Email",d.email],["地址",d.address],["聯絡人",d.contactPerson],["補充說明",d.note]];
+  return`<div class="overlay"><div class="dialog" style="max-width:480px">
+  <div class="dialog-title">👁 當事人回填資料</div>
+  <div class="card" style="box-shadow:none;margin-bottom:16px">
+    ${rows.map(([l,v])=>`<div class="info-row"><div class="info-lbl">${l}</div><div class="info-val" style="text-align:right">${v?esc(v):"—"}</div></div>`).join("")}
+  </div>
+  <div style="font-size:11px;color:var(--text4);margin-bottom:16px">匯入後將於客戶名單新增一筆資料（案源標記為「當事人自填」），可再自行編輯調整。</div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+    <button class="btn btn-outline btn-sm" id="ip-close">關閉</button>
+    <button class="btn btn-danger btn-sm" data-del-intake="${rec.id}">刪除</button>
+    <button class="btn btn-violet btn-sm" id="ip-import">⬇ 匯入為客戶</button>
+  </div>
+</div></div>`;}
+
 function renderForm(){
   const f=S.form;
   return`<div class="overlay"><div class="dialog">
@@ -674,6 +850,23 @@ function bindApp(){
   document.getElementById("dc-client-ok")?.addEventListener("click",()=>delClient(S.delConfirm));
   document.getElementById("dc-comm-cancel")?.addEventListener("click",()=>{S.delComm=null;render();});
   document.getElementById("dc-comm-ok")?.addEventListener("click",()=>delCommItem(S.delComm));
+
+  // 當事人自填連結
+  document.getElementById("btn-gen-intake")?.addEventListener("click",()=>{S.showIntakeGen=true;render();});
+  document.getElementById("ig-cancel")?.addEventListener("click",()=>{S.showIntakeGen=false;render();});
+  document.getElementById("ig-create")?.addEventListener("click",()=>{
+    S.intakeGenName=document.getElementById("ig-name")?.value||"";
+    S.intakeGenType=document.getElementById("ig-type")?.value||"個人";
+    genIntakeLink();
+  });
+  document.getElementById("lm-close")?.addEventListener("click",()=>{S.linkModal=null;render();});
+  document.querySelectorAll("[data-copy-intake]").forEach(b=>b.addEventListener("click",()=>copyIntakeLink(b.dataset.copyIntake)));
+  document.querySelectorAll("[data-preview-intake]").forEach(b=>b.addEventListener("click",()=>{S.previewIntake=b.dataset.previewIntake;render();}));
+  document.getElementById("ip-close")?.addEventListener("click",()=>{S.previewIntake=null;render();});
+  document.getElementById("ip-import")?.addEventListener("click",()=>importIntake(S.previewIntake));
+  document.querySelectorAll("[data-del-intake]").forEach(b=>b.addEventListener("click",()=>{S.delIntake=b.dataset.delIntake;render();}));
+  document.getElementById("dc-intake-cancel")?.addEventListener("click",()=>{S.delIntake=null;render();});
+  document.getElementById("dc-intake-ok")?.addEventListener("click",()=>deleteIntake(S.delIntake));
 }
 
 render();

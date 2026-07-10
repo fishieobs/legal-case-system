@@ -1,0 +1,53 @@
+rules_version = '2';
+
+// ══════════════════════════════════════════════════════════════════
+// Firestore 安全規則 — 禹河法律事務所案件/客戶管理系統
+//
+// 【套用方式】Firebase 主控台 → Firestore Database → 規則(Rules) →
+//   貼上以下內容 → 發布(Publish)
+//
+// 【前置作業】Firebase 主控台 → Authentication → Sign-in method →
+//   啟用「匿名(Anonymous)」登入（當事人自填頁 intake.html 需要）
+//
+// 安全模型：
+//   • 管理員（律師）＝ 以「帳號密碼 / Google」等非匿名方式登入者，
+//     可讀寫全部資料。
+//   • 當事人自填表單 intakeForms：僅持有專屬連結（= 隨機文件 ID）者
+//     可讀取並填寫「一次」，且只能改動 status/data/submittedAt。
+//     匿名者無法列舉、無法讀取 clients/cases 等任何其他資料。
+//   • 沒有連結、也非管理員者：完全無法存取任何資料。
+// ══════════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 管理員 = 已登入且非匿名（帳號密碼 / Google …）
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // 當事人自填表單
+    match /intakeForms/{token} {
+      // 只有管理員可建立、列舉、刪除、直接覆寫
+      allow create, list, delete: if isAdmin();
+
+      // 持有連結者（含匿名）可讀取自己這一份（token 為 144-bit 隨機值，無法猜測）
+      allow get: if request.auth != null;
+
+      // 持有連結者可將 pending 表單填寫「一次」，且僅能改動這三個欄位
+      allow update: if isAdmin() || (
+        request.auth != null
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'submitted'
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'data', 'submittedAt'])
+      );
+    }
+
+    // 其餘所有資料（clients、cases、calTodos、widgetHearings …）：僅管理員
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

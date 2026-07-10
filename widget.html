@@ -88,9 +88,6 @@ html,body{min-height:100vh;padding-top:40px;background:var(--bg);color:var(--tex
 .days-btn.active{background:linear-gradient(135deg,#1a0f6e,#301e90);border-color:#c8a06088;color:var(--gold);}
 .days-btn:hover:not(.active){border-color:var(--gold)44;color:var(--text2);}
 
-.invoice-btn:hover{border-color:#f97316;transform:translateY(-1px);}
-.invoice-btn:active{transform:translateY(0);opacity:.9;}
-
 .checkin-btn{width:100%;background:linear-gradient(135deg,#1a0f6e,#301e90);border:1px solid #c8a06088;border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;transition:all .2s;margin-bottom:14px;}
 .checkin-btn:hover{border-color:var(--gold);transform:translateY(-1px);}
 .checkin-btn:active{transform:translateY(0);opacity:.9;}
@@ -166,14 +163,6 @@ html,body{min-height:100vh;padding-top:40px;background:var(--bg);color:var(--tex
 @media(min-width:600px){.day-modal{align-items:center;padding:20px;}}
 .day-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:20px;max-height:75vh;overflow-y:auto;}
 @media(min-width:600px){.day-sheet{border-radius:16px;}}
-
-.invoice-btn{width:100%;background:linear-gradient(135deg,#f97316,#ea580c);border:1px solid rgba(249,115,22,.5);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;text-align:left;transition:all .2s;margin-bottom:14px;}
-.invoice-btn:hover{border-color:#f97316;transform:translateY(-1px);}
-.invoice-btn:active{transform:translateY(0);opacity:.9;}
-.invoice-icon{width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(249,115,22,.4);}
-.invoice-text{flex:1;}
-.invoice-title{font-size:14px;font-weight:700;color:#f97316;letter-spacing:.02em;}
-.invoice-sub{font-size:10px;color:#fb923c;margin-top:2px;}
 .day-modal{position:fixed;inset:0;background:#000000dd;z-index:9998;display:flex;align-items:flex-end;justify-content:center;padding:0;}
 @media(min-width:600px){.day-modal{align-items:center;padding:20px;}}
 .day-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:20px;max-height:85vh;overflow-y:auto;}
@@ -316,7 +305,7 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 let state = { 
     user:null, authChecked:false, cases:[], calTodos:[], 
     widgetHearings:loadWidgetHearings(), showAddHearing:false, showAddTodo:false, 
-    showQR:false, showInvoice:false, dayDetail:null, editingHearingId:null, editingTodoId:null, editTodoText:"", showTodos:false, showArchivedTodos:false,
+    showQR:false, dayDetail:null, editingHearingId:null, editingTodoId:null, editTodoText:"", showTodos:false, showArchivedTodos:false,
     reminder:loadReminder(), refreshing:false, notice:"",
     viewMode:localStorage.getItem("widget_view_mode")||"list",
     calDate:new Date(), selectedDate:null
@@ -677,27 +666,6 @@ function buildWidget(){
     </div>
 
     <div class="content">
-        <!-- Invoice barcode button -->
-    
-
-    <!-- Invoice barcode button -->
-    <button class="invoice-btn" id="btn-invoice">
-        <img class="invoice-icon" src="assets/img-2b4029bc7779.jpg" alt="統一發票"/>
-        <div class="invoice-text">
-            <div class="invoice-title">📋 統一發票條碼</div>
-            <div class="invoice-sub">點擊顯示條碼 · 全螢幕掃描</div>
-        </div>
-        <div class="checkin-arrow" style="color:#f97316;">▶</div>
-    </button>
-
-    <!-- Invoice overlay -->
-    ${state.showInvoice?`
-    <div class="qr-overlay" id="invoice-overlay">
-        <img class="qr-img" src="assets/img-2b4029bc7779.jpg" alt="統一發票條碼"/>
-        <div class="qr-hint">點擊任意處關閉</div>
-        <button class="qr-close" id="invoice-close" type="button">返回主畫面</button>
-    </div>`:""}
-
     <!-- View mode toggle -->
     <div class="mode-toggle">
         <button class="mode-btn ${state.viewMode==="list"?"active":""}" data-mode="list">📋 列表</button>
@@ -1215,20 +1183,8 @@ function bindEvents(){
         });
     });
 
-    // Invoice barcode
-    document.getElementById("btn-invoice")?.addEventListener("click",()=>{
-        state.showInvoice=true; render();
-    });
-    document.getElementById("invoice-overlay")?.addEventListener("click",()=>{
-        state.showInvoice=false; render();
-    });
-    document.getElementById("invoice-close")?.addEventListener("click",e=>{
-        e.stopPropagation();
-        state.showInvoice=false; render();
-    });
     document.onkeydown = e=>{
-        if(e.key==="Escape" && (state.showInvoice || state.showQR || state.dayDetail || state.selectedDate)){
-            state.showInvoice=false;
+        if(e.key==="Escape" && (state.showQR || state.dayDetail || state.selectedDate)){
             state.showQR=false;
             state.dayDetail=null;
             state.selectedDate=null;
@@ -1276,14 +1232,6 @@ function bindEvents(){
     });
     document.getElementById("qr-overlay")?.addEventListener("click",()=>{
         state.showQR=false; render();
-    });
-
-    // Invoice barcode
-    document.getElementById("btn-invoice")?.addEventListener("click",()=>{
-        state.showInvoice=true; render();
-    });
-    document.getElementById("invoice-overlay")?.addEventListener("click",()=>{
-        state.showInvoice=false; render();
     });
 
     // Calendar day click

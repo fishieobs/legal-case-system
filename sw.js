@@ -1,4 +1,4 @@
-const CACHE = "case-mgr-v18";
+const CACHE = "case-mgr-v19";
 
 const PRECACHE = [
   "./",
@@ -34,7 +34,6 @@ const PRECACHE = [
   "./icons/icon-court.png",
   "./icons/icon-fees.png",
   "./assets/img-0adfa7b3d292.png",
-  "./assets/img-2b4029bc7779.jpg",
   "./assets/img-d1456ca19b20.jpg",
 ];
 

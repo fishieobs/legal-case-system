@@ -2,18 +2,18 @@
   var active = (document.currentScript && document.currentScript.getAttribute("data-active")) || "";
   var pages = [
     { id: "cases",     href: "index.html",      label: "⚖ 案件系統" },
+    { id: "widget",    href: "widget.html",      label: "📅 庭期 Widget" },
     { id: "clients",   href: "clients.html",     label: "👥 客戶管理" },
+    { id: "fees",           href: "fees.html",           label: "💰 律師費計算" },
     { id: "judgments", href: "judgments.html",   label: "🔨 判決書管理" },
     { id: "letters",   href: "letters.html",     label: "📮 信函管理" },
     { id: "documents", href: "documents.html",   label: "📁 文件管理" },
     { id: "templates", href: "templates.html",   label: "📚 文書範本" },
     { id: "tax",       href: "tax.html",         label: "💰 稅務管理" },
     { id: "court",     href: "court_nav.html",   label: "🗺 開庭助理" },
-    { id: "widget",    href: "widget.html",      label: "📅 庭期 Widget" },
     { id: "deadline",  href: "deadline.html",    label: "⏱ 時效計算器" },
     { id: "checklist",      href: "checklist.html",      label: "📋 開庭清單" },
     { id: "judicial-search",href: "judicial-search.html",label: "🔍 裁判書查詢" },
-    { id: "fees",           href: "fees.html",           label: "💰 律師費計算" },
   ];
 
   // ── Global theme (dark / light), shared across all pages ──

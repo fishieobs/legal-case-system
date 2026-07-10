@@ -225,8 +225,10 @@ const auth = getAuth(app);
 
 // ── Constants ──
 const TYPE_COLOR = {刑事:"#ef4444",民事:"#3b82f6",行政:"#8b5cf6",家事:"#ec4899",勞動:"#f97316",智財:"#14b8a6",非訟:"#06b6d4"};
-const DAYS_OPTIONS = [7, 15, 30, 60];
-let DAYS_AHEAD = parseInt(localStorage.getItem("widget_days_ahead")||"7");
+const DAYS_OPTIONS = [30, 60, 120];
+let DAYS_AHEAD = parseInt(localStorage.getItem("widget_days_ahead")||"30");
+// 舊版儲存的 7/15 已不在選項中，一律回歸 30
+if(!DAYS_OPTIONS.includes(DAYS_AHEAD)) DAYS_AHEAD = 30;
 
 // ── Helpers ──
 function today(){
@@ -945,7 +947,7 @@ function buildWidget(){
         ${hearings.length===0?`
         <div style="text-align:center;padding:30px 20px 20px;color:var(--text4)">
             <div style="font-size:40px;margin-bottom:12px">🎉</div>
-            <div style="font-weight:700;color:var(--text3)">近7日無庭期</div>
+            <div style="font-weight:700;color:var(--text3)">近${DAYS_AHEAD}日無庭期</div>
             <div style="font-size:12px;margin-top:6px">好好休息！</div>
         </div>`:""}
 

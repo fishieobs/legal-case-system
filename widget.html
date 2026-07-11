@@ -262,7 +262,10 @@ window.toggleTodosPanel = function(){
 };
 
 window.startEditTodo = function(id, text){
-    state.editingTodoId=id; state.editTodoText=text; render();
+    // text 由 state 查得，不經 DOM 傳遞，避免內嵌事件字串注入
+    state.editingTodoId=id;
+    state.editTodoText = (text!=null) ? text : ((state.calTodos||[]).find(t=>t.id===id)?.text || "");
+    render();
     setTimeout(()=>document.getElementById("etid-"+id)?.focus(), 50);
 };
 
@@ -733,11 +736,11 @@ function buildWidget(){
                     const c=TYPE_COLOR[h.caseType]||"#64748b";
                     return `<div style="background:var(--bg3);border:1px solid ${c}44;border-radius:10px;padding:12px 14px;margin-bottom:8px">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-                            <span style="font-size:15px;font-weight:700;color:var(--text)">${h.time||"—"}</span>
-                            <span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:${c}22;color:${c}">${h.caseType||"庭期"}</span>
+                            <span style="font-size:15px;font-weight:700;color:var(--text)">${esc(h.time||"—")}</span>
+                            <span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:${c}22;color:${c}">${esc(h.caseType||"庭期")}</span>
                         </div>
-                        <div style="font-size:13px;color:var(--text2)">${h.clientName||"臨時庭期"}</div>
-                        <div style="font-size:11px;color:var(--text3);margin-top:2px">${[h.agency,h.courtroom,h.note].filter(Boolean).join(" · ")}</div>
+                        <div style="font-size:13px;color:var(--text2)">${esc(h.clientName||"臨時庭期")}</div>
+                        <div style="font-size:11px;color:var(--text3);margin-top:2px">${esc([h.agency,h.courtroom,h.note].filter(Boolean).join(" · "))}</div>
                     </div>`;
                 }).join("")}
                 `:""} 
@@ -746,8 +749,8 @@ function buildWidget(){
                 ${todos.sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99")).map(t=>`<div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
                     <div style="width:16px;height:16px;border-radius:4px;border:2px solid #8b5cf6;background:${t.done?"#8b5cf6":"transparent"};flex-shrink:0;display:flex;align-items:center;justify-content:center">${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}</div>
                     <div style="flex:1">
-                        ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
-                        <div style="color:var(--text);font-size:13px;text-decoration:${t.done?"line-through":"none"}">${t.text}</div>
+                        ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${esc(t.time)}</div>`:""}
+                        <div style="color:var(--text);font-size:13px;text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
                     </div>
                 </div>`).join("")}
                 `:""} 
@@ -806,8 +809,8 @@ function buildWidget(){
                     ${todos.map(t=>`<div style="background:var(--bg3);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;opacity:${t.done?.5:1}">
                         <div style="width:18px;height:18px;border-radius:4px;border:2px solid #8b5cf6;background:${t.done?"#8b5cf6":"transparent"};flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center">${t.done?'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>':""}</div>
                         <div style="flex:1">
-                            ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
-                            <div style="color:var(--text);font-size:14px;text-decoration:${t.done?"line-through":"none"}">${t.text}</div>
+                            ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${esc(t.time)}</div>`:""}
+                            <div style="color:var(--text);font-size:14px;text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
                         </div>
                     </div>`).join("")}
                 </div>`;
@@ -955,7 +958,7 @@ function buildWidget(){
                                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
                                     <span style="color:${tc};font-size:16px">${h.time||"—"}</span>
                                     <span style="font-weight:700;color:var(--text);flex:1">${esc(h.clientName||"")}</span>
-                                    <span class="badge" style="background:${tc}22;color:${tc};border:1px solid ${tc}44">${h.caseType||""}</span>
+                                    <span class="badge" style="background:${tc}22;color:${tc};border:1px solid ${tc}44">${esc(h.caseType||"")}</span>
                                 </div>
                                 <div style="font-size:11px;color:var(--text3)">${esc([h.agency,h.courtroom,h.note].filter(Boolean).join(" · "))}</div>
                                 ${actions}
@@ -999,11 +1002,11 @@ function buildTodoItem(t){
     return `<div class="todo-item${t.done?" done":""}${isOverdue?" overdue":""}">
         ${checkBox}
         <div style="flex:1">
-            ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${t.time}</div>`:""}
+            ${t.time?`<div style="font-size:11px;color:#8b5cf6;font-weight:700;margin-bottom:2px">⏰ ${esc(t.time)}</div>`:""}
             <div style="font-size:13px;color:${t.done?"var(--text4)":"var(--text)"};text-decoration:${t.done?"line-through":"none"}">${esc(t.text)}</div>
         </div>
         ${t.done?`<button class="todo-edit-btn" onclick="window.archiveTodo('${t.id}')" title="封存" style="color:#8b5cf6">📥</button>`:""}
-        <button class="todo-edit-btn" onclick="window.startEditTodo('${t.id}',\`${esc(t.text)}\`)" title="編輯">✏️</button>
+        <button class="todo-edit-btn" data-edit-todo="${t.id}" title="編輯">✏️</button>
         <button class="todo-edit-btn" onclick="window.deleteTodo('${t.id}')" title="刪除" style="color:var(--text4)">🗑</button>
     </div>`;
 }
@@ -1014,7 +1017,7 @@ function buildArchivedTodoItem(t){
     return `<div class="todo-item done" style="opacity:.75">
         <div class="todo-check-box done" style="cursor:default">${'<span style="color:#fff;font-size:10px;font-weight:900">✓</span>'}</div>
         <div style="flex:1">
-            <div style="font-size:10px;color:var(--text4);margin-bottom:2px">${dd.getMonth()+1}/${dd.getDate()}（${wd}）${t.time?` ⏰ ${t.time}`:""}</div>
+            <div style="font-size:10px;color:var(--text4);margin-bottom:2px">${dd.getMonth()+1}/${dd.getDate()}（${wd}）${t.time?` ⏰ ${esc(t.time)}`:""}</div>
             <div style="font-size:13px;color:var(--text4);text-decoration:line-through">${esc(t.text)}</div>
         </div>
         <button class="todo-edit-btn" onclick="window.unarchiveTodo('${t.id}')" title="取消封存" style="color:var(--green)">↩️</button>
@@ -1136,7 +1139,7 @@ function buildCard(h){
             <div class="client-name">${esc(h.clientName)}</div>
             <div class="case-no">${esc(h.firmCaseNo)}${caseNo&&caseNo!==h.firmCaseNo?" · "+esc(caseNo):""}</div>
             <div class="meta-row">
-                <span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${h.caseType}</span>
+                <span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${esc(h.caseType)}</span>
                 ${h.note?`<span class="badge" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)">${esc(h.note)}</span>`:""}
             </div>
             ${h.agency||h.courtroom?`<div class="detail-row">🏛 ${esc([h.agency,h.courtroom].filter(Boolean).join(" · "))}</div>`:""}
@@ -1181,6 +1184,11 @@ function bindEvents(){
             localStorage.setItem("widget_days_ahead", DAYS_AHEAD);
             render();
         });
+    });
+
+    // 待辦編輯：以 data 屬性 + 監聽器取代內嵌事件（避免字串注入）
+    document.querySelectorAll("[data-edit-todo]").forEach(btn=>{
+        btn.addEventListener("click",()=>window.startEditTodo(btn.dataset.editTodo));
     });
 
     document.onkeydown = e=>{

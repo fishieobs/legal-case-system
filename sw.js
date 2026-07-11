@@ -1,4 +1,4 @@
-const CACHE = "case-mgr-v20";
+const CACHE = "case-mgr-v21";
 
 const PRECACHE = [
   "./",
@@ -22,7 +22,9 @@ const PRECACHE = [
   "./manifest-judgments.json",
   "./manifest-widget.json",
   "./manifest-fees.json",
+  "./manifest-clients.json",
   "./icons/icon-cases.png",
+  "./icons/icon-clients.png",
   "./icons/icon-letters.png",
   "./icons/icon-templates.png",
   "./icons/icon-judgments.png",

@@ -405,7 +405,8 @@ const STATUS_COLOR={"進行中":"#22c55e","已結案":"#94a3b8","上訴中":"#f5
 
 const emptyCase = {
     id:"", firmCaseNo:"", courtCaseNos:[""], division:"",
-    clientName:"", phone:"", totalFee:0, payments:[], disbursements:0,
+    clientName:"", phone:"", clientParties:[{name:"",phone:""}], opposingParties:[""],
+    totalFee:0, payments:[], disbursements:0,
     caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
     attorney:"", retainerDate:"", opposingParty:"", caseReason:"", judgementLink:"", notes:"",
     judgmentReceivedDate:"", appealDeadline:"",
@@ -697,6 +698,7 @@ function App({user}){
         const q=search.toLowerCase();
         const searchFields=[
             c.clientName, c.firmCaseNo, c.opposingParty, c.attorney,
+            ...(c.clientParties||[]).flatMap(p=>[p.name,p.phone]),
             c.currentAgency, c.court, c.division, c.notes, c.judgementLink, ...(c.judgementLinks||[]), c.caseReason||"",
             ...(c.courtCaseNos||[]),
             ...(c.hearings||[]).map(h=>[h.agency,h.note,h.courtroom].filter(Boolean).join(" ")),
@@ -741,11 +743,20 @@ function App({user}){
 
     // ── Save to Firebase ──
     const saveCase = async()=>{
-        if(!formData.clientName.trim()){ toast("⚠️ 請輸入當事人姓名"); return; }
+        const parties=(formData.clientParties||[]).map(p=>({name:(p.name||"").trim(),phone:(p.phone||"").trim()})).filter(p=>p.name||p.phone);
+        const opp=(formData.opposingParties||[]).map(s=>(s||"").trim()).filter(Boolean);
+        if(!parties.some(p=>p.name)){ toast("⚠️ 請輸入當事人姓名"); return; }
         if(!formData.firmCaseNo.trim()){ toast("⚠️ 請輸入事務所案件編號"); return; }
         try{
             const id = editId || uid();
-            const data = {...formData, id};
+            // 陣列為主，同步回寫舊版單一字串欄位以相容其他系統（客戶關聯、庭期、匯出…）
+            const data = {...formData, id,
+                clientParties: parties,
+                opposingParties: opp,
+                clientName: parties.map(p=>p.name).filter(Boolean).join("、"),
+                phone: (parties.find(p=>p.phone)||{}).phone || "",
+                opposingParty: opp.join("、"),
+            };
             toast("⏳ 儲存中…");
             await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"cases",id), data);
             toast("✅ 已儲存至雲端");
@@ -794,9 +805,25 @@ function App({user}){
         setNewDoc({label:"",url:"",type:"筆錄"});
     };
     const removeDoc=i=>sf("docs",(formData.docs||[]).filter((_,idx)=>idx!==i));
-    const addCaseNo=()=>sf("courtCaseNos",[...(formData.courtCaseNos||[]),""]); 
+    const addCaseNo=()=>sf("courtCaseNos",[...(formData.courtCaseNos||[]),""]);
     const updateCaseNo=(i,v)=>{const a=[...(formData.courtCaseNos||[])];a[i]=v;sf("courtCaseNos",a);};
     const removeCaseNo=i=>sf("courtCaseNos",formData.courtCaseNos.filter((_,idx)=>idx!==i));
+    // 當事人（可複數，每位含姓名+電話）與對造當事人（可複數）；相容舊版單一字串欄位
+    const withParties=(c)=>{
+        const cp=(Array.isArray(c.clientParties)&&c.clientParties.length)
+            ? c.clientParties.map(p=>({name:p.name||"",phone:p.phone||""}))
+            : [{name:c.clientName||"",phone:c.phone||""}];
+        const op=(Array.isArray(c.opposingParties)&&c.opposingParties.length)
+            ? c.opposingParties.slice()
+            : (c.opposingParty?[c.opposingParty]:[""]);
+        return {...c, clientParties:cp, opposingParties:op};
+    };
+    const addClientParty=()=>sf("clientParties",[...(formData.clientParties||[]),{name:"",phone:""}]);
+    const updateClientParty=(i,key,v)=>sf("clientParties",(formData.clientParties||[]).map((p,idx)=>idx===i?{...p,[key]:v}:p));
+    const removeClientParty=i=>sf("clientParties",(formData.clientParties||[]).filter((_,idx)=>idx!==i));
+    const addOpposing=()=>sf("opposingParties",[...(formData.opposingParties||[]),""]);
+    const updateOpposing=(i,v)=>{const a=[...(formData.opposingParties||[])];a[i]=v;sf("opposingParties",a);};
+    const removeOpposing=i=>sf("opposingParties",(formData.opposingParties||[]).filter((_,idx)=>idx!==i));
     // 判決書連結（多筆；相容舊版單筆 judgementLink 字串）
     const getJudgements=()=>(formData.judgementLinks&&formData.judgementLinks.length)?formData.judgementLinks:(formData.judgementLink?[formData.judgementLink]:[""]);
     const addJudgement=()=>sf("judgementLinks",[...getJudgements(),""]);
@@ -818,8 +845,8 @@ function App({user}){
     // 空白或仍是自動編號格式者，切換類型時允許重新編號（手動輸入的特殊編號不覆蓋）
     const isAutoCaseNo=(v)=>!v||!String(v).trim()||/^\d{2,3}-.-\d{3}$/.test(String(v).trim());
 
-    const openAdd=()=>{ setFormData({...emptyCase,id:"",firmCaseNo:autoCaseNo(emptyCase.caseType)}); setEditId(null); setView("form"); };
-    const openEdit=(c)=>{ setFormData(JSON.parse(JSON.stringify(c))); setEditId(c.id); setView("form"); };
+    const openAdd=()=>{ setFormData(withParties({...emptyCase,id:"",firmCaseNo:autoCaseNo(emptyCase.caseType)})); setEditId(null); setView("form"); };
+    const openEdit=(c)=>{ setFormData(withParties(JSON.parse(JSON.stringify(c)))); setEditId(c.id); setView("form"); };
     const openDetail=(id)=>{ setSelectedId(id); setDetailTab("info"); setView("detail"); };
 
     // ── Calendar Todos ──
@@ -968,7 +995,7 @@ function App({user}){
             driveFolderUrl:"",
             docs:[],
         };
-        setFormData(newCase); setEditId(null); setView("form");
+        setFormData(withParties(newCase)); setEditId(null); setView("form");
         toast("已複製案件，請確認資料後儲存");
     };
 
@@ -1875,14 +1902,27 @@ function App({user}){
                     {/* 當事人 & 費用 */}
                     <div className="card">
                         <div className="card-title">👤 當事人 & 費用</div>
-                        <div className="info-row"><div className="info-lbl">當事人姓名</div><div className="info-val">{selected.clientName||"—"}</div></div>
-                        <div className="info-row">
-                            <div className="info-lbl">連絡電話</div>
-                            <div className="info-val">
-                                {selected.phone?<a href={`tel:${selected.phone}`}>{selected.phone}</a>:"—"}
-                            </div>
-                        </div>
-                        <div className="info-row"><div className="info-lbl">對造當事人</div><div className="info-val">{selected.opposingParty||"—"}</div></div>
+                        {(()=>{
+                            const cps=(Array.isArray(selected.clientParties)&&selected.clientParties.length)?selected.clientParties:[{name:selected.clientName,phone:selected.phone}];
+                            const ops=(Array.isArray(selected.opposingParties)&&selected.opposingParties.length)?selected.opposingParties.filter(Boolean):(selected.opposingParty?[selected.opposingParty]:[]);
+                            return(<>
+                                <div className="info-row" style={{alignItems:"flex-start"}}>
+                                    <div className="info-lbl">當事人</div>
+                                    <div className="info-val">
+                                        {cps.map((p,i)=>(
+                                            <div key={i} style={{marginBottom:i<cps.length-1?5:0}}>
+                                                {p.name||"—"}
+                                                {p.phone?<> · <a href={`tel:${(p.phone||"").replace(/[^0-9+]/g,"")}`}>{p.phone}</a></>:""}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="info-row" style={{alignItems:"flex-start"}}>
+                                    <div className="info-lbl">對造當事人</div>
+                                    <div className="info-val">{ops.length?ops.map((o,i)=><div key={i}>{o}</div>):"—"}</div>
+                                </div>
+                            </>);
+                        })()}
                         <hr className="divider"/>
                         {/* Fee summary */}
                         <div className="fee-summary">
@@ -2517,12 +2557,16 @@ function App({user}){
                     <input className="search-inp" placeholder="🔍 搜尋姓名、電話…" value={search} onChange={e=>setSearch(e.target.value)}/>
                 </div>
                 {(()=>{
-                    // Group cases by clientName + phone
+                    // Group by each party (name + phone) across all cases（支援複數當事人）
                     const map = {};
                     cases.forEach(c=>{
-                        const key = c.clientName + "|" + (c.phone||"");
-                        if(!map[key]) map[key]={name:c.clientName, phone:c.phone||"", cases:[]};
-                        map[key].cases.push(c);
+                        const parties=(Array.isArray(c.clientParties)&&c.clientParties.length)?c.clientParties:[{name:c.clientName,phone:c.phone}];
+                        parties.forEach(p=>{
+                            const nm=(p.name||"").trim(); if(!nm) return;
+                            const key = nm + "|" + (p.phone||"");
+                            if(!map[key]) map[key]={name:nm, phone:p.phone||"", cases:[]};
+                            map[key].cases.push(c);
+                        });
                     });
                     const contacts = Object.values(map)
                         .filter(ct=>{
@@ -2661,13 +2705,36 @@ function App({user}){
 
                 {/* 當事人 */}
                 <div className="section-hdr">👤 當事人資訊</div>
-                <div className="form-grid">
-                    {[["clientName","當事人姓名","text",""],["phone","連絡電話","tel","0912-345-678"],["opposingParty","對造當事人","text",""],["currentAgency","現在繫屬機關","text",""]].map(([k,l,t,p])=>(
-                        <div key={k} className="fg">
-                            <label className="fl">{l}</label>
-                            <input className="fi" type={t} placeholder={p} value={F[k]||""} onChange={e=>sf(k,e.target.value)}/>
+                <div className="fg" style={{marginBottom:12}}>
+                    <label className="fl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span>當事人（姓名 · 連絡電話，可多位）</span>
+                        <button className="btn btn-outline btn-sm" type="button" onClick={addClientParty}>＋ 新增當事人</button>
+                    </label>
+                    {(F.clientParties||[{name:"",phone:""}]).map((p,i)=>(
+                        <div key={i} style={{display:"flex",gap:8,marginBottom:8}}>
+                            <input className="fi" style={{flex:2}} placeholder="當事人姓名" value={p.name||""} onChange={e=>updateClientParty(i,"name",e.target.value)}/>
+                            <input className="fi" style={{flex:2}} type="tel" placeholder="0912-345-678" value={p.phone||""} onChange={e=>updateClientParty(i,"phone",e.target.value)}/>
+                            {(F.clientParties||[]).length>1 && <button className="btn btn-danger btn-icon" type="button" onClick={()=>removeClientParty(i)}>✕</button>}
                         </div>
                     ))}
+                </div>
+                <div className="fg" style={{marginBottom:12}}>
+                    <label className="fl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span>對造當事人（可多位）</span>
+                        <button className="btn btn-outline btn-sm" type="button" onClick={addOpposing}>＋ 新增對造</button>
+                    </label>
+                    {(F.opposingParties||[""]).map((o,i)=>(
+                        <div key={i} style={{display:"flex",gap:8,marginBottom:8}}>
+                            <input className="fi" style={{flex:1}} placeholder="對造當事人姓名" value={o||""} onChange={e=>updateOpposing(i,e.target.value)}/>
+                            {(F.opposingParties||[]).length>1 && <button className="btn btn-danger btn-icon" type="button" onClick={()=>removeOpposing(i)}>✕</button>}
+                        </div>
+                    ))}
+                </div>
+                <div className="form-grid">
+                    <div className="fg">
+                        <label className="fl">現在繫屬機關</label>
+                        <input className="fi" type="text" value={F.currentAgency||""} onChange={e=>sf("currentAgency",e.target.value)}/>
+                    </div>
                 </div>
 
                 {/* 費用 */}

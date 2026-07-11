@@ -319,7 +319,12 @@ function casesOfClient(c){
   if(!c)return[];
   const name=(c.name||"").trim();
   if(!name)return[];
-  return S.cases.filter(cs=>(cs.clientName||"").trim()===name);
+  return S.cases.filter(cs=>{
+    // 複數當事人：比對 clientParties；相容舊版單一/以「、」串接的 clientName
+    if(Array.isArray(cs.clientParties)&&cs.clientParties.length)
+      return cs.clientParties.some(p=>(p.name||"").trim()===name);
+    return (cs.clientName||"").split("、").map(s=>s.trim()).includes(name);
+  });
 }
 function feeStats(cases){
   let totalFee=0,received=0;

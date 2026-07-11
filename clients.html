@@ -424,9 +424,6 @@ function renderDashboard(){
   // 全所費用（依關聯案件）
   let totalFee=0,outstanding=0;
   S.clients.forEach(c=>{const fs=feeStats(casesOfClient(c));totalFee+=fs.totalFee;outstanding+=fs.outstanding;});
-  // 未連結案件：cases 中 clientName 找不到對應客戶
-  const clientNames=new Set(S.clients.map(c=>(c.name||"").trim()));
-  const unlinked=[...new Set(S.cases.map(cs=>(cs.clientName||"").trim()).filter(n=>n&&!clientNames.has(n)))];
   // 近期溝通
   const recentComms=[];
   S.clients.forEach(c=>(c.comms||[]).forEach(m=>recentComms.push({...m,clientId:c.id,clientName:c.name})));
@@ -444,14 +441,6 @@ function renderDashboard(){
     <div class="stat-card"><div class="stat-val" style="color:var(--gold3);font-size:16px">NT$ ${Math.round(totalFee).toLocaleString("zh-TW")}</div><div class="stat-lbl">委任費用合計</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--red);font-size:16px">NT$ ${Math.round(outstanding).toLocaleString("zh-TW")}</div><div class="stat-lbl">未收款合計</div></div>
   </div>
-
-  ${unlinked.length?`<div class="card" style="border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.04)">
-    <div class="card-hdr" style="color:var(--gold)">🔗 案件系統中有 ${unlinked.length} 位當事人尚未建立客戶檔案</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px">
-      ${unlinked.slice(0,30).map(n=>`<button class="tag-chip" style="cursor:pointer;background:rgba(245,158,11,.12);color:var(--gold3);border-color:rgba(245,158,11,.3)" data-quick-add="${esc(n)}">＋ ${esc(n)}</button>`).join("")}
-    </div>
-    <div style="font-size:10px;color:var(--text4);margin-top:8px">點擊姓名即可快速建檔並自動連結其案件</div>
-  </div>`:""}
 
   <div class="detail-grid">
     <div class="card">
@@ -814,8 +803,6 @@ function bindApp(){
   const sb=document.getElementById("search");
   if(sb)sb.addEventListener("input",e=>{S.search=e.target.value;const pos=e.target.selectionStart;render();const n=document.getElementById("search");if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(_){}}});
 
-  // 快速建檔（從未連結當事人）
-  document.querySelectorAll("[data-quick-add]").forEach(b=>b.addEventListener("click",()=>{S.form={...newForm(),name:b.dataset.quickAdd};S.editId=null;S.showForm=true;render();}));
 
   // 詳情頁
   document.getElementById("btn-back")?.addEventListener("click",()=>{S.viewId=null;S.tab="clients";render();});

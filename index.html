@@ -694,6 +694,13 @@ function App({user}){
 
     const selected = cases.find(c=>c.id===selectedId);
 
+    // ── Fee helpers（需在排序前定義，排序會用到 getReceived/getUnpaid）──
+    const calcReceived=(c)=>(c.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+    const calcUnpaid=(c)=>Math.max(0,Number(c.totalFee||0)-calcReceived(c));
+    // backward compat: if old feeReceived exists, treat as received
+    const getReceived=(c)=>c.payments?calcReceived(c):Number(c.feeReceived||0);
+    const getUnpaid=(c)=>c.payments?calcUnpaid(c):Number(c.feeUnpaid||0);
+
     const filtered = cases.filter(c=>{
         const q=search.toLowerCase();
         const searchFields=[
@@ -965,14 +972,9 @@ function App({user}){
         return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
     };
 
-    // ── Fee helpers ──
+    // ── Fee helpers（calcReceived/getReceived 等已於排序前定義）──
     const PAYMENT_METHODS=["現金","匯款","票據","信用卡","其他"];
     const METHOD_CLASS={"現金":"pay-method-cash","匯款":"pay-method-transfer","票據":"pay-method-check","信用卡":"pay-method-transfer","其他":"pay-method-other"};
-    const calcReceived=(c)=>(c.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0);
-    const calcUnpaid=(c)=>Math.max(0,Number(c.totalFee||0)-calcReceived(c));
-    // backward compat: if old feeReceived exists, treat as received
-    const getReceived=(c)=>c.payments?calcReceived(c):Number(c.feeReceived||0);
-    const getUnpaid=(c)=>c.payments?calcUnpaid(c):Number(c.feeUnpaid||0);
 
     // ── Copy case ──
     const copyCase=(c)=>{
@@ -1272,7 +1274,12 @@ function App({user}){
                     <select className="fsel" value={filterType} onChange={e=>setFilterType(e.target.value)}>
                         {["全部",...CASE_TYPES].map(t=><option key={t}>{t}</option>)}
                     </select>
-                    <select className="fsel" value={sortBy} onChange={e=>setSortBy(e.target.value)}>
+                    <select className="fsel" value={sortBy} onChange={e=>{
+                        const v=e.target.value;
+                        setSortBy(v);
+                        // 最近開庭預設由近到遠（升冪）；其餘預設由大到小（降冪）。仍可用 ↑/↓ 切換
+                        setSortDir(v==="nextHearing"?"asc":"desc");
+                    }}>
                         <option value="retainerDate">委任日期</option>
                         <option value="nextHearing">最近開庭</option>
                         <option value="todoCount">待辦事項</option>

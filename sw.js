@@ -1,4 +1,4 @@
-const CACHE = "case-mgr-v21";
+const CACHE = "case-mgr-v22";
 
 const PRECACHE = [
   "./",

@@ -65,23 +65,18 @@
   if (!document.getElementById("sys-nav-css")) {
     var style = document.createElement("style");
     style.id = "sys-nav-css";
+    // legal-design-tw：宣紙暖白底、墨字、朱印紅重點色（單一紙本主題，字面色值以確保
+    // 於尚未改版的頁面也能正確顯示，不依賴各頁 CSS 變數）。
     style.textContent =
-      ".sys-nav{position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(5,10,24,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(200,169,110,.25);display:flex;align-items:center;gap:2px;padding:6px 12px;overflow-x:auto;scrollbar-width:none;}" +
+      ".sys-nav{position:fixed;top:0;left:0;right:0;z-index:9999;background:#FFFFFF;border-bottom:1px solid #C4BAA6;display:flex;align-items:center;gap:2px;padding:6px 12px;overflow-x:auto;scrollbar-width:none;}" +
       ".sys-nav::-webkit-scrollbar{display:none;}" +
-      ".sys-nav-item{display:inline-flex;align-items:center;padding:6px 14px;border-radius:7px;font-size:12px;font-weight:700;white-space:nowrap;font-family:'Noto Sans TC',sans-serif;transition:all .15s;text-decoration:none;border:1px solid transparent;}" +
-      ".sys-nav-item.active{background:rgba(200,169,110,.15);color:#c8a96e;border-color:rgba(200,169,110,.3);cursor:default;}" +
-      "a.sys-nav-item{color:#64748b;}" +
-      "a.sys-nav-item:hover{background:rgba(200,169,110,.08);color:#c8a96e;border-color:rgba(200,169,110,.2);}" +
-      ".sys-nav-logo{font-size:14px;color:rgba(200,169,110,.5);margin-right:6px;flex-shrink:0;border-right:1px solid rgba(200,169,110,.2);padding-right:10px;}" +
-      ".sys-nav-theme{margin-left:auto;flex-shrink:0;background:transparent;border:1px solid rgba(200,169,110,.25);border-radius:7px;padding:4px 10px;font-size:13px;cursor:pointer;line-height:1;transition:all .15s;}" +
-      ".sys-nav-theme:hover{border-color:rgba(200,169,110,.6);background:rgba(200,169,110,.08);}" +
-      ":root.light .sys-nav{background:rgba(255,255,255,.96);border-bottom-color:rgba(138,92,26,.25);}" +
-      ":root.light .sys-nav-item.active{background:rgba(138,92,26,.1);color:#8a5c1a;border-color:rgba(138,92,26,.3);}" +
-      ":root.light a.sys-nav-item{color:#6b7280;}" +
-      ":root.light a.sys-nav-item:hover{background:rgba(138,92,26,.06);color:#8a5c1a;border-color:rgba(138,92,26,.2);}" +
-      ":root.light .sys-nav-logo{color:rgba(138,92,26,.5);border-right-color:rgba(138,92,26,.2);}" +
-      ":root.light .sys-nav-theme{border-color:rgba(138,92,26,.25);}" +
-      ":root.light .sys-nav-theme:hover{border-color:rgba(138,92,26,.6);background:rgba(138,92,26,.06);}";
+      ".sys-nav-item{display:inline-flex;align-items:center;padding:6px 13px;border-radius:2px;font-size:13px;font-weight:700;white-space:nowrap;font-family:'BiauKai','DFKai-SB','標楷體','KaiTi','STKaiti','Kaiti TC','Noto Serif TC',serif;letter-spacing:.03em;transition:all .15s;text-decoration:none;border:1px solid transparent;}" +
+      ".sys-nav-item.active{background:#F3E3DF;color:#9E2A24;border-color:#9E2A24;cursor:default;}" +
+      "a.sys-nav-item{color:#5B554D;}" +
+      "a.sys-nav-item:hover{background:#F3E3DF;color:#9E2A24;border-color:transparent;}" +
+      ".sys-nav-logo{font-size:15px;color:#9E2A24;margin-right:6px;flex-shrink:0;border-right:1px solid #DDD5C7;padding-right:10px;}" +
+      ".sys-nav-theme{margin-left:auto;flex-shrink:0;background:transparent;border:1px solid #C4BAA6;border-radius:2px;padding:4px 10px;font-size:13px;cursor:pointer;line-height:1;color:#5B554D;transition:all .15s;}" +
+      ".sys-nav-theme:hover{border-color:#9E2A24;color:#9E2A24;background:#F3E3DF;}";
     document.head.appendChild(style);
   }
 

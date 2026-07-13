@@ -6,198 +6,191 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="案件管理">
-    <meta name="theme-color" content="#0a1628">
+    <meta name="theme-color" content="#FAF7F0">
     <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-cases.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-cases.png">
     <meta name="mobile-web-app-capable" content="yes">
     <title>⚖ 律師案件管理系統</title>
     <link rel="manifest" href="manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 
 <style>
-/* ── DARK THEME (default) ── */
-:root {
-    --bg:#020817; --bg2:#0a1628; --bg3:#0f172a; --bg4:#1e293b;
-    --gold:#c8a96e; --gold2:#a07840;
-    --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b; --text4:#475569;
-    --green:#22c55e; --red:#ef4444; --yellow:#f59e0b; --purple:#8b5cf6; --blue:#3b82f6;
-    --border:#1e293b;
-    --shadow:0 2px 8px rgba(0,0,0,.4);
-}
-/* ── LIGHT THEME ── */
-:root.light {
-    --bg:#f0f4f8; --bg2:#ffffff; --bg3:#ffffff; --bg4:#e2e8f0;
-    --gold:#9a6f2e; --gold2:#7a5520;
-    --text:#1a2744; --text2:#374151; --text3:#6b7280; --text4:#9ca3af;
-    --green:#16a34a; --red:#dc2626; --yellow:#d97706; --purple:#7c3aed; --blue:#2563eb;
-    --border:#e2e8f0;
-    --shadow:0 2px 8px rgba(0,0,0,.08);
+/* ── legal-design-tw 權杖 + 舊變數別名（單一紙本主題） ── */
+:root{
+  --paper:#FAF7F0;--paper-raised:#FFFFFF;--paper-sunken:#F1ECE1;
+  --ink:#211E1A;--ink-soft:#5B554D;--ink-faint:#8A8377;
+  --seal:#9E2A24;--seal-bright:#C0392B;--seal-wash:#F3E3DF;
+  --positive:#3A6B4F;--negative:#9E2A24;--warning:#A6741C;--navy:#2A3D4F;
+  --positive-wash:#E7EFE9;--warning-wash:#F3EBDA;
+  --rule:#DDD5C7;--rule-strong:#C4BAA6;
+  --font-kai:"BiauKai","DFKai-SB","標楷體","KaiTi","STKaiti","Kaiti TC","Noto Serif TC",serif;
+  --font-song:"Noto Serif TC","Source Han Serif TC","PMingLiU","新細明體","Songti TC",serif;
+  --shadow-raised:0 2px 10px rgba(33,30,26,.10);
+  --bg:var(--paper);--bg2:var(--paper-raised);--bg3:var(--paper-raised);--bg4:var(--paper-sunken);
+  --gold:var(--seal);--gold2:var(--seal-bright);
+  --text:var(--ink);--text2:var(--ink-soft);--text3:var(--ink-soft);--text4:var(--ink-faint);
+  --green:var(--positive);--red:var(--negative);--yellow:var(--warning);--purple:var(--seal);--blue:var(--navy);
+  --border:var(--rule);--shadow:none;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{padding-top:40px;height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;line-height:1.5;transition:background .3s,color .3s;}
+html,body{padding-top:40px;height:100%;background:var(--paper);color:var(--ink);font-family:var(--font-song);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
 
 /* ── LAYOUT ── */
 .app{min-height:100vh;padding-bottom:80px;}
-.header{background:var(--bg2);padding:12px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:200;gap:10px;flex-wrap:wrap;}
-.header-title{font-family:'Noto Serif TC',serif;font-size:1.1rem;color:var(--gold);display:flex;align-items:center;gap:8px;}
+.header{background:var(--paper-raised);padding:12px 18px;border-bottom:2px solid var(--seal);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:200;gap:10px;flex-wrap:wrap;}
+.header-title{font-family:var(--font-kai);font-size:1.25rem;letter-spacing:.06em;color:var(--ink);display:flex;align-items:center;gap:8px;}
 .content{padding:16px;max-width:960px;margin:0 auto;}
 
 /* ── BUTTONS ── */
-.btn{padding:9px 18px;border-radius:8px;font-weight:700;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-family:inherit;transition:opacity .15s;white-space:nowrap;}
-.btn:active{opacity:.8;}
-.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0a0a;}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);}
-.btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.4);}
+.btn{padding:9px 18px;border-radius:2px;font-weight:700;cursor:pointer;border:1.5px solid var(--rule-strong);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-family:var(--font-kai);letter-spacing:.04em;background:var(--paper-raised);color:var(--ink);transition:all .15s;white-space:nowrap;}
+.btn:hover{border-color:var(--ink-soft);}
+.btn:active{opacity:.85;}
+.btn-gold{background:var(--seal);border-color:var(--seal);color:var(--paper-raised);}
+.btn-gold:hover{background:var(--seal-bright);border-color:var(--seal-bright);}
+.btn-outline{background:transparent;border:1.5px solid var(--rule-strong);color:var(--ink-soft);}
+.btn-outline:hover{border-color:var(--seal);color:var(--seal);}
+.btn-danger{background:transparent;color:var(--seal);border:1.5px solid var(--seal);}
+.btn-danger:hover{background:var(--seal-wash);}
 .btn-sm{padding:6px 12px;font-size:12px;}
-.btn-icon{width:30px;height:30px;padding:0;justify-content:center;border-radius:50%;font-size:16px;flex-shrink:0;}
+.btn-icon{width:30px;height:30px;padding:0;justify-content:center;border-radius:2px;font-size:16px;flex-shrink:0;}
 
 /* ── STATS ── */
 .stats-row{display:flex;gap:10px;overflow-x:auto;padding:14px 16px;scrollbar-width:none;}
 .stats-row::-webkit-scrollbar{display:none;}
-.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 18px;min-width:105px;flex-shrink:0;}
-.stat-val{font-size:22px;font-weight:800;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums;}
+.stat-card{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:12px 18px;min-width:105px;flex-shrink:0;}
+.stat-val{font-family:var(--font-kai);font-size:22px;font-weight:700;color:var(--seal);line-height:1;font-variant-numeric:tabular-nums;}
 .stat-unit{font-size:12px;font-weight:500;margin-left:2px;}
-.stat-lbl{font-size:11px;color:var(--text4);margin-top:5px;}
+.stat-lbl{font-size:11px;color:var(--ink-soft);margin-top:5px;}
 
 /* ── UPCOMING ── */
-.upcoming{margin:0 16px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;}
-.sec-title{font-size:10px;color:var(--text3);letter-spacing:.1em;font-weight:700;margin-bottom:10px;text-transform:uppercase;}
+.upcoming{margin:0 16px 14px;background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:14px;}
+.sec-title{font-family:var(--font-kai);font-size:12px;color:var(--seal);letter-spacing:.08em;font-weight:700;margin-bottom:10px;padding-left:8px;border-left:3px solid var(--seal);}
 .chip-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
 .chip-row::-webkit-scrollbar{display:none;}
-.chip{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;min-width:150px;flex-shrink:0;}
-.chip:active{opacity:.8;}
+.chip{background:var(--paper);border:1px solid var(--rule);border-radius:3px;padding:10px 14px;cursor:pointer;min-width:150px;flex-shrink:0;}
+.chip:active{opacity:.85;}
 
 /* ── FILTERS ── */
 .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
-.search-inp{flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--text);font-size:13px;outline:none;font-family:inherit;}
-.search-inp:focus{border-color:var(--gold);}
-.fsel{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;cursor:pointer;outline:none;font-family:inherit;}
+.search-inp{flex:1;min-width:160px;background:var(--paper-raised);border:1px solid var(--rule);border-radius:2px;padding:9px 13px;color:var(--ink);font-size:14px;outline:none;font-family:var(--font-song);}
+.search-inp:focus{border-color:var(--seal);box-shadow:0 0 0 3px var(--seal-wash);}
+.fsel{background:var(--paper-raised);border:1px solid var(--rule);border-radius:2px;padding:9px 12px;color:var(--ink);font-size:14px;cursor:pointer;outline:none;font-family:var(--font-song);}
 
 /* ── CASE CARDS (mobile) ── */
 .case-cards{display:flex;flex-direction:column;gap:10px;}
-.case-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow);}
-.case-card:active{border-color:var(--gold);}
+.case-card{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:14px 16px;cursor:pointer;transition:border-color .2s;}
+.case-card:active{border-color:var(--seal);}
 
 /* ── DESKTOP TABLE ── */
 @media(min-width:860px){.case-cards{display:none;}.tbl-wrap{display:block;}}
 @media(max-width:859px){.tbl-wrap{display:none;}}
-.tbl-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-table{width:100%;border-collapse:collapse;font-size:12px;}
-th{text-align:left;padding:10px 12px;color:var(--text4);font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg2);white-space:nowrap;}
-.trow{border-bottom:1px solid var(--bg);cursor:pointer;}
-.trow:hover{background:var(--bg4);}
-.trow:active{background:var(--bg4);}
-td{padding:11px 12px;color:var(--text2);vertical-align:middle;white-space:nowrap;}
+.tbl-wrap{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;color:var(--ink-soft);font-family:var(--font-kai);font-weight:700;font-size:11px;letter-spacing:.04em;border-bottom:1.5px solid var(--rule-strong);background:var(--paper-sunken);white-space:nowrap;}
+.trow{border-bottom:1px solid var(--rule);cursor:pointer;}
+.trow:hover{background:var(--paper-sunken);}
+.trow:active{background:var(--paper-sunken);}
+td{padding:11px 12px;color:var(--ink-soft);vertical-align:middle;white-space:nowrap;font-variant-numeric:tabular-nums;}
 
 /* ── BADGE ── */
-.badge{display:inline-block;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+.badge{display:inline-block;border-radius:2px;padding:1px 7px;font-size:11px;font-weight:400;letter-spacing:.02em;white-space:nowrap;border:1px solid currentColor;}
 
 /* ── DETAIL ── */
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
-.card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
-.card-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:10px;}
-.info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;gap:10px;border-bottom:1px solid #0a0f1e;}
-.info-lbl{font-size:11px;color:var(--text4);white-space:nowrap;min-width:80px;padding-top:1px;}
-.info-val{font-size:13px;color:var(--text);text-align:right;word-break:break-all;}
-.hearing-item{border-left:3px solid var(--border);padding-left:12px;margin-bottom:12px;}
-.todo-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid var(--border);}
-.todo-check{width:18px;height:18px;border-radius:4px;border:2px solid var(--bg4);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .2s;}
-.todo-check.done{background:var(--green);border-color:var(--green);}
+.card{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:18px 20px;}
+.card-title{font-family:var(--font-kai);font-size:13px;font-weight:700;color:var(--ink);letter-spacing:.05em;margin-bottom:14px;padding-left:10px;border-left:4px solid var(--seal);}
+.info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;gap:10px;border-bottom:1px dotted var(--rule);}
+.info-lbl{font-size:12px;color:var(--ink-faint);white-space:nowrap;min-width:80px;padding-top:1px;}
+.info-val{font-size:13px;color:var(--ink);text-align:right;word-break:break-all;font-variant-numeric:tabular-nums;}
+.hearing-item{border-left:3px solid var(--rule-strong);padding-left:12px;margin-bottom:12px;}
+.todo-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px dotted var(--rule);}
+.todo-check{width:18px;height:18px;border-radius:2px;border:2px solid var(--rule-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .2s;}
+.todo-check.done{background:var(--positive);border-color:var(--positive);}
 
 /* ── FORM ── */
 .form-wrap{padding:16px;max-width:960px;margin:0 auto;}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:4px;}
 .fg{display:flex;flex-direction:column;gap:5px;}
-.fl{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
-.fi{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;font-family:inherit;width:100%;}
-.fi:focus{border-color:var(--gold);}
+.fl{font-size:11px;color:var(--ink-soft);font-weight:700;letter-spacing:.04em;}
+.fi{background:var(--paper-raised);border:1px solid var(--rule);border-radius:2px;padding:9px 12px;color:var(--ink);font-size:14px;outline:none;font-family:var(--font-song);width:100%;}
+.fi:focus{border-color:var(--seal);box-shadow:0 0 0 3px var(--seal-wash);}
 textarea.fi{resize:vertical;min-height:80px;}
-.section-hdr{font-size:11px;color:var(--gold);font-weight:700;border-left:3px solid var(--gold);padding-left:10px;margin:22px 0 12px;display:flex;justify-content:space-between;align-items:center;}
-.item-row{background:rgba(255,255,255,.03);padding:11px 14px;border-radius:8px;margin-bottom:8px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.section-hdr{font-family:var(--font-kai);font-size:13px;color:var(--seal);font-weight:700;border-left:4px solid var(--seal);padding-left:10px;margin:22px 0 12px;display:flex;justify-content:space-between;align-items:center;letter-spacing:.05em;}
+.item-row{background:var(--paper-sunken);padding:11px 14px;border-radius:3px;margin-bottom:8px;border:1px solid var(--rule);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
 .add-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
 .add-row .fi{flex:1;min-width:100px;}
 
 /* ── BOTTOM NAV ── */
 .bnav{display:none;}
 @media(max-width:600px){
-    .bnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:100;}
-    .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;font-size:10px;color:var(--text3);cursor:pointer;gap:3px;border:none;background:transparent;font-family:inherit;}
-    .bnav-btn.active{color:var(--gold);}
+    .bnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--paper-raised);border-top:2px solid var(--seal);z-index:100;}
+    .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;font-size:10px;font-family:var(--font-kai);color:var(--ink-soft);cursor:pointer;gap:3px;border:none;background:transparent;}
+    .bnav-btn.active{color:var(--seal);}
     .bnav-icon{font-size:18px;}
     .app{padding-bottom:80px;}
 }
 
 /* ── OVERLAY ── */
-.overlay{position:fixed;inset:0;background:#000000aa;display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
-.dialog{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:380px;width:100%;}
+.overlay{position:fixed;inset:0;background:rgba(33,30,26,.45);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.dialog{background:var(--paper-raised);border:1px solid var(--rule-strong);border-radius:4px;padding:24px;max-width:380px;width:100%;box-shadow:var(--shadow-raised);}
 
 /* ── LOADING ── */
-.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:var(--text3);}
-.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:var(--ink-soft);}
+.spinner{width:34px;height:34px;border:3px solid var(--paper-sunken);border-top-color:var(--seal);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--gold);color:var(--gold);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);border:1px solid var(--ink);color:var(--paper);padding:10px 20px;border-radius:2px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 #toast.show{opacity:1;}
 
-
-
-
-
-
-
-
-
-
-
 /* ── CAL TODO ── */
-.cal-todo-dot{display:flex;align-items:center;gap:3px;padding:1px 4px;border-radius:3px;font-size:8px;font-weight:700;margin-bottom:1px;cursor:pointer;background:rgba(139,92,246,.15);color:#8b5cf6;border:1px solid rgba(139,92,246,.3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cal-todo-dot{display:flex;align-items:center;gap:3px;padding:1px 4px;border-radius:2px;font-size:8px;font-weight:700;margin-bottom:1px;cursor:pointer;background:var(--warning-wash);color:var(--warning);border:1px solid transparent;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cal-todo-dot.done{opacity:.45;text-decoration:line-through;}
-.cal-todo-modal{position:fixed;inset:0;background:#00000099;display:flex;align-items:flex-end;justify-content:center;z-index:600;padding:0;}
+.cal-todo-modal{position:fixed;inset:0;background:rgba(33,30,26,.45);display:flex;align-items:flex-end;justify-content:center;z-index:600;padding:0;}
 @media(min-width:600px){.cal-todo-modal{align-items:center;padding:20px;}}
-.cal-todo-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:24px 20px 32px;max-height:80vh;overflow-y:auto;}
-@media(min-width:600px){.cal-todo-sheet{border-radius:16px;}}
-.cal-todo-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
-.cal-todo-check{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .2s;}
-.cal-todo-check.done{background:var(--green);border-color:var(--green);}
-.cal-todo-del{background:none;border:none;color:var(--text4);cursor:pointer;padding:2px 6px;font-size:13px;border-radius:4px;margin-left:auto;flex-shrink:0;}
-.cal-todo-del:hover{color:var(--red);}
+.cal-todo-sheet{background:var(--paper-raised);border:1px solid var(--rule-strong);border-radius:4px 4px 0 0;width:100%;max-width:520px;padding:24px 20px 32px;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-raised);}
+@media(min-width:600px){.cal-todo-sheet{border-radius:4px;}}
+.cal-todo-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px dotted var(--rule);cursor:pointer;}
+.cal-todo-check{width:20px;height:20px;border-radius:2px;border:2px solid var(--rule-strong);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .2s;}
+.cal-todo-check.done{background:var(--positive);border-color:var(--positive);}
+.cal-todo-del{background:none;border:none;color:var(--ink-faint);cursor:pointer;padding:2px 6px;font-size:13px;border-radius:2px;margin-left:auto;flex-shrink:0;}
+.cal-todo-del:hover{color:var(--seal);}
 
 /* ── CASE NOTES ── */
 .notes-wrap{display:flex;flex-direction:column;gap:14px;}
-.note-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;box-shadow:var(--shadow);}
-.note-card.pinned{border-color:var(--gold)44;background:rgba(200,169,110,.04);}
+.note-card{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:16px 18px;position:relative;}
+.note-card.pinned{border-color:var(--seal);background:var(--seal-wash);}
 .note-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
-.note-meta{font-size:11px;color:var(--text4);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.note-tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
-.note-body{font-size:13px;color:var(--text);line-height:1.75;white-space:pre-wrap;word-break:break-word;}
+.note-meta{font-size:11px;color:var(--ink-faint);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.note-tag{padding:2px 8px;border-radius:2px;font-size:10px;font-weight:700;}
+.note-body{font-size:14px;color:var(--ink);line-height:1.8;white-space:pre-wrap;word-break:break-word;}
 .note-body.collapsed{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
 .note-actions{display:flex;gap:6px;flex-shrink:0;}
-.note-action-btn{background:none;border:none;color:var(--text4);cursor:pointer;padding:3px 6px;border-radius:5px;font-size:13px;font-family:inherit;transition:background .15s;}
-.note-action-btn:hover{background:var(--bg4);color:var(--text2);}
-.note-editor{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
-.note-editor textarea{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;line-height:1.75;resize:none;min-height:120px;}
-.note-toolbar{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);gap:8px;flex-wrap:wrap;}
+.note-action-btn{background:none;border:none;color:var(--ink-faint);cursor:pointer;padding:3px 6px;border-radius:2px;font-size:13px;font-family:inherit;transition:background .15s;}
+.note-action-btn:hover{background:var(--paper-sunken);color:var(--ink-soft);}
+.note-editor{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:16px 18px;}
+.note-editor textarea{width:100%;background:transparent;border:none;outline:none;color:var(--ink);font-size:14px;font-family:var(--font-song);line-height:1.8;resize:none;min-height:120px;}
+.note-toolbar{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--rule);gap:8px;flex-wrap:wrap;}
 .note-tag-sel{display:flex;gap:6px;flex-wrap:wrap;}
-.note-tag-opt{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s;}
+.note-tag-opt{padding:3px 10px;border-radius:2px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s;}
 .note-tag-opt:not(.sel){opacity:.5;}
-.notes-empty{text-align:center;padding:40px 20px;color:var(--text4);}
+.notes-empty{text-align:center;padding:40px 20px;color:var(--ink-faint);}
 .notes-empty .ico{font-size:40px;margin-bottom:10px;opacity:.5;}
 
 /* ── FEE PAYMENTS ── */
-.fee-summary{background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px;}
+.fee-summary{background:var(--paper-sunken);border:1px solid var(--rule);border-radius:3px;padding:14px;margin-bottom:12px;}
 .fee-summary-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;gap:8px;}
-.fee-progress{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;margin:10px 0 4px;}
-.fee-progress-bar{height:100%;background:linear-gradient(90deg,var(--green),#16a34a);border-radius:4px;transition:width .5s ease;}
-.pay-record{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;}
-.pay-badge{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;}
-.pay-method-cash{background:rgba(34,197,94,.15);color:var(--green);}
-.pay-method-transfer{background:rgba(59,130,246,.15);color:var(--blue);}
-.pay-method-check{background:rgba(245,158,11,.15);color:var(--yellow);}
-.pay-method-other{background:rgba(100,116,139,.15);color:var(--text3);}
+.fee-progress{height:8px;background:var(--paper);border:1px solid var(--rule);border-radius:2px;overflow:hidden;margin:10px 0 4px;}
+.fee-progress-bar{height:100%;background:var(--positive);border-radius:0;transition:width .5s ease;}
+.pay-record{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;}
+.pay-badge{padding:2px 9px;border-radius:2px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;border:1px solid currentColor;}
+.pay-method-cash{background:var(--positive-wash);color:var(--positive);border-color:transparent;}
+.pay-method-transfer{background:transparent;color:var(--navy);}
+.pay-method-check{background:var(--warning-wash);color:var(--warning);border-color:transparent;}
+.pay-method-other{background:transparent;color:var(--ink-faint);}
 
 /* ── PRINT ── */
 @media print {
@@ -205,125 +198,124 @@ textarea.fi{resize:vertical;min-height:80px;}
     .app{padding:0;}
     .content{padding:0;}
     body{background:#fff;color:#000;}
-    :root{--bg:#fff;--bg2:#f8f8f8;--bg3:#fff;--bg4:#eee;--text:#000;--text2:#333;--text3:#555;--text4:#777;--border:#ddd;--gold:#a07840;}
-    .card{border:1px solid #ddd;break-inside:avoid;margin-bottom:12px;}
+    :root{--bg:#fff;--bg2:#fff;--bg3:#fff;--bg4:#f2f2f2;--text:#000;--text2:#333;--text3:#555;--text4:#777;--border:#ccc;--gold:#9E2A24;--seal:#9E2A24;}
+    .card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px;}
     .detail-grid{grid-template-columns:1fr 1fr;}
     .badge{border:1px solid #ccc!important;}
     .print-title{display:block!important;}
 }
-.print-title{display:none;font-size:18px;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #a07840;}
+.print-title{display:none;font-family:var(--font-kai);font-size:18px;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid var(--seal);}
 
 /* ── CALENDAR ── */
-.cal-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
-.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg2);}
-.cal-nav{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;padding:6px 14px;font-size:15px;font-family:inherit;}
-.cal-nav:hover{background:var(--bg4);}
+.cal-wrap{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;overflow:hidden;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--rule);background:var(--paper-sunken);}
+.cal-nav{background:var(--paper-raised);border:1px solid var(--rule-strong);border-radius:2px;color:var(--ink-soft);cursor:pointer;padding:6px 14px;font-size:15px;font-family:inherit;}
+.cal-nav:hover{background:var(--paper-sunken);border-color:var(--seal);color:var(--seal);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:96px;}
-.cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text4);padding:10px 4px;letter-spacing:.04em;text-transform:uppercase;}
-.cal-dow.sun{color:#ef4444;}
-.cal-dow.sat{color:#3b82f6;}
-.cal-day{height:96px;overflow:hidden;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:5px 4px;cursor:default;transition:background .15s;}
+.cal-dow{text-align:center;font-family:var(--font-kai);font-size:11px;font-weight:700;color:var(--ink-soft);padding:10px 4px;letter-spacing:.04em;}
+.cal-dow.sun{color:var(--seal);}
+.cal-dow.sat{color:var(--navy);}
+.cal-day{height:96px;overflow:hidden;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:5px 4px;cursor:default;transition:background .15s;}
 .cal-day:nth-child(7n){border-right:none;}
-.cal-day.other-month{opacity:.35;}
-.cal-day.today-cell{background:rgba(200,169,110,.08);}
-.cal-day.is-sun{background:rgba(239,68,68,.03);}
-.cal-day.is-sat{background:rgba(59,130,246,.03);}
-.cal-day.is-holiday{background:rgba(239,68,68,.05);}
-.cal-day-num{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:2px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
-.cal-day.today-cell .cal-day-num{background:var(--gold);color:#000;font-weight:800;}
-.cal-day.is-sun:not(.other-month) .cal-day-num{color:#ef4444;}
-.cal-day.is-sat:not(.other-month) .cal-day-num{color:#3b82f6;}
-.cal-day.is-holiday:not(.other-month) .cal-day-num{color:#ef4444;font-weight:800;}
-.cal-holiday-label{font-size:8px;color:#ef4444;font-weight:700;margin-bottom:1px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;}
-.cal-event{font-size:9px;border-radius:3px;padding:1px 4px;margin-bottom:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;line-height:1.5;}
+.cal-day.other-month{opacity:.4;}
+.cal-day.today-cell{background:var(--seal-wash);}
+.cal-day.is-sun{background:rgba(158,42,36,.03);}
+.cal-day.is-sat{background:rgba(42,61,79,.03);}
+.cal-day.is-holiday{background:rgba(158,42,36,.05);}
+.cal-day-num{font-family:var(--font-kai);font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:2px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+.cal-day.today-cell .cal-day-num{background:var(--seal);color:var(--paper-raised);font-weight:700;}
+.cal-day.is-sun:not(.other-month) .cal-day-num{color:var(--seal);}
+.cal-day.is-sat:not(.other-month) .cal-day-num{color:var(--navy);}
+.cal-day.is-holiday:not(.other-month) .cal-day-num{color:var(--seal);font-weight:800;}
+.cal-holiday-label{font-size:8px;color:var(--seal);font-weight:700;margin-bottom:1px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;}
+.cal-event{font-size:9px;border-radius:2px;padding:1px 4px;margin-bottom:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;line-height:1.5;}
 .cal-event:hover{opacity:.8;}
-.cal-legend{display:flex;gap:12px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--border);}
-.cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);}
+.cal-legend{display:flex;gap:12px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--rule);}
+.cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-soft);}
 
 /* ── TAGS ── */
-.tag-pill{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;border:none;font-family:inherit;}
+.tag-pill{display:inline-flex;align-items:center;gap:4px;border-radius:2px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;border:none;font-family:inherit;}
 .tag-input-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;}
 .tag-color-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
 .tag-color-swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s;}
-.tag-color-swatch.sel{border-color:var(--text);transform:scale(1.25);}
+.tag-color-swatch.sel{border-color:var(--ink);transform:scale(1.25);}
 
 /* ── EXCEL EXPORT ── */
-.export-section{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:var(--shadow);}
+.export-section{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:20px;margin-bottom:14px;}
 
 /* ── TIMELINE ── */
 .tl-wrap{position:relative;padding-left:28px;}
-.tl-wrap::before{content:"";position:absolute;left:9px;top:0;bottom:0;width:2px;background:var(--border);}
+.tl-wrap::before{content:"";position:absolute;left:9px;top:0;bottom:0;width:2px;background:var(--rule);}
 .tl-item{position:relative;margin-bottom:20px;}
-.tl-dot{position:absolute;left:-24px;top:3px;width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:var(--bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;}
-.tl-dot.past{background:var(--bg4);border-color:var(--text4);}
-.tl-dot.future{background:var(--gold);border-color:var(--gold);box-shadow:0 0 6px var(--gold)44;}
-.tl-dot.today{background:var(--red);border-color:var(--red);box-shadow:0 0 8px var(--red)66;}
-.tl-dot.todo{background:var(--bg3);border-color:var(--purple);}
-.tl-dot.todo.done{background:var(--green);border-color:var(--green);}
-.tl-dot.milestone{background:var(--bg3);border-color:var(--gold);border-width:2px;}
-.tl-date{font-size:11px;color:var(--text4);margin-bottom:3px;font-family:monospace;}
-.tl-body{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
-.tl-body.future{border-color:var(--gold)33;}
-.tl-body.today{border-color:var(--red)55;background:rgba(239,68,68,.05);}
-.tl-body.past{opacity:.7;}
-.tl-tag{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;}
-
+.tl-dot{position:absolute;left:-24px;top:3px;width:14px;height:14px;border-radius:50%;border:2px solid var(--rule-strong);background:var(--paper);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;}
+.tl-dot.past{background:var(--paper-sunken);border-color:var(--ink-faint);}
+.tl-dot.future{background:var(--seal);border-color:var(--seal);}
+.tl-dot.today{background:var(--seal);border-color:var(--seal);}
+.tl-dot.todo{background:var(--paper-raised);border-color:var(--warning);}
+.tl-dot.todo.done{background:var(--positive);border-color:var(--positive);}
+.tl-dot.milestone{background:var(--paper-raised);border-color:var(--seal);border-width:2px;}
+.tl-date{font-size:11px;color:var(--ink-faint);margin-bottom:3px;font-family:var(--font-song);font-variant-numeric:tabular-nums;}
+.tl-body{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:12px 14px;}
+.tl-body.future{border-color:var(--seal);}
+.tl-body.today{border-color:var(--seal);background:var(--seal-wash);}
+.tl-body.past{opacity:.75;}
+.tl-tag{font-family:var(--font-kai);font-size:10px;font-weight:700;letter-spacing:.05em;margin-bottom:4px;}
 
 /* ── TOOLS ── */
 .tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
-.tool-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:18px 14px;cursor:pointer;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .2s;box-shadow:var(--shadow);position:relative;}
-.tool-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.2);border-color:var(--gold)44;}
-.tool-card:active{transform:translateY(0);}
+.tool-card{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:18px 14px;cursor:pointer;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .2s;position:relative;}
+.tool-card:hover{border-color:var(--seal);background:var(--paper-sunken);}
+.tool-card:active{opacity:.9;}
 .tool-emoji{font-size:36px;line-height:1;}
-.tool-name{font-weight:700;font-size:13px;color:var(--text);text-align:center;word-break:break-all;}
-.tool-desc{font-size:11px;color:var(--text3);text-align:center;line-height:1.4;}
-.tool-del{position:absolute;top:7px;right:7px;background:var(--bg4);border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:6px;font-family:inherit;transition:background .15s;}
-.tool-del:hover{background:var(--gold);color:#000;}
-.tool-add-card{background:transparent;border:2px dashed var(--border);border-radius:14px;padding:18px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .2s;color:var(--text4);}
-.tool-add-card:hover{border-color:var(--gold);color:var(--gold);}
-.tool-modal-overlay{position:fixed;inset:0;background:#00000099;display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
-.tool-modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:420px;}
+.tool-name{font-family:var(--font-kai);font-weight:700;font-size:14px;color:var(--ink);text-align:center;word-break:break-all;}
+.tool-desc{font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.4;}
+.tool-del{position:absolute;top:7px;right:7px;background:var(--paper-sunken);border:1px solid var(--rule);color:var(--ink-soft);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:2px;font-family:inherit;transition:background .15s;}
+.tool-del:hover{background:var(--seal);color:var(--paper-raised);border-color:var(--seal);}
+.tool-add-card{background:transparent;border:1.5px dashed var(--rule-strong);border-radius:3px;padding:18px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .2s;color:var(--ink-faint);}
+.tool-add-card:hover{border-color:var(--seal);color:var(--seal);}
+.tool-modal-overlay{position:fixed;inset:0;background:rgba(33,30,26,.45);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.tool-modal{background:var(--paper-raised);border:1px solid var(--rule-strong);border-radius:4px;padding:24px;width:100%;max-width:420px;box-shadow:var(--shadow-raised);}
 .color-dot{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s;flex-shrink:0;}
-.color-dot.selected{border-color:var(--text);transform:scale(1.2);}
+.color-dot.selected{border-color:var(--ink);transform:scale(1.2);}
 
 /* ── CONTACTS ── */
-.contact-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow);}
-.contact-name{font-size:17px;font-weight:700;color:var(--text);}
-.contact-phone{color:var(--blue);font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;margin-top:4px;}
+.contact-card{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:16px 18px;margin-bottom:10px;}
+.contact-name{font-family:var(--font-kai);font-size:17px;font-weight:700;color:var(--ink);}
+.contact-phone{color:var(--seal);font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;margin-top:4px;}
 .contact-phone:hover{text-decoration:underline;}
-.contact-cases{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
-.contact-case-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;cursor:pointer;border:1px solid var(--border);transition:border-color .2s;}
-.contact-case-row:hover{border-color:var(--gold);}
+.contact-cases{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule);}
+.contact-case-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--paper-sunken);border-radius:2px;cursor:pointer;border:1px solid var(--rule);transition:border-color .2s;}
+.contact-case-row:hover{border-color:var(--seal);}
 
 /* ── THEME TOGGLE ── */
-.theme-btn{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;color:var(--text2);font-family:inherit;transition:all .2s;white-space:nowrap;}
-.theme-btn:hover{border-color:var(--gold);color:var(--gold);}
-.theme-mode-badge{font-size:10px;color:var(--text4);padding:2px 6px;background:var(--bg4);border-radius:10px;}
+.theme-btn{background:var(--paper-raised);border:1px solid var(--rule-strong);border-radius:2px;padding:5px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;color:var(--ink-soft);font-family:var(--font-kai);transition:all .2s;white-space:nowrap;}
+.theme-btn:hover{border-color:var(--seal);color:var(--seal);}
+.theme-mode-badge{font-size:10px;color:var(--ink-faint);padding:2px 6px;background:var(--paper-sunken);border-radius:2px;}
 
 /* ── DRIVE ── */
-.drive-btn{display:flex;align-items:center;gap:10px;background:rgba(66,133,244,.1);border:1px solid rgba(66,133,244,.35);border-radius:10px;padding:13px 16px;cursor:pointer;text-decoration:none;transition:background .2s;width:100%;}
-.drive-btn:hover{background:rgba(66,133,244,.2);}
+.drive-btn{display:flex;align-items:center;gap:10px;background:transparent;border:1px solid var(--navy);border-radius:3px;padding:13px 16px;cursor:pointer;text-decoration:none;transition:background .2s;width:100%;}
+.drive-btn:hover{background:var(--paper-sunken);}
 .drive-icon{font-size:26px;flex-shrink:0;}
-.drive-doc-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);gap:8px;}
-.drive-doc-row a{color:var(--blue);text-decoration:none;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.drive-doc-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px dotted var(--rule);gap:8px;}
+.drive-doc-row a{color:var(--seal);text-decoration:none;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .drive-doc-row a:hover{text-decoration:underline;}
 
 /* ── LOGIN ── */
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;}
-.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px #000a;}
-.login-logo{font-size:52px;text-align:center;margin-bottom:8px;filter:drop-shadow(0 0 20px #c8a96e66);}
-.login-title{font-family:'Noto Serif TC',serif;font-size:1.3rem;color:var(--gold);text-align:center;margin-bottom:4px;}
-.login-sub{font-size:12px;color:var(--text4);text-align:center;letter-spacing:.06em;margin-bottom:32px;}
-.login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;text-align:center;}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper);padding:24px;}
+.login-box{background:var(--paper-raised);border:1px solid var(--rule-strong);border-top:3px solid var(--seal);border-radius:4px;padding:40px 36px;width:100%;max-width:380px;box-shadow:var(--shadow-raised);}
+.login-logo{font-size:52px;text-align:center;margin-bottom:8px;}
+.login-title{font-family:var(--font-kai);font-size:1.4rem;letter-spacing:.06em;color:var(--ink);text-align:center;margin-bottom:4px;}
+.login-sub{font-size:12px;color:var(--ink-faint);text-align:center;letter-spacing:.06em;margin-bottom:32px;}
+.login-err{background:var(--seal-wash);border:1px solid transparent;color:var(--seal);border-radius:2px;padding:10px 14px;font-size:13px;margin-bottom:16px;text-align:center;}
 
 /* ── MISC ── */
-.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
-.empty{text-align:center;padding:50px 20px;color:var(--text3);}
+.divider{border:none;border-top:1px solid var(--rule);margin:12px 0;}
+.empty{text-align:center;padding:50px 20px;color:var(--ink-soft);}
 .empty .ico{font-size:40px;margin-bottom:12px;}
-::-webkit-scrollbar{width:4px;height:4px;}
-::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
-a{color:var(--blue);}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--paper);}
+::-webkit-scrollbar-thumb{background:var(--rule-strong);border-radius:2px;}
+a{color:var(--seal);}
 @media(max-width:600px){.header{padding:10px 12px;}.content{padding:12px;}}
 </style>
 </head>
@@ -400,8 +392,8 @@ const TW_HOLIDAYS = {
     "2027-06-09":"端午節","2027-10-01":"彈性放假","2027-10-10":"國慶日",
 };
 
-const TYPE_COLOR={刑事:"#ef4444",民事:"#3b82f6",行政:"#8b5cf6",家事:"#ec4899",勞動:"#f97316",智財:"#14b8a6",非訟:"#06b6d4"};
-const STATUS_COLOR={"進行中":"#22c55e","已結案":"#94a3b8","上訴中":"#f59e0b","停止中":"#ef4444","準備委任":"#3b82f6"};
+const TYPE_COLOR={刑事:"#9E2A24",民事:"#2A3D4F",行政:"#A6741C",家事:"#99604F",勞動:"#3A6B4F",智財:"#3E6B6B",非訟:"#6B6250"};
+const STATUS_COLOR={"進行中":"#3A6B4F","已結案":"#8A8377","上訴中":"#A6741C","停止中":"#9E2A24","準備委任":"#2A3D4F"};
 
 const emptyCase = {
     id:"", firmCaseNo:"", courtCaseNos:[""], division:"",
@@ -617,7 +609,7 @@ function App({user}){
     const [sortDir, setSortDir] = useState("desc");
     const [allTags, setAllTags] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("caseTags")||"[]"); }catch(e){ return []; } });
     const [tagModal, setTagModal] = useState(false);
-    const [tagForm, setTagForm] = useState({name:"",color:"#ef4444"});
+    const [tagForm, setTagForm] = useState({name:"",color:"#9E2A24"});
     // inline add forms
     const [newH, setNewH] = useState({date:"",time:"",agency:"",courtroom:"",note:""});
     const [newT, setNewT] = useState({text:"",due:""});
@@ -627,7 +619,7 @@ function App({user}){
         try{ return JSON.parse(localStorage.getItem("quickTools")||"[]"); }catch(e){ return []; }
     });
     const [toolModal, setToolModal] = useState(false);
-    const [toolForm, setToolForm] = useState({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"});
+    const [toolForm, setToolForm] = useState({emoji:"🔗",name:"",url:"",desc:"",color:"#9E2A24"});
     const [editingToolId, setEditingToolId] = useState(null);
     const [aiApiKey, setAiApiKey] = useState(()=>localStorage.getItem("claudeApiKey")||"");
     const [aiKeyEditing, setAiKeyEditing] = useState(false);
@@ -934,12 +926,12 @@ function App({user}){
 
     // ── Note helpers ──
     const NOTE_TAGS=[
-        {name:"一般",color:"#64748b"},
-        {name:"重要",color:"#ef4444"},
-        {name:"法律意見",color:"#8b5cf6"},
-        {name:"當事人指示",color:"#3b82f6"},
-        {name:"庭後記錄",color:"#f59e0b"},
-        {name:"待確認",color:"#f97316"},
+        {name:"一般",color:"#8A8377"},
+        {name:"重要",color:"#9E2A24"},
+        {name:"法律意見",color:"#3E6B6B"},
+        {name:"當事人指示",color:"#2A3D4F"},
+        {name:"庭後記錄",color:"#A6741C"},
+        {name:"待確認",color:"#A6741C"},
     ];
     const addNote=async(c)=>{
         if(!noteInput.trim()){ toast("請輸入筆記內容"); return; }
@@ -1089,13 +1081,13 @@ function App({user}){
     };
 
     // ── Tag helpers ──
-    const TAG_COLORS=["#ef4444","#f97316","#f59e0b","#22c55e","#3b82f6","#8b5cf6","#ec4899","#64748b"];
+    const TAG_COLORS=["#9E2A24","#A6741C","#3A6B4F","#2A3D4F","#99604F","#3E6B6B","#6B6250","#8A8377"];
     const saveTag=()=>{
         if(!tagForm.name.trim()){ toast("請填標籤名稱"); return; }
         if(allTags.find(t=>t.name===tagForm.name.trim())){ toast("標籤已存在"); return; }
         const updated=[...allTags,{id:uid(),name:tagForm.name.trim(),color:tagForm.color}];
         setAllTags(updated); localStorage.setItem("caseTags",JSON.stringify(updated));
-        setTagForm({name:"",color:"#ef4444"}); setTagModal(false); toast("✅ 標籤已新增");
+        setTagForm({name:"",color:"#9E2A24"}); setTagModal(false); toast("✅ 標籤已新增");
     };
     const deleteTag=(id)=>{
         const updated=allTags.filter(t=>t.id!==id);
@@ -1138,7 +1130,7 @@ function App({user}){
         setTools(updated);
         localStorage.setItem("quickTools", JSON.stringify(updated));
         setToolModal(false); setEditingToolId(null);
-        setToolForm({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"});
+        setToolForm({emoji:"🔗",name:"",url:"",desc:"",color:"#9E2A24"});
         toast("✅ 工具已儲存");
     };
     const deleteTool=(id)=>{
@@ -1147,8 +1139,8 @@ function App({user}){
         localStorage.setItem("quickTools", JSON.stringify(updated));
         toast("🗑 已移除");
     };
-    const openAddTool=()=>{ setToolForm({emoji:"🔗",name:"",url:"",desc:"",color:"#c8a96e"}); setEditingToolId(null); setToolModal(true); };
-    const openEditTool=(t)=>{ setToolForm({emoji:t.emoji,name:t.name,url:t.url,desc:t.desc||"",color:t.color||"#c8a96e"}); setEditingToolId(t.id); setToolModal(true); };
+    const openAddTool=()=>{ setToolForm({emoji:"🔗",name:"",url:"",desc:"",color:"#9E2A24"}); setEditingToolId(null); setToolModal(true); };
+    const openEditTool=(t)=>{ setToolForm({emoji:t.emoji,name:t.name,url:t.url,desc:t.desc||"",color:t.color||"#9E2A24"}); setEditingToolId(t.id); setToolModal(true); };
 
     // ── Google Calendar ──
     const openGoogleCalendar=(h, c)=>{
@@ -1296,7 +1288,7 @@ function App({user}){
                 {/* Tag filter row */}
                 <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
                     <button className="tag-pill" onClick={()=>setFilterTag("全部")}
-                        style={{background:filterTag==="全部"?"var(--gold)":"var(--bg4)",color:filterTag==="全部"?"#000":"var(--text3)"}}>
+                        style={{background:filterTag==="全部"?"var(--gold)":"var(--bg4)",color:filterTag==="全部"?"#fff":"var(--text3)"}}>
                         全部
                     </button>
                     {allTags.map(t=>(
@@ -1331,7 +1323,7 @@ function App({user}){
                                 <input className="fi" value={tagForm.name} onChange={e=>setTagForm(f=>({...f,name:e.target.value}))} placeholder="例如：緊急、等候判決、上訴中"/>
                             </div>
                             <div style={{display:"flex",gap:6,marginBottom:18}}>
-                                {["#ef4444","#f97316","#f59e0b","#22c55e","#3b82f6","#8b5cf6","#ec4899","#64748b"].map(c=>(
+                                {["#9E2A24","#A6741C","#3A6B4F","#2A3D4F","#99604F","#3E6B6B","#6B6250","#8A8377"].map(c=>(
                                     <div key={c} className={"tag-color-swatch"+(tagForm.color===c?" sel":"")} style={{background:c}} onClick={()=>setTagForm(f=>({...f,color:c}))}/>
                                 ))}
                             </div>
@@ -1409,7 +1401,7 @@ function App({user}){
                                             )}
                                             {events.slice(0,2).map((ev,ei)=>(
                                                 <div key={ei} className="cal-event"
-                                                    style={{background:(ev.isWidget?"#c8a96e":(TYPE_COLOR[ev.caseType]||"#64748b"))+"33",color:ev.isWidget?"#c8a96e":(TYPE_COLOR[ev.caseType]||"#64748b")}}
+                                                    style={{background:(ev.isWidget?"#9E2A24":(TYPE_COLOR[ev.caseType]||"#8A8377"))+"33",color:ev.isWidget?"#9E2A24":(TYPE_COLOR[ev.caseType]||"#8A8377")}}
                                                     onClick={e=>{e.stopPropagation();if(!ev.isWidget)openDetail(ev.caseId);}}
                                                     title={`${ev.isWidget?"⚡ ":""}${ev.clientName} ${ev.time} ${ev.note}`}>
                                                     {ev.time&&`${ev.time} `}{ev.isWidget?"⚡":""}{ev.clientName}
@@ -1425,12 +1417,12 @@ function App({user}){
                                 })}
                             </div>
                             <div className="cal-legend">
-                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#ef4444"}}/><span style={{color:"#ef4444",fontWeight:700}}>日/假日</span></div>
-                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#3b82f6"}}/><span style={{color:"#3b82f6",fontWeight:700}}>六</span></div>
-                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:4,background:"rgba(139,92,246,.4)"}}/><span style={{color:"#8b5cf6",fontWeight:700}}>待辦</span></div>
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#9E2A24"}}/><span style={{color:"#9E2A24",fontWeight:700}}>日/假日</span></div>
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#2A3D4F"}}/><span style={{color:"#2A3D4F",fontWeight:700}}>六</span></div>
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:4,background:"#A6741C"}}/><span style={{color:"#A6741C",fontWeight:700}}>待辦</span></div>
                                 <div style={{width:1,height:14,background:"var(--border)",margin:"0 4px"}}/>
-                                {CASE_TYPES.map(t=><div key={t} className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:TYPE_COLOR[t]||"#64748b"}}/>{t}</div>)}
-                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:"#c8a96e"}}/><span style={{color:"#c8a96e",fontWeight:700}}>⚡ 臨時庭期</span></div>
+                                {CASE_TYPES.map(t=><div key={t} className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:TYPE_COLOR[t]||"#8A8377"}}/>{t}</div>)}
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:"#9E2A24"}}/><span style={{color:"#9E2A24",fontWeight:700}}>⚡ 臨時庭期</span></div>
                             </div>
                             <div style={{fontSize:10,color:"var(--text4)",padding:"6px 18px 0",textAlign:"right"}}>點選日期可新增待辦事項</div>
                         </div>
@@ -1466,7 +1458,7 @@ function App({user}){
                                 {hearingsForDay.length>0 && <>
                                     <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>🏛 當日庭期</div>
                                     {hearingsForDay.map((h,i)=>{
-                                        const color=h.isWidget?"#c8a96e":(TYPE_COLOR[h.caseType]||"#64748b");
+                                        const color=h.isWidget?"#9E2A24":(TYPE_COLOR[h.caseType]||"#8A8377");
                                         const label=h.isWidget?"臨時庭期":h.caseType;
                                         const agency=h.agency||h.note||"";
                                         const detail=[h.time,agency,h.courtroom].filter(Boolean).join(" · ");
@@ -1544,7 +1536,7 @@ function App({user}){
                                             {t.done && <span style={{color:"#fff",fontSize:11,fontWeight:900}}>✓</span>}
                                         </div>
                                         <div style={{flex:1}}>
-                                            {t.time && <div style={{fontSize:11,color:"#8b5cf6",fontWeight:700,marginBottom:2}}>⏰ {t.time}</div>}
+                                            {t.time && <div style={{fontSize:11,color:"var(--warning)",fontWeight:700,marginBottom:2}}>⏰ {t.time}</div>}
                                             <div style={{color:t.done?"var(--text4)":"var(--text)",textDecoration:t.done?"line-through":"none",fontSize:14}}>{t.text}</div>
                                         </div>
                                         <button className="cal-todo-del" onClick={e=>{e.stopPropagation();startEditCalTodo(t);}} title="編輯">✏️</button>
@@ -1593,13 +1585,13 @@ function App({user}){
                                         <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{c.currentAgency||c.court||""}{c.caseReason&&<span style={{color:"var(--text4)",marginLeft:4}}>· {c.caseReason}</span>}</div>
                                     </div>
                                     <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
-                                        <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/>
-                                        <Badge label={c.status} color={STATUS_COLOR[c.status]||"#64748b"}/>
+                                        <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#8A8377"}/>
+                                        <Badge label={c.status} color={STATUS_COLOR[c.status]||"#8A8377"}/>
                                     </div>
                                 </div>
                                 <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:6,fontSize:12}}>
                                     {nh && <span style={{color:daysUntil(nh.date)<=7?"var(--yellow)":"var(--text3)"}}>🗓 {nh.date}</span>}
-                                    {pt>0 && <span style={{background:"#ef444422",color:"var(--red)",borderRadius:10,padding:"1px 8px",fontWeight:700}}>✅ {pt}項</span>}
+                                    {pt>0 && <span style={{background:"var(--warning-wash)",color:"var(--warning)",borderRadius:10,padding:"1px 8px",fontWeight:700}}>✅ {pt}項</span>}
                                 </div>
                                 <div style={{display:"flex",gap:14,marginTop:8,fontSize:12}}>
                                     <div><div style={{color:"var(--text4)",fontSize:10}}>應收</div><div style={{color:"var(--gold)",fontWeight:700}}>{c.totalFee?Number(c.totalFee).toLocaleString():"—"}</div></div>
@@ -1631,13 +1623,13 @@ function App({user}){
                                         <td><span style={{fontWeight:700,color:"var(--text)"}}>{c.clientName}</span></td>
                                         <td style={{color:"var(--text3)",fontSize:11}}>{c.opposingParty||"—"}</td>
                                         <td style={{color:"var(--text3)",fontSize:11}}>{c.currentAgency||"—"}</td>
-                                        <td><Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/></td>
-                                        <td><Badge label={c.status} color={STATUS_COLOR[c.status]||"#64748b"}/></td>
+                                        <td><Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#8A8377"}/></td>
+                                        <td><Badge label={c.status} color={STATUS_COLOR[c.status]||"#8A8377"}/></td>
                                         <td style={{textAlign:"right",color:"var(--green)"}}>{getReceived(c)?getReceived(c).toLocaleString():"—"}</td>
                                         <td style={{textAlign:"right",color:getUnpaid(c)>0?"var(--red)":"var(--text3)"}}>{getUnpaid(c)?getUnpaid(c).toLocaleString():"—"}</td>
                                         <td style={{textAlign:"right",color:"var(--purple)"}}>{c.disbursements?Number(c.disbursements).toLocaleString():"—"}</td>
                                         <td style={{color:nh&&daysUntil(nh.date)<=7?"var(--yellow)":"var(--text3)",fontSize:11}}>{nh?nh.date:"—"}</td>
-                                        <td>{pt>0?<span style={{background:"#ef444422",color:"var(--red)",borderRadius:10,padding:"1px 8px",fontSize:11,fontWeight:700}}>{pt}</span>:"—"}</td>
+                                        <td>{pt>0?<span style={{background:"var(--warning-wash)",color:"var(--warning)",borderRadius:10,padding:"1px 8px",fontSize:11,fontWeight:700}}>{pt}</span>:"—"}</td>
                                         <td onClick={e=>e.stopPropagation()}>
                                             <button className="btn btn-outline btn-sm" style={{fontSize:11}} onClick={()=>openEdit(c)}>編輯</button>
                                         </td>
@@ -1704,9 +1696,9 @@ function App({user}){
 
                 {/* Badge row */}
                 <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
-                    <Badge label={selected.caseType} color={TYPE_COLOR[selected.caseType]||"#64748b"}/>
-                    <Badge label={selected.status} color={STATUS_COLOR[selected.status]||"#64748b"}/>
-                    <Badge label={selected.instance} color="#64748b"/>
+                    <Badge label={selected.caseType} color={TYPE_COLOR[selected.caseType]||"#8A8377"}/>
+                    <Badge label={selected.status} color={STATUS_COLOR[selected.status]||"#8A8377"}/>
+                    <Badge label={selected.instance} color="#8A8377"/>
                     {(selected.tags||[]).map(tag=>{
                         const t=allTags.find(x=>x.name===tag);
                         return t?<Badge key={tag} label={tag} color={t.color}/>:null;
@@ -1811,7 +1803,7 @@ function App({user}){
                                 const isEditing=editingNote?.id===n.id;
                                 const isExpanded=expandedNotes[n.id];
                                 const isLong=n.text.length>200||n.text.split("\n").length>4;
-                                const tagColor=tagMap[n.tag]||"#64748b";
+                                const tagColor=tagMap[n.tag]||"#8A8377";
                                 return(
                                     <div key={n.id} className={"note-card"+(n.pinned?" pinned":"")}>
                                         <div className="note-header">
@@ -2018,8 +2010,8 @@ function App({user}){
                                                 onClick={()=>openGoogleCalendar(h, selected)}
                                                 title="加入 Google 日曆"
                                                 style={{
-                                                    background:"rgba(66,133,244,.15)",
-                                                    border:"1px solid rgba(66,133,244,.4)",
+                                                    background:"transparent",
+                                                    border:"1px solid var(--navy)",
                                                     borderRadius:8,
                                                     color:"#4285f4",
                                                     padding:"6px 10px",
@@ -2101,7 +2093,7 @@ function App({user}){
                 {detailTab==="ai" && (
                     <div style={{maxWidth:760,margin:"0 auto"}}>
                         {/* API Key section */}
-                        <div style={{background:"linear-gradient(135deg,rgba(200,169,110,.06),rgba(139,92,246,.06))",border:"1px solid rgba(200,169,110,.2)",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
+                        <div style={{background:"var(--paper-sunken)",border:"1px solid var(--rule)",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                                 <div style={{fontSize:12,fontWeight:700,color:"var(--gold)"}}>🤖 Claude AI 法律助理</div>
                                 {aiApiKey&&!aiKeyEditing&&<button style={{background:"none",border:"1px solid var(--border2)",borderRadius:6,color:"var(--text3)",cursor:"pointer",padding:"3px 10px",fontSize:11,fontFamily:"inherit"}} onClick={()=>setAiKeyEditing(true)}>變更 Key</button>}
@@ -2114,7 +2106,7 @@ function App({user}){
                                             type="password" placeholder="貼上 Anthropic API Key（sk-ant-…）"
                                             value={aiKeyInput} onChange={e=>setAiKeyInput(e.target.value)}
                                             onKeyDown={e=>e.key==="Enter"&&saveApiKey()}/>
-                                        <button style={{padding:"8px 14px",borderRadius:8,fontWeight:700,cursor:"pointer",border:"none",background:"linear-gradient(135deg,var(--gold),#a07840)",color:"#0a0a0a",fontSize:12,fontFamily:"inherit"}} onClick={saveApiKey}>儲存</button>
+                                        <button style={{padding:"8px 14px",borderRadius:8,fontWeight:700,cursor:"pointer",border:"none",background:"var(--seal)",color:"#fff",fontSize:12,fontFamily:"inherit"}} onClick={saveApiKey}>儲存</button>
                                         {aiApiKey&&<button style={{padding:"8px 14px",borderRadius:8,fontWeight:700,cursor:"pointer",border:"1px solid var(--border2)",background:"transparent",color:"var(--text2)",fontSize:12,fontFamily:"inherit"}} onClick={()=>setAiKeyEditing(false)}>取消</button>}
                                     </div>
                                     <div style={{fontSize:11,color:"var(--text4)",marginTop:6}}>至 <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" style={{color:"var(--gold)"}}>Anthropic Console</a> 取得 API Key</div>
@@ -2139,8 +2131,8 @@ function App({user}){
                                 <div key={i} style={{marginBottom:12,display:"flex",flexDirection:"column",alignItems:msg.role==="user"?"flex-end":"flex-start"}}>
                                     <div style={{
                                         maxWidth:"85%",padding:"10px 14px",borderRadius:12,fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",
-                                        background:msg.role==="user"?"rgba(200,169,110,.15)":"var(--bg3)",
-                                        border:msg.role==="user"?"1px solid rgba(200,169,110,.3)":"1px solid var(--border)",
+                                        background:msg.role==="user"?"var(--seal-wash)":"var(--bg3)",
+                                        border:msg.role==="user"?"1px solid var(--rule-strong)":"1px solid var(--border)",
                                         color:"var(--text2)",
                                         borderBottomRightRadius:msg.role==="user"?2:12,
                                         borderBottomLeftRadius:msg.role==="ai"?2:12,
@@ -2164,7 +2156,7 @@ function App({user}){
                                     onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAiMessage(selected);}}}
                                     rows={2}/>
                                 <button
-                                    style={{padding:"10px 16px",borderRadius:10,fontWeight:700,cursor:"pointer",border:"none",background:aiLoading?"var(--bg4)":"linear-gradient(135deg,var(--gold),#a07840)",color:aiLoading?"var(--text3)":"#0a0a0a",fontSize:13,fontFamily:"inherit",flexShrink:0,alignSelf:"flex-end"}}
+                                    style={{padding:"10px 16px",borderRadius:10,fontWeight:700,cursor:"pointer",border:"none",background:aiLoading?"var(--bg4)":"var(--seal)",color:aiLoading?"var(--text3)":"#fff",fontSize:13,fontFamily:"inherit",flexShrink:0,alignSelf:"flex-end"}}
                                     onClick={()=>sendAiMessage(selected)} disabled={aiLoading||!aiInput.trim()}>
                                     {aiLoading?"…":"發送"}
                                 </button>
@@ -2261,7 +2253,7 @@ function App({user}){
                             </select>
                         )}
                         <div style={{
-                            background:"rgba(200,169,110,.1)",border:"1px solid rgba(200,169,110,.3)",
+                            background:"var(--seal-wash)",border:"1px solid var(--rule-strong)",
                             borderRadius:8,padding:"6px 14px",fontSize:13,color:"var(--gold)",fontWeight:700,
                         }}>📅 {periodLabel}</div>
                         {(statsYear!=="全部"||statsMonth!=="全部") && (
@@ -2308,7 +2300,7 @@ function App({user}){
                                             <div style={{fontSize:11,color:"var(--text3)",width:32,flexShrink:0}}>{d.month.slice(5)}月</div>
                                             <div style={{flex:1,background:"var(--bg4)",borderRadius:4,height:18,overflow:"hidden",position:"relative"}}>
                                                 <div style={{
-                                                    background:"linear-gradient(90deg,var(--green),#16a34a)",
+                                                    background:"var(--positive)",
                                                     height:"100%",borderRadius:4,
                                                     width:`${(d.recv/maxRecv*100).toFixed(1)}%`,
                                                     transition:"width .5s",
@@ -2353,10 +2345,10 @@ function App({user}){
                             <div className="card-title">📊 案件類型（委任）</div>
                             {CASE_TYPES.filter(t=>byType[t]>0).map(t=>(
                                 <div key={t} className="info-row">
-                                    <div><Badge label={t} color={TYPE_COLOR[t]||"#64748b"}/></div>
+                                    <div><Badge label={t} color={TYPE_COLOR[t]||"#8A8377"}/></div>
                                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                                         <div style={{background:"var(--bg4)",borderRadius:4,height:6,width:80,overflow:"hidden"}}>
-                                            <div style={{background:TYPE_COLOR[t]||"#64748b",height:"100%",width:`${filteredCases.length?((byType[t]/filteredCases.length)*100).toFixed(0):0}%`}}/>
+                                            <div style={{background:TYPE_COLOR[t]||"#8A8377",height:"100%",width:`${filteredCases.length?((byType[t]/filteredCases.length)*100).toFixed(0):0}%`}}/>
                                         </div>
                                         <div style={{color:"var(--text)",fontWeight:700,minWidth:28,textAlign:"right"}}>{byType[t]}</div>
                                     </div>
@@ -2370,10 +2362,10 @@ function App({user}){
                             <div className="card-title">📈 案件狀態</div>
                             {CASE_STATUS.filter(s=>byStatus[s]>0).map(s=>(
                                 <div key={s} className="info-row">
-                                    <div><Badge label={s} color={STATUS_COLOR[s]||"#64748b"}/></div>
+                                    <div><Badge label={s} color={STATUS_COLOR[s]||"#8A8377"}/></div>
                                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                                         <div style={{background:"var(--bg4)",borderRadius:4,height:6,width:80,overflow:"hidden"}}>
-                                            <div style={{background:STATUS_COLOR[s]||"#64748b",height:"100%",width:`${filteredCases.length?((byStatus[s]/filteredCases.length)*100).toFixed(0):0}%`}}/>
+                                            <div style={{background:STATUS_COLOR[s]||"#8A8377",height:"100%",width:`${filteredCases.length?((byStatus[s]/filteredCases.length)*100).toFixed(0):0}%`}}/>
                                         </div>
                                         <div style={{color:"var(--text)",fontWeight:700,minWidth:28,textAlign:"right"}}>{byStatus[s]}</div>
                                     </div>
@@ -2468,7 +2460,7 @@ function App({user}){
                         <div className="fg" style={{marginBottom:22}}>
                             <label className="fl">主題色</label>
                             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:4}}>
-                                {['#c8a96e', '#3b82f6', '#22c55e', '#ef4444', '#8b5cf6', '#f97316', '#14b8a6', '#ec4899', '#64748b', '#f59e0b'].map(c=>(
+                                {['#9E2A24', '#A6741C', '#3A6B4F', '#2A3D4F', '#99604F', '#3E6B6B', '#6B6250', '#8A8377'].map(c=>(
                                     <div key={c} className={"color-dot"+(toolForm.color===c?" selected":"")}
                                         style={{background:c}} onClick={()=>setToolForm(f=>({...f,color:c}))}/>
                                 ))}
@@ -2516,12 +2508,12 @@ function App({user}){
                         <div style={{fontSize:11,color:"var(--text3)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:12}}>推薦常用法律工具</div>
                         <div className="tool-grid">
                             {[
-                                {emoji:"⚖",name:"司法院裁判書",url:"https://judgment.judicial.gov.tw",desc:"查詢判決書",color:"#c8a96e"},
-                                {emoji:"📋",name:"法院開庭查詢",url:"https://www.judicial.gov.tw/tw/cp-1363-78984-5a3fd-1.html",desc:"查詢開庭進度",color:"#3b82f6"},
-                                {emoji:"🔍",name:"法源法律網",url:"https://www.lawbank.com.tw",desc:"法規與判決查詢",color:"#8b5cf6"},
-                                {emoji:"🤖",name:"Claude AI",url:"https://claude.ai",desc:"AI法律助理",color:"#f97316"},
-                                {emoji:"📊",name:"Google 試算表",url:"https://sheets.google.com",desc:"帳務計算",color:"#22c55e"},
-                                {emoji:"📁",name:"Google Drive",url:"https://drive.google.com",desc:"雲端卷證",color:"#f59e0b"},
+                                {emoji:"⚖",name:"司法院裁判書",url:"https://judgment.judicial.gov.tw",desc:"查詢判決書",color:"#9E2A24"},
+                                {emoji:"📋",name:"法院開庭查詢",url:"https://www.judicial.gov.tw/tw/cp-1363-78984-5a3fd-1.html",desc:"查詢開庭進度",color:"#2A3D4F"},
+                                {emoji:"🔍",name:"法源法律網",url:"https://www.lawbank.com.tw",desc:"法規與判決查詢",color:"#3E6B6B"},
+                                {emoji:"🤖",name:"Claude AI",url:"https://claude.ai",desc:"AI法律助理",color:"#9E2A24"},
+                                {emoji:"📊",name:"Google 試算表",url:"https://sheets.google.com",desc:"帳務計算",color:"#3A6B4F"},
+                                {emoji:"📁",name:"Google Drive",url:"https://drive.google.com",desc:"雲端卷證",color:"#A6741C"},
                             ].map((t,i)=>(
                                 <div key={i} style={{position:"relative"}}>
                                     <a className="tool-card" href={t.url} target="_blank" rel="noreferrer"
@@ -2603,8 +2595,8 @@ function App({user}){
                                         onClick={()=>{setSelectedId(c.id);setDetailTab("info");setView("detail");}}>
                                         <span style={{color:"var(--gold)",fontFamily:"monospace",fontSize:12,flexShrink:0}}>{c.firmCaseNo}</span>
                                         <span style={{flex:1,color:"var(--text2)",fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.courtCaseNo||(c.courtCaseNos||[])[0]||""}</span>
-                                        <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#64748b"}/>
-                                        <Badge label={c.status} color={STATUS_COLOR[c.status]||"#64748b"}/>
+                                        <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#8A8377"}/>
+                                        <Badge label={c.status} color={STATUS_COLOR[c.status]||"#8A8377"}/>
                                     </div>
                                 ))}
                             </div>

@@ -228,6 +228,7 @@ textarea.fi{resize:vertical;min-height:80px;}
 .cal-day.is-sat:not(.other-month) .cal-day-num{color:var(--navy);}
 .cal-day.is-holiday:not(.other-month) .cal-day-num{color:var(--seal);font-weight:800;}
 .cal-holiday-label{font-size:8px;color:var(--seal);font-weight:700;margin-bottom:1px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;}
+.cal-school-label{font-size:8px;color:var(--navy);font-weight:700;margin-bottom:1px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;background:rgba(42,61,79,.08);border-radius:2px;padding:0 2px;}
 .cal-event{font-size:9px;border-radius:2px;padding:1px 4px;margin-bottom:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;line-height:1.5;}
 .cal-event:hover{opacity:.8;}
 .cal-legend{display:flex;gap:12px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--rule);}
@@ -394,6 +395,16 @@ const TW_HOLIDAYS = {
 
 const TYPE_COLOR={刑事:"#9E2A24",民事:"#2A3D4F",行政:"#A6741C",家事:"#99604F",勞動:"#3A6B4F",智財:"#3E6B6B",非訟:"#6B6250"};
 const STATUS_COLOR={"進行中":"#3A6B4F","已結案":"#8A8377","上訴中":"#A6741C","停止中":"#9E2A24","準備委任":"#2A3D4F"};
+
+// 115 學年度（2026–2027）學校重要日期。依一般行事曆整理，實際以各縣市教育局／就讀學校公布為準（考試日期尤其可能差一週）。
+const SCHOOL_EVENTS = {
+    "2026-08-31":"開學（上學期）",
+    "2026-10-13":"期中考","2026-10-14":"期中考","2026-10-15":"期中考","2026-10-16":"期中考",
+    "2026-12-01":"第二次評量","2026-12-02":"第二次評量","2026-12-03":"第二次評量","2026-12-04":"第二次評量",
+    "2027-01-19":"期末考","2027-01-20":"休業式·上學期結束",
+    "2027-01-21":"寒假開始","2027-02-10":"寒假結束",
+    "2027-07-01":"暑假開始","2027-08-29":"暑假結束",
+};
 
 const emptyCase = {
     id:"", firmCaseNo:"", courtCaseNos:[""], division:"",
@@ -1380,6 +1391,7 @@ function App({user}){
                                     const isSun=dow===0;
                                     const isSat=dow===6;
                                     const holidayName=dateStr?TW_HOLIDAYS[dateStr]:"";
+                                    const schoolName=dateStr?SCHOOL_EVENTS[dateStr]:"";
                                     const isHoliday=!!holidayName&&!isSun&&!isSat; // non-weekend public holiday
                                     const cls=[
                                         "cal-day",
@@ -1398,6 +1410,9 @@ function App({user}){
                                                 <div className="cal-holiday-label" title={holidayName}>
                                                     {holidayName==="彈性放假"?"補假":holidayName}
                                                 </div>
+                                            )}
+                                            {schoolName && cell.cur && (
+                                                <div className="cal-school-label" title={`學校：${schoolName}`}>📚{schoolName}</div>
                                             )}
                                             {events.slice(0,2).map((ev,ei)=>(
                                                 <div key={ei} className="cal-event"
@@ -1423,6 +1438,7 @@ function App({user}){
                                 <div style={{width:1,height:14,background:"var(--border)",margin:"0 4px"}}/>
                                 {CASE_TYPES.map(t=><div key={t} className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:TYPE_COLOR[t]||"#8A8377"}}/>{t}</div>)}
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:"#9E2A24"}}/><span style={{color:"#9E2A24",fontWeight:700}}>⚡ 臨時庭期</span></div>
+                                <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:"#2A3D4F"}}/><span style={{color:"#2A3D4F",fontWeight:700}}>📚 學校行事</span></div>
                             </div>
                             <div style={{fontSize:10,color:"var(--text4)",padding:"6px 18px 0",textAlign:"right"}}>點選日期可新增待辦事項</div>
                         </div>
@@ -1450,6 +1466,7 @@ function App({user}){
                                     <div>
                                         <div style={{fontWeight:800,fontSize:17,color:"var(--text)"}}>{label}</div>
                                         {TW_HOLIDAYS[ds] && <div style={{fontSize:12,color:"var(--red)",marginTop:2}}>🎌 {TW_HOLIDAYS[ds]}</div>}
+                                        {SCHOOL_EVENTS[ds] && <div style={{fontSize:12,color:"var(--navy)",marginTop:2}}>📚 {SCHOOL_EVENTS[ds]}</div>}
                                     </div>
                                     <button onClick={closeCalTodoModal} style={{background:"var(--bg4)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",color:"var(--text2)",fontSize:16}}>✕</button>
                                 </div>

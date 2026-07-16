@@ -350,6 +350,8 @@ a{color:var(--seal);}
 
 <script type="text/babel">
 const { useState, useEffect, useCallback } = React;
+// 月曆手機左右滑動換月用的暫存手勢座標
+let calSwipeX=null, calSwipeY=null;
 
 // ── Constants ──
 const CASE_TYPES = ["刑事","民事","行政","家事","勞動","智財","非訟"];
@@ -1382,7 +1384,18 @@ function App({user}){
                     while(cells.length%7!==0) cells.push({day:cells.length-daysInMonth-firstDay+1,cur:false});
                     const monthStr=`${y}年${m+1}月`;
                     return(
-                        <div className="cal-wrap">
+                        <div className="cal-wrap"
+                            onTouchStart={e=>{calSwipeX=e.touches[0].clientX;calSwipeY=e.touches[0].clientY;}}
+                            onTouchEnd={e=>{
+                                if(calSwipeX==null)return;
+                                const dx=e.changedTouches[0].clientX-calSwipeX;
+                                const dy=e.changedTouches[0].clientY-calSwipeY;
+                                calSwipeX=null;calSwipeY=null;
+                                // 需為明顯的水平滑動（避免與上下捲動衝突）
+                                if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){
+                                    setCalDate(new Date(y,m+(dx<0?1:-1),1)); // 左滑→下個月，右滑→上個月
+                                }
+                            }}>
                             <div className="cal-header">
                                 <button className="cal-nav" onClick={()=>setCalDate(new Date(y,m-1,1))}>‹</button>
                                 <div style={{fontWeight:700,fontSize:16,color:"var(--text)"}}>{monthStr}</div>

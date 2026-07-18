@@ -182,7 +182,6 @@ const SPECIAL_DEDUCTION=0;
 
 const EXPENSE_CATS=["辦公室租金","律師公會費","電話/網路","辦公設備","書籍資料","交通費","訴訟費用代墊","保險費","水電費","其他費用"];
 const INCOME_TYPES=["律師費","顧問費","出庭費","文件費","其他收入"];
-const VAT_PERIODS=["1-2月","3-4月","5-6月","7-8月","9-10月","11-12月"];
 
 // ══════════════════════════════════════════
 // STATE
@@ -196,7 +195,7 @@ function applyTheme(m){const eff=m==="auto"?(new Date().getHours()>=6&&new Date(
 
 let S={
   user:null,authChecked:false,
-  incomes:[],expenses:[],loading:true,
+  incomes:[],expenses:[],cases:[],loading:true,
   tab:"dashboard",
   year:new Date().getFullYear(),
   month:new Date().getMonth()+1,
@@ -230,6 +229,13 @@ onAuthStateChanged(auth,u=>{
       try{localStorage.setItem("tax_expense_cache",JSON.stringify(S.expenses));}catch(_){}
       render();
     });
+    // 讀取案件管理系統的收款（收入），與本系統手動收入合併
+    try{const c=localStorage.getItem("tax_cases_cache");if(c)S.cases=JSON.parse(c);}catch(_){}
+    onSnapshot(collection(db,"cases"),snap=>{
+      S.cases=snap.docs.map(d=>({...d.data(),id:d.id}));
+      try{localStorage.setItem("tax_cases_cache",JSON.stringify(S.cases));}catch(_){}
+      render();
+    },err=>{ console.warn("cases 同步失敗：",err.code||err.message); });
   }else{S.loading=false;render();}
 });
 
@@ -259,7 +265,26 @@ async function delRecord(col,id){
 // ══════════════════════════════════════════
 // 稅務計算函數
 // ══════════════════════════════════════════
-function getYearIncomes(y){return S.incomes.filter(i=>i.date?.startsWith(y));}
+// 案件系統收款 → 收入記錄（唯讀，於案件系統管理）
+function caseIncomes(){
+  const out=[];
+  (S.cases||[]).forEach(c=>{
+    (c.payments||[]).forEach((p,idx)=>{
+      if(!p.date||!(Number(p.amount)>0))return;
+      out.push({
+        id:`case:${c.id}:${idx}`, date:p.date, amount:Number(p.amount||0),
+        type:"律師費", client:c.clientName||"", firmCaseNo:c.firmCaseNo||"",
+        note:[p.method,p.note].filter(Boolean).join(" · "),
+        source:"case", suppPremium:0,
+      });
+    });
+  });
+  return out;
+}
+// 全部收入 = 案件收款 + 手動收入
+function allIncomes(){ return [...caseIncomes(), ...S.incomes]; }
+
+function getYearIncomes(y){return allIncomes().filter(i=>i.date?.startsWith(y));}
 function getYearExpenses(y){return S.expenses.filter(e=>e.date?.startsWith(y));}
 
 function calcIncomeTax(y){
@@ -282,27 +307,10 @@ function calcIncomeTax(y){
   return{grossIncome,actualExpense,standardExpense,useActual,netIncome,taxableIncome,tax:Math.max(0,tax),bracket,suppPremiums};
 }
 
-function calcVAT(y,period){
-  const [m1,m2]=VAT_PERIODS.indexOf(period)>=0?[VAT_PERIODS.indexOf(period)*2+1,VAT_PERIODS.indexOf(period)*2+2]:[1,2];
-  const periodIncomes=S.incomes.filter(i=>{
-    if(!i.date?.startsWith(y))return false;
-    const m=parseInt(i.date.split("-")[1]);
-    return m>=m1&&m<=m2;
-  });
-  const sales=periodIncomes.reduce((s,i)=>s+Number(i.amount||0),0);
-  const vatOutput=Math.round(sales*0.05);
-  const periodExpenses=S.expenses.filter(e=>{
-    if(!e.date?.startsWith(y))return false;
-    const m=parseInt(e.date.split("-")[1]);
-    return m>=m1&&m<=m2&&e.receipt;
-  });
-  const vatInput=Math.round(periodExpenses.reduce((s,e)=>s+Number(e.amount||0),0)*0.05);
-  return{sales,vatOutput,vatInput,vatPayable:Math.max(0,vatOutput-vatInput),period,m1,m2};
-}
 
 function getMonthSummary(y,m){
   const ms=String(m).padStart(2,"0");
-  const incomes=S.incomes.filter(i=>i.date?.startsWith(`${y}-${ms}`));
+  const incomes=allIncomes().filter(i=>i.date?.startsWith(`${y}-${ms}`));
   const expenses=S.expenses.filter(e=>e.date?.startsWith(`${y}-${ms}`));
   return{
     income:incomes.reduce((s,i)=>s+Number(i.amount||0),0),
@@ -317,20 +325,6 @@ function getDeadlines(){
   const now=new Date(new Date().getTime()+8*3600000);
   const y=now.getFullYear();const m=now.getMonth()+1;
   const deadlines=[];
-  // 營業稅申報（每雙月25日）
-  for(let p=0;p<6;p++){
-    const m2=p*2+2;const m1=p*2+1;
-    const deadline=new Date(y,m2,25);
-    const diff=Math.ceil((deadline-now)/(1000*60*60*24));
-    if(diff>-10&&diff<60){
-      deadlines.push({
-        label:`${m1}、${m2}月營業稅（401）`,
-        date:`${y}/${m2}/25`,
-        days:diff,type:"vat",
-        note:"於雙數月25日前申報上兩個月之營業稅"
-      });
-    }
-  }
   // 綜合所得稅（5月31日）
   const itDeadline=new Date(y,4,31);
   const itDiff=Math.ceil((itDeadline-now)/(1000*60*60*24));
@@ -396,7 +390,7 @@ function bindLogin(){
 // ══════════════════════════════════════════
 function renderApp(){
   const thIcon=S.themeMode==="dark"?"🌙":S.themeMode==="light"?"☀️":"🕐";
-  const tabs=[["dashboard","🏠 總覽"],["income","💵 收入"],["expense","📤 支出"],["vat","🧾 營業稅"],["incometax","📊 所得稅"],["health","🏥 二代健保"],["deadlines","⏰ 申報期限"]];
+  const tabs=[["dashboard","🏠 總覽"],["income","💵 收入"],["expense","📤 支出"],["incometax","📊 所得稅"],["health","🏥 二代健保"],["deadlines","⏰ 申報期限"]];
   return`
 <div class="app">
   <div class="hdr">
@@ -419,13 +413,12 @@ function renderApp(){
     ${S.tab==="dashboard"?renderDashboard():""}
     ${S.tab==="income"?renderIncome():""}
     ${S.tab==="expense"?renderExpense():""}
-    ${S.tab==="vat"?renderVAT():""}
     ${S.tab==="incometax"?renderIncomeTax():""}
     ${S.tab==="health"?renderHealth():""}
     ${S.tab==="deadlines"?renderDeadlines():""}
   </div>
   <div class="bnav">
-    ${[["dashboard","🏠","總覽"],["income","💵","收入"],["expense","📤","支出"],["vat","🧾","稅務"],["deadlines","⏰","期限"]]
+    ${[["dashboard","🏠","總覽"],["income","💵","收入"],["expense","📤","支出"],["incometax","📊","所得稅"],["deadlines","⏰","期限"]]
       .map(([k,ico,l])=>`<button class="bnav-btn${S.tab===k?" active":""}" data-tab="${k}"><span class="bnav-icon">${ico}</span>${l}</button>`).join("")}
   </div>
   ${S.showIncomeForm?renderIncomeForm():""}
@@ -453,7 +446,7 @@ function renderDashboard(){
       [tax.tax,"預估綜合所得稅","var(--red)"],
       [totalSupp,"二代健保補充保費","var(--blue)"],
     ].map(([v,l,c])=>`<div class="stat-card"><div class="stat-val" style="color:${c}">${v?fmt(v):"NT$ 0"}</div><div class="stat-lbl">${l}</div></div>`).join("")}
-    <div class="stat-card"><div class="stat-val" style="color:var(--purple)">${S.incomes.filter(i=>i.date?.startsWith(y)).length}筆</div><div class="stat-lbl">收入筆數</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--purple)">${allIncomes().filter(i=>i.date?.startsWith(y)).length}筆</div><div class="stat-lbl">收入筆數</div></div>
   </div>
 
   ${urgent.length?`<div class="card" style="border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.04);margin-bottom:12px">
@@ -501,7 +494,8 @@ function renderDashboard(){
 // ── 收入 ──
 function renderIncome(){
   const y=String(S.year);
-  const list=S.incomes.filter(i=>i.date?.startsWith(y)).sort((a,b)=>b.date.localeCompare(a.date));
+  const list=allIncomes().filter(i=>i.date?.startsWith(y)).sort((a,b)=>b.date.localeCompare(a.date));
+  const caseCount=list.filter(i=>i.source==="case").length;
   const total=list.reduce((s,i)=>s+Number(i.amount||0),0);
   const totalSupp=list.reduce((s,i)=>s+Number(i.suppPremium||0),0);
   return`
@@ -512,21 +506,24 @@ function renderIncome(){
     </div>
     <div style="font-size:12px;color:var(--blue)">二代健保補充保費已扣：${fmt(totalSupp)}</div>
   </div>
+  ${caseCount>0?`<div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:8px 12px;background:var(--paper-sunken);border:1px solid var(--rule);border-radius:3px">📁 其中 ${caseCount} 筆為案件管理系統的收款（唯讀，請於案件系統修改）</div>`:""}
   ${list.length===0?`<div class="empty"><div class="empty-ico">💵</div><div>尚無${S.year}年收入記錄</div></div>`:""}
   ${list.map(i=>`
   <div class="rec-card">
     <div style="flex:1">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
         <span style="font-size:15px;font-weight:800;color:var(--green)">${fmt(Number(i.amount))}</span>
         <span class="badge" style="background:rgba(34,197,94,.15);color:var(--green);border-color:rgba(34,197,94,.3)">${i.type}</span>
+        ${i.source==="case"?`<span class="badge" style="background:var(--seal-wash);color:var(--seal);border-color:transparent">📁 案件${i.firmCaseNo?" "+esc(i.firmCaseNo):""}</span>`:""}
         ${i.suppPremium>0?`<span class="badge" style="background:rgba(56,189,248,.15);color:var(--blue);border-color:rgba(56,189,248,.3)">健保 ${fmt(Number(i.suppPremium))}</span>`:""}
       </div>
       <div style="font-size:11px;color:var(--text3)">${i.date}${i.client?" · "+esc(i.client):""}${i.note?" · "+esc(i.note):""}</div>
     </div>
+    ${i.source==="case"?`<div style="font-size:10px;color:var(--text4);align-self:center">案件系統</div>`:`
     <div style="display:flex;gap:5px">
       <button class="btn btn-outline btn-xs" data-edit-income="${i.id}">✏️</button>
       <button class="btn btn-danger btn-xs" data-del="taxIncomes|${i.id}">🗑</button>
-    </div>
+    </div>`}
   </div>`).join("")}`;}
 
 // ── 支出 ──
@@ -543,7 +540,7 @@ function renderExpense(){
       <span style="font-size:22px;font-weight:800;color:var(--orange)">${fmt(total)}</span>
       <span style="font-size:12px;color:var(--text3);margin-left:8px">${S.year}年全年支出 共${list.length}筆</span>
     </div>
-    <div style="font-size:12px;color:var(--text3)">有發票 ${fmt(withReceipt)}（可抵扣營業稅）</div>
+    <div style="font-size:12px;color:var(--text3)">有憑證 ${fmt(withReceipt)}（列報執行業務費用）</div>
   </div>
   ${Object.entries(byCat).length>0?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
     ${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>`
@@ -567,37 +564,6 @@ function renderExpense(){
       <button class="btn btn-danger btn-xs" data-del="taxExpenses|${e.id}">🗑</button>
     </div>
   </div>`).join("")}`;}
-
-// ── 營業稅 ──
-function renderVAT(){
-  const y=String(S.year);
-  return`
-  <div class="card" style="margin-bottom:16px;border-color:rgba(34,197,94,.3)">
-    <div class="card-hdr">🧾 營業稅說明</div>
-    <div style="font-size:12px;color:var(--text2);line-height:1.9">
-      <div>• 執行業務者（律師）若年營業額未達 <strong style="color:var(--green)">480萬元</strong>，可申請免徵營業稅</div>
-      <div>• 超過門檻需每雙月（1-2月、3-4月…）申報一次</div>
-      <div>• 申報日期：雙數月 <strong style="color:var(--green)">25日</strong> 前</div>
-      <div>• 稅率：<strong style="color:var(--green)">5%</strong>（銷項稅額 - 進項稅額 = 應繳稅額）</div>
-    </div>
-  </div>
-  <div class="detail-grid">
-    ${VAT_PERIODS.map(period=>{
-      const vat=calcVAT(y,period);
-      return`<div class="card">
-        <div class="card-hdr">📅 ${y}年 ${period}</div>
-        ${[
-          ["銷售額（含稅）",fmt(vat.sales),"var(--green)"],
-          ["銷項稅額（5%）",fmt(vat.vatOutput),"var(--gold)"],
-          ["進項稅額（有發票支出）",fmt(vat.vatInput),"var(--orange)"],
-          ["應繳稅額",fmt(vat.vatPayable),vat.vatPayable>0?"var(--red)":"var(--green)"],
-        ].map(([l,v,c])=>`<div class="info-row"><div class="info-lbl" style="font-size:10px">${l}</div><div class="info-val" style="color:${c}">${v}</div></div>`).join("")}
-        <div style="margin-top:8px;padding:6px 10px;border-radius:6px;background:${vat.vatPayable>0?"rgba(239,68,68,.06)":"rgba(34,197,94,.06)"};border:1px solid ${vat.vatPayable>0?"rgba(239,68,68,.2)":"rgba(34,197,94,.2)"};font-size:11px;color:${vat.vatPayable>0?"var(--red)":"var(--green)"};">
-          ${vat.vatPayable>0?`需繳 ${fmt(vat.vatPayable)}`:"無需繳稅（進項≥銷項）"}
-        </div>
-      </div>`;
-    }).join("")}
-  </div>`;}
 
 // ── 所得稅 ──
 function renderIncomeTax(){
@@ -656,7 +622,7 @@ function renderIncomeTax(){
 // ── 二代健保 ──
 function renderHealth(){
   const y=String(S.year);
-  const incomes=S.incomes.filter(i=>i.date?.startsWith(y)).sort((a,b)=>b.date.localeCompare(a.date));
+  const incomes=allIncomes().filter(i=>i.date?.startsWith(y)).sort((a,b)=>b.date.localeCompare(a.date));
   const suppList=incomes.filter(i=>i.suppPremium>0);
   const totalSupp=suppList.reduce((s,i)=>s+Number(i.suppPremium||0),0);
   const pending=incomes.filter(i=>Number(i.amount)>=SUPP_PREMIUM_THRESHOLD&&!i.suppPremium);
@@ -732,20 +698,14 @@ function renderDeadlines(){
   <div class="card" style="margin-top:20px;border-color:rgba(167,139,250,.3)">
     <div class="card-hdr" style="color:var(--purple)">📋 年度申報行事曆</div>
     ${[
-      ["1月","繳納上年度12月補充保費（1/31）；二代健保年度補報"],
-      ["2月","申報1-2月營業稅（2/25）"],
-      ["3月","繳納1-2月補充保費"],
-      ["4月","申報3-4月營業稅（4/25）"],
-      ["5月","🌟 綜合所得稅申報（5/31）；申報5-6月營業稅（6/25）"],
-      ["7月","繳納5-6月補充保費；申報7-8月營業稅（8/25）"],
-      ["9月","繳納7-8月補充保費"],
-      ["10月","申報9-10月營業稅（10/25）"],
-      ["11月","繳納9-10月補充保費"],
-      ["12月","申報11-12月營業稅（12/25）"],
+      ["1月","二代健保年度補報（1/31）"],
+      ["5月","🌟 綜合所得稅申報（5/31）—申報上年度執行業務所得"],
+      ["隨時","單次給付逾 2 萬元之二代健保補充保費，由給付方於次月底前扣繳"],
     ].map(([m,note])=>`<div style="display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
       <span style="color:var(--purple);font-weight:700;min-width:30px">${m}</span>
       <span style="color:var(--text2)">${note}</span>
     </div>`).join("")}
+    <div style="margin-top:12px;font-size:11px;color:var(--text3);line-height:1.7">※ 律師執行業務收入屬勞務報酬，<strong>免徵營業稅</strong>，故本系統不列營業稅申報。</div>
   </div>`;}
 
 // ── Income Form ──
@@ -790,7 +750,7 @@ function renderExpenseForm(){
   <div class="fg" style="margin-bottom:12px"><label class="fl">備註</label><input class="fi" id="ef-note" value="${esc(f.note||"")}" placeholder="供應商、說明…"></div>
   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text2);margin-bottom:16px">
     <input type="checkbox" id="ef-receipt" ${f.receipt?"checked":""}>
-    此筆有統一發票（可作為營業稅進項憑證）
+    此筆有憑證（統一發票／收據，可列報為執行業務費用）
   </label>
   <div style="display:flex;gap:10px;justify-content:flex-end">
     <button class="btn btn-outline btn-sm" id="ef-cancel">取消</button>

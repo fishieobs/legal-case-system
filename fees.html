@@ -214,7 +214,7 @@ input:checked+.tog-slider:before{transform:translateX(16px);background:var(--pap
       <div class="grid2">
         <div class="fg">
           <label class="fl">案件類型</label>
-          <select class="fi" id="fix-ct" onchange="updateFixedPreset()">
+          <select class="fi" id="fix-ct" onchange="onCaseTypeChange()">
             <option value="">選擇類型</option>
             <option value="civil">民事</option>
             <option value="criminal">刑事</option>
@@ -532,7 +532,25 @@ const FL = {
   family:"家事事件委任酬金",labor:"勞動事件委任酬金",ip:"智財案件委任酬金",
   mediate:"調解／仲裁代理酬金",consult:"法律諮詢費",
 };
-const IL = {first:"一審",second:"二審",third:"三審",other:""};
+const IL = {first:"一審",second:"二審",third:"三審",other:"",
+  execution:"強制執行",provisional_seizure:"假扣押",provisional_execution:"假執行",
+  investigation:"偵查",reconsideration:"再議",private_prosecution:"聲請准予自訴",
+  protection_order:"保護令"};
+// 各案件類型的額外服務別（附加於標準審級之後）
+const EXTRA_INST = {
+  civil:    [["execution","強制執行"],["provisional_seizure","假扣押"],["provisional_execution","假執行"]],
+  criminal: [["investigation","偵查"],["reconsideration","再議"],["private_prosecution","聲請准予自訴"]],
+  family:   [["protection_order","保護令"]],
+};
+function rebuildInstOptions(){
+  const ct = document.getElementById("fix-ct").value;
+  const sel = document.getElementById("fix-inst");
+  const prev = sel.value;
+  const opts = [["first","第一審"],["second","第二審"],["third","第三審"], ...(EXTRA_INST[ct]||[]), ["other","其他"]];
+  sel.innerHTML = opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+  sel.value = opts.some(o=>o[0]===prev) ? prev : "first";
+}
+function onCaseTypeChange(){ rebuildInstOptions(); updateFixedPreset(); }
 
 function updateFixedPreset(){
   const ct = document.getElementById("fix-ct").value;

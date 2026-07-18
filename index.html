@@ -233,6 +233,30 @@ textarea.fi{resize:vertical;min-height:80px;}
 .cal-event:hover{opacity:.8;}
 .cal-legend{display:flex;gap:12px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--rule);}
 .cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-soft);}
+/* 期限標記（上訴/抗告末日、收判） */
+.cal-deadline-label{font-size:8px;color:var(--seal);background:var(--seal-wash);font-weight:700;border-radius:2px;padding:0 2px;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.5;cursor:pointer;}
+/* 換月滑動動畫 */
+@keyframes calSlideL{from{transform:translateX(26px);opacity:.25}to{transform:none;opacity:1}}
+@keyframes calSlideR{from{transform:translateX(-26px);opacity:.25}to{transform:none;opacity:1}}
+.cal-grid.slide-l{animation:calSlideL .22s ease;}
+.cal-grid.slide-r{animation:calSlideR .22s ease;}
+/* 年月快速選擇 */
+.cal-pick{padding:12px 18px;border-bottom:1px solid var(--rule);background:var(--paper-raised);display:flex;flex-direction:column;gap:10px;}
+.cal-pick-months{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+.cal-pick-m{padding:7px 4px;border:1px solid var(--rule-strong);border-radius:2px;background:var(--paper-raised);font-family:var(--font-kai);font-size:13px;cursor:pointer;color:var(--ink-soft);}
+.cal-pick-m.on{background:var(--seal);border-color:var(--seal);color:var(--paper-raised);}
+/* 議程檢視 */
+.agenda-row{display:flex;gap:10px;padding:9px 14px;border-bottom:1px dotted var(--rule);align-items:flex-start;}
+.agenda-row:last-child{border-bottom:none;}
+.agenda-date{font-family:var(--font-kai);font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink-soft);width:88px;flex-shrink:0;padding-top:1px;}
+/* 手機：格高自適應 */
+@media(max-width:600px){
+  .cal-grid{grid-auto-rows:74px;}
+  .cal-day{height:74px;padding:3px;}
+  .cal-event{font-size:8px;}
+  .cal-pick-months{grid-template-columns:repeat(4,1fr);}
+  .agenda-date{width:74px;}
+}
 
 /* ── TAGS ── */
 .tag-pill{display:inline-flex;align-items:center;gap:4px;border-radius:2px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;border:none;font-family:inherit;}
@@ -352,8 +376,8 @@ a{color:var(--seal);}
 
 <script type="text/babel">
 const { useState, useEffect, useCallback } = React;
-// 月曆手機左右滑動換月用的暫存手勢座標
-let calSwipeX=null, calSwipeY=null;
+// 月曆手機左右滑動換月用的暫存手勢座標；calAnimDir 供換月滑動動畫方向
+let calSwipeX=null, calSwipeY=null, calAnimDir=0;
 
 // ── Constants ──
 const CASE_TYPES = ["刑事","民事","行政","家事","勞動","智財","非訟"];
@@ -624,6 +648,8 @@ function App({user}){
     const [calTodos, setCalTodos] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(e){ return []; } });
     const [widgetHearings, setWidgetHearings] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("widgetHearings")||"[]"); }catch(e){ return []; } });
     const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
+    const [calView, setCalView] = useState("grid"); // grid | agenda（月曆/議程檢視）
+    const [calPicker, setCalPicker] = useState(false); // 年月快速選擇面板
     const [calTodoInput, setCalTodoInput] = useState("");
     const [calTodoTime, setCalTodoTime] = useState("");
     const [calEditHearing, setCalEditHearing] = useState(null); // {id, caseId, isWidget, clientName, date, time, agency, courtroom, note}
@@ -1388,6 +1414,23 @@ function App({user}){
                         if(!hearingMap[h.date]) hearingMap[h.date]=[];
                         hearingMap[h.date].push({clientName:h.clientName||"臨時庭期",caseType:"臨時庭期",note:h.note||h.agency||"臨時庭期",caseId:null,time:h.time||"",isWidget:true});
                     });
+                    // 書狀遞狀 & 期限（上訴/抗告末日、收受判決）
+                    const filingMap={}, deadlineMap={};
+                    cases.forEach(c=>{
+                        (c.filings||[]).forEach(f=>{
+                            if(!f.date) return;
+                            if(!filingMap[f.date]) filingMap[f.date]=[];
+                            filingMap[f.date].push({...f,clientName:c.clientName,caseId:c.id});
+                        });
+                        if(c.appealDeadline){
+                            if(!deadlineMap[c.appealDeadline]) deadlineMap[c.appealDeadline]=[];
+                            deadlineMap[c.appealDeadline].push({kind:"末日",clientName:c.clientName,caseId:c.id});
+                        }
+                        if(c.judgmentReceivedDate){
+                            if(!deadlineMap[c.judgmentReceivedDate]) deadlineMap[c.judgmentReceivedDate]=[];
+                            deadlineMap[c.judgmentReceivedDate].push({kind:"收判",clientName:c.clientName,caseId:c.id});
+                        }
+                    });
                     const cells=[];
                     // Previous month padding
                     const prevDays=new Date(y,m,0).getDate();
@@ -1395,6 +1438,33 @@ function App({user}){
                     for(let d=1;d<=daysInMonth;d++) cells.push({day:d,cur:true});
                     while(cells.length%7!==0) cells.push({day:cells.length-daysInMonth-firstDay+1,cur:false});
                     const monthStr=`${y}年${m+1}月`;
+                    const mm2=String(m+1).padStart(2,"0");
+                    const goMonth=(ny,nm,dir)=>{calAnimDir=dir;setCalDate(new Date(ny,nm,1));};
+                    // 匯出當月 .ics（庭期＋期限）
+                    const icsEsc=s=>String(s||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+                    const exportIcs=()=>{
+                        const lines=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//legal-case-system//TW","CALSCALE:GREGORIAN"];
+                        Object.keys(hearingMap).filter(ds=>ds.startsWith(`${y}-${mm2}`)).sort().forEach(ds=>{
+                            hearingMap[ds].forEach(h=>{
+                                const dt=ds.replace(/-/g,"");
+                                lines.push("BEGIN:VEVENT",`UID:${uid()}@legal-case-system`);
+                                if(h.time) lines.push(`DTSTART;TZID=Asia/Taipei:${dt}T${h.time.replace(":","")}00`);
+                                else lines.push(`DTSTART;VALUE=DATE:${dt}`);
+                                lines.push(`SUMMARY:${icsEsc(`開庭 ${h.clientName}`)}`,`DESCRIPTION:${icsEsc(h.note||"")}`,"END:VEVENT");
+                            });
+                        });
+                        Object.keys(deadlineMap).filter(ds=>ds.startsWith(`${y}-${mm2}`)).sort().forEach(ds=>{
+                            deadlineMap[ds].forEach(dl=>{
+                                lines.push("BEGIN:VEVENT",`UID:${uid()}@legal-case-system`,`DTSTART;VALUE=DATE:${ds.replace(/-/g,"")}`,`SUMMARY:${icsEsc(`${dl.kind==="末日"?"上訴/抗告末日":"收受判決"} ${dl.clientName}`)}`,"END:VEVENT");
+                            });
+                        });
+                        lines.push("END:VCALENDAR");
+                        const blob=new Blob([lines.join("\r\n")],{type:"text/calendar;charset=utf-8"});
+                        const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`庭期_${y}-${mm2}.ics`;a.click();
+                        toast("📆 已匯出當月行事曆檔");
+                    };
+                    const animCls=calAnimDir===1?" slide-l":calAnimDir===-1?" slide-r":"";
+                    calAnimDir=0;
                     return(
                         <div className="cal-wrap"
                             onTouchStart={e=>{calSwipeX=e.touches[0].clientX;calSwipeY=e.touches[0].clientY;}}
@@ -1405,15 +1475,64 @@ function App({user}){
                                 calSwipeX=null;calSwipeY=null;
                                 // 需為明顯的水平滑動（避免與上下捲動衝突）
                                 if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){
-                                    setCalDate(new Date(y,m+(dx<0?1:-1),1)); // 左滑→下個月，右滑→上個月
+                                    const dir=dx<0?1:-1; // 左滑→下個月，右滑→上個月
+                                    goMonth(y,m+dir,dir);
                                 }
                             }}>
                             <div className="cal-header">
-                                <button className="cal-nav" onClick={()=>setCalDate(new Date(y,m-1,1))}>‹</button>
-                                <div style={{fontWeight:700,fontSize:16,color:"var(--text)"}}>{monthStr}</div>
-                                <button className="cal-nav" onClick={()=>setCalDate(new Date(y,m+1,1))}>›</button>
+                                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                                    <button className="cal-nav" onClick={()=>goMonth(y,m-1,-1)}>‹</button>
+                                    <button className="cal-nav" style={{fontSize:12}} onClick={()=>{calAnimDir=0;setCalDate(new Date());}}>今天</button>
+                                    <button className="cal-nav" onClick={()=>goMonth(y,m+1,1)}>›</button>
+                                </div>
+                                <button onClick={()=>setCalPicker(p=>!p)} title="點擊快速選擇年月"
+                                    style={{background:"none",border:"none",cursor:"pointer",fontWeight:700,fontSize:16,color:"var(--text)",fontFamily:"var(--font-kai)",letterSpacing:".04em"}}>
+                                    {monthStr} ▾
+                                </button>
+                                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                                    <button className="cal-nav" style={{fontSize:12}} onClick={()=>setCalView(v=>v==="grid"?"agenda":"grid")}>{calView==="grid"?"☰ 議程":"▦ 月曆"}</button>
+                                    <button className="cal-nav" style={{fontSize:12}} onClick={exportIcs} title="匯出當月庭期與期限為 .ics 行事曆檔">📆</button>
+                                </div>
                             </div>
-                            <div className="cal-grid">
+                            {calPicker && (
+                                <div className="cal-pick">
+                                    <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
+                                        {[y-2,y-1,y,y+1,y+2].map(yy=>(
+                                            <button key={yy} className={"cal-pick-m"+(yy===y?" on":"")} style={{minWidth:64}}
+                                                onClick={()=>goMonth(yy,m,yy>y?1:yy<y?-1:0)}>{yy}</button>
+                                        ))}
+                                    </div>
+                                    <div className="cal-pick-months">
+                                        {Array.from({length:12},(_,mi)=>mi).map(mi=>(
+                                            <button key={mi} className={"cal-pick-m"+(mi===m?" on":"")}
+                                                onClick={()=>{setCalPicker(false);goMonth(y,mi,mi>m?1:mi<m?-1:0);}}>{mi+1}月</button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {calView==="agenda" ? (()=>{
+                                const rows=[];
+                                for(let dd=1;dd<=daysInMonth;dd++){
+                                    const ds=`${y}-${mm2}-${String(dd).padStart(2,"0")}`;
+                                    (deadlineMap[ds]||[]).forEach(dl=>rows.push({date:ds,time:"",icon:"⏰",label:`${dl.kind==="末日"?"上訴/抗告末日":"收受判決"} · ${dl.clientName}`,detail:"",caseId:dl.caseId,color:"var(--seal)",bold:true}));
+                                    (hearingMap[ds]||[]).forEach(h=>rows.push({date:ds,time:h.time,icon:h.isWidget?"⚡":"🏛",label:h.clientName,detail:h.note,caseId:h.caseId,color:h.isWidget?"#9E2A24":(TYPE_COLOR[h.caseType]||"#8A8377")}));
+                                    (filingMap[ds]||[]).forEach(f=>rows.push({date:ds,time:"",icon:"📄",label:`${f.type} · ${f.clientName}`,detail:f.summary,caseId:f.caseId,color:"var(--navy)"}));
+                                    calTodos.filter(t=>t.date===ds).forEach(t=>rows.push({date:ds,time:"",icon:t.done?"✓":"○",label:t.text,detail:t.done?"已完成":"待辦",caseId:null,color:t.done?"var(--positive)":"var(--warning)"}));
+                                }
+                                rows.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"99:99").localeCompare(b.time||"99:99"));
+                                if(!rows.length) return <div className="empty" style={{padding:"36px 20px"}}><div className="ico">🗓</div>本月無庭期、期限、遞狀或待辦</div>;
+                                return <div>{rows.map((r,ri)=>(
+                                    <div key={ri} className="agenda-row" style={{cursor:r.caseId?"pointer":"default"}} onClick={()=>r.caseId&&openDetail(r.caseId)}>
+                                        <div className="agenda-date">{r.date.slice(5)}{r.time&&` ${r.time}`}</div>
+                                        <span style={{flexShrink:0,color:r.color}}>{r.icon}</span>
+                                        <div style={{flex:1,minWidth:0}}>
+                                            <div style={{fontSize:13,color:r.bold?r.color:"var(--text)",fontWeight:r.bold?700:500}}>{r.label}</div>
+                                            {r.detail&&<div style={{fontSize:11,color:"var(--text3)"}}>{r.detail}</div>}
+                                        </div>
+                                    </div>
+                                ))}</div>;
+                            })() : (
+                            <div className={"cal-grid"+animCls} key={monthStr}>
                                 {[["日","sun"],["一",""],["二",""],["三",""],["四",""],["五",""],["六","sat"]].map(([d,cls])=>(
                                     <div key={d} className={`cal-dow${cls?" "+cls:""}`}>{d}</div>
                                 ))}
@@ -1448,6 +1567,13 @@ function App({user}){
                                             {schoolName && cell.cur && (
                                                 <div className="cal-school-label" title={`學校：${schoolName}`}>📚{schoolName}</div>
                                             )}
+                                            {cell.cur && (deadlineMap[dateStr]||[]).slice(0,2).map((dl,di)=>(
+                                                <div key={"dl"+di} className="cal-deadline-label"
+                                                    title={`${dl.kind==="末日"?"上訴/抗告末日":"收受判決"}：${dl.clientName}`}
+                                                    onClick={e=>{e.stopPropagation();if(dl.caseId)openDetail(dl.caseId);}}>
+                                                    ⏰{dl.kind} {dl.clientName}
+                                                </div>
+                                            ))}
                                             {events.slice(0,2).map((ev,ei)=>(
                                                 <div key={ei} className="cal-event"
                                                     style={{background:(ev.isWidget?"#9E2A24":(TYPE_COLOR[ev.caseType]||"#8A8377"))+"33",color:ev.isWidget?"#9E2A24":(TYPE_COLOR[ev.caseType]||"#8A8377")}}
@@ -1456,15 +1582,20 @@ function App({user}){
                                                     {ev.time&&`${ev.time} `}{ev.isWidget?"⚡":""}{ev.clientName}
                                                 </div>
                                             ))}
-                                            {(events.length>2||dateTodos.length>0) && (
+                                            {(events.length>2||dateTodos.length>0||(dateStr&&(filingMap[dateStr]||[]).length>0)) && (
                                                 <div style={{fontSize:8,color:"var(--text4)",paddingLeft:2,lineHeight:1.3}}>
-                                                    {events.length>2&&`+${events.length-2}庭`}{events.length>2&&dateTodos.length>0&&" "}{dateTodos.length>0&&`${dateTodos.filter(t=>!t.done).length}待辦`}
+                                                    {[
+                                                        events.length>2?`+${events.length-2}庭`:null,
+                                                        (dateStr&&(filingMap[dateStr]||[]).length>0)?`📄${filingMap[dateStr].length}狀`:null,
+                                                        dateTodos.length>0?`${dateTodos.filter(t=>!t.done).length}待辦`:null,
+                                                    ].filter(Boolean).join(" ")}
                                                 </div>
                                             )}
                                         </div>
                                     );
                                 })}
                             </div>
+                            )}
                             <div className="cal-legend">
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#9E2A24"}}/><span style={{color:"#9E2A24",fontWeight:700}}>日/假日</span></div>
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:50,background:"#2A3D4F"}}/><span style={{color:"#2A3D4F",fontWeight:700}}>六</span></div>
@@ -1473,6 +1604,8 @@ function App({user}){
                                 {CASE_TYPES.map(t=><div key={t} className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:TYPE_COLOR[t]||"#8A8377"}}/>{t}</div>)}
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:"#9E2A24"}}/><span style={{color:"#9E2A24",fontWeight:700}}>⚡ 臨時庭期</span></div>
                                 <div className="cal-legend-item"><div style={{width:10,height:10,borderRadius:2,background:"#2A3D4F"}}/><span style={{color:"#2A3D4F",fontWeight:700}}>📚 學校行事</span></div>
+                                <div className="cal-legend-item"><span style={{color:"var(--seal)",fontWeight:700}}>⏰ 末日/收判</span></div>
+                                <div className="cal-legend-item"><span style={{color:"var(--navy)",fontWeight:700}}>📄 遞狀</span></div>
                             </div>
                             <div style={{fontSize:10,color:"var(--text4)",padding:"6px 18px 0",textAlign:"right"}}>點選日期可新增待辦事項</div>
                         </div>
@@ -1501,6 +1634,18 @@ function App({user}){
                                         <div style={{fontWeight:800,fontSize:17,color:"var(--text)"}}>{label}</div>
                                         {TW_HOLIDAYS[ds] && <div style={{fontSize:12,color:"var(--red)",marginTop:2}}>🎌 {TW_HOLIDAYS[ds]}</div>}
                                         {SCHOOL_EVENTS[ds] && <div style={{fontSize:12,color:"var(--navy)",marginTop:2}}>📚 {SCHOOL_EVENTS[ds]}</div>}
+                                        {(()=>{ // 該日期限與遞狀
+                                            const items=[];
+                                            cases.forEach(c=>{
+                                                if(c.appealDeadline===ds) items.push({t:`⏰ 上訴/抗告末日：${c.clientName}`,c:"var(--seal)",b:true,id:c.id});
+                                                if(c.judgmentReceivedDate===ds) items.push({t:`📩 收受判決：${c.clientName}`,c:"var(--seal)",b:false,id:c.id});
+                                                (c.filings||[]).forEach(f=>{ if(f.date===ds) items.push({t:`📄 ${f.type}：${c.clientName}${f.summary?`（${f.summary}）`:""}`,c:"var(--navy)",b:false,id:c.id}); });
+                                            });
+                                            return items.map((it,ii)=>(
+                                                <div key={ii} onClick={()=>{openDetail(it.id);closeCalTodoModal();}}
+                                                    style={{fontSize:12,color:it.c,marginTop:2,fontWeight:it.b?700:400,cursor:"pointer"}}>{it.t}</div>
+                                            ));
+                                        })()}
                                     </div>
                                     <button onClick={closeCalTodoModal} style={{background:"var(--bg4)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",color:"var(--text2)",fontSize:16}}>✕</button>
                                 </div>

@@ -255,6 +255,8 @@ textarea.fi{resize:vertical;min-height:80px;}
 .tl-dot.todo{background:var(--paper-raised);border-color:var(--warning);}
 .tl-dot.todo.done{background:var(--positive);border-color:var(--positive);}
 .tl-dot.milestone{background:var(--paper-raised);border-color:var(--seal);border-width:2px;}
+.tl-dot.filing{background:var(--paper-raised);border-color:var(--navy);}
+.tl-dot.payment{background:var(--positive);border-color:var(--positive);}
 .tl-date{font-size:11px;color:var(--ink-faint);margin-bottom:3px;font-family:var(--font-song);font-variant-numeric:tabular-nums;}
 .tl-body{background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;padding:12px 14px;}
 .tl-body.future{border-color:var(--seal);}
@@ -424,8 +426,10 @@ const emptyCase = {
     caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
     attorney:"", retainerDate:"", opposingParty:"", caseReason:"", judgementLink:"", notes:"",
     judgmentReceivedDate:"", appealDeadline:"",
-    hearings:[], todos:[], driveFolderUrl:"", docs:[]
+    hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[]
 };
+// 書狀種類
+const FILING_TYPES = ["起訴狀","答辯狀","準備書狀","準備程序書狀","言詞辯論意旨狀","上訴狀","上訴理由狀","抗告狀","聲請狀","陳報狀","調查證據聲請狀","刑事辯護意旨狀","告訴狀","再議聲請狀","強制執行聲請狀","其他"];
 
 // ── Helpers ──
 function today(){
@@ -636,6 +640,7 @@ function App({user}){
     const [newH, setNewH] = useState({date:"",time:"",agency:"",courtroom:"",note:""});
     const [newT, setNewT] = useState({text:"",due:""});
     const [newDoc, setNewDoc] = useState({label:"",url:"",type:"筆錄"});
+    const [newFiling, setNewFiling] = useState({type:"起訴狀",date:today(),summary:""});
     const [newPay, setNewPay] = useState({amount:"",date:today(),method:"現金",note:""});
     const [tools, setTools] = useState(()=>{
         try{ return JSON.parse(localStorage.getItem("quickTools")||"[]"); }catch(e){ return []; }
@@ -826,6 +831,12 @@ function App({user}){
         setNewDoc({label:"",url:"",type:"筆錄"});
     };
     const removeDoc=i=>sf("docs",(formData.docs||[]).filter((_,idx)=>idx!==i));
+    const addFiling=()=>{
+        if(!newFiling.date){ toast("請選擇遞狀日期"); return; }
+        sf("filings",[...(formData.filings||[]),{...newFiling,id:uid()}]);
+        setNewFiling({type:newFiling.type,date:today(),summary:""});
+    };
+    const removeFiling=i=>sf("filings",(formData.filings||[]).filter((_,idx)=>idx!==i));
     const addCaseNo=()=>sf("courtCaseNos",[...(formData.courtCaseNos||[]),""]);
     const updateCaseNo=(i,v)=>{const a=[...(formData.courtCaseNos||[])];a[i]=v;sf("courtCaseNos",a);};
     const removeCaseNo=i=>sf("courtCaseNos",formData.courtCaseNos.filter((_,idx)=>idx!==i));
@@ -1004,6 +1015,7 @@ function App({user}){
             status:"進行中",
             hearings:[],
             todos:[],
+            filings:[],
             notes:"（由 "+c.firmCaseNo+" 複製）\n"+(c.notes||""),
             judgementLink:"",
             judgmentReceivedDate:"",
@@ -1771,6 +1783,12 @@ function App({user}){
                     (selected.todos||[]).forEach(t=>{
                         if(t.due) events.push({date:t.due,type:"todo",done:t.done,icon:t.done?"✓":"○",label:t.text,detail:t.done?"已完成":"待辦",color:t.done?"var(--green)":"var(--purple)"});
                     });
+                    (selected.filings||[]).forEach(f=>{
+                        if(f.date) events.push({date:f.date,type:"filing",tag:"遞狀",icon:"📄",label:f.type,detail:f.summary,color:"var(--navy)"});
+                    });
+                    (selected.payments||[]).forEach(p=>{
+                        if(p.date) events.push({date:p.date,type:"payment",tag:"收款",icon:"💰",label:`收款 ${Number(p.amount||0).toLocaleString()} 元`,detail:`${p.method||""}${p.note?` · ${p.note}`:""}`.trim(),color:"var(--positive)"});
+                    });
                     events.sort((a,b)=>a.date.localeCompare(b.date));
                     return(
                         <div className="tl-wrap">
@@ -1784,7 +1802,7 @@ function App({user}){
                                         <div className={dotClass}/>
                                         <div className="tl-date">{ev.date}{ev.time&&` ${ev.time}`}</div>
                                         <div className={bodyClass}>
-                                            <div className="tl-tag" style={{color:ev.color}}>{ev.icon} {ev.type==="hearing"||ev.type==="past"||ev.type==="future"||ev.type==="today"?"開庭":ev.type==="todo"?"待辦":ev.type==="milestone"?"里程碑":""}</div>
+                                            <div className="tl-tag" style={{color:ev.color}}>{ev.icon} {ev.tag || (ev.type==="hearing"||ev.type==="past"||ev.type==="future"||ev.type==="today"?"開庭":ev.type==="todo"?"待辦":ev.type==="milestone"?"里程碑":"")}</div>
                                             <div style={{color:"var(--text)",fontWeight:600,fontSize:14}}>{ev.label}</div>
                                             {ev.detail && <div style={{color:"var(--text3)",fontSize:12,marginTop:3}}>{ev.detail}</div>}
                                             {ev.type==="future"&&<div style={{color:"var(--gold)",fontSize:11,marginTop:4}}>📅 {d===0?"今天":d===1?"明天":`${d}天後`}</div>}
@@ -2086,6 +2104,20 @@ function App({user}){
                                     <div style={{color:t.done?"var(--text3)":"var(--text)",textDecoration:t.done?"line-through":"none"}}>{t.text}</div>
                                     {t.due && <div style={{color:"var(--text4)",fontSize:11}}>期限：{t.due}</div>}
                                 </div>
+                            </div>
+                        ))}
+                    </div>
+                    {/* 書狀 */}
+                    <div className="card">
+                        <div className="card-title">📄 書狀（{(selected.filings||[]).length} 件）</div>
+                        {(selected.filings||[]).length===0 && <div style={{color:"var(--text3)",padding:"12px 0"}}>尚無書狀記錄</div>}
+                        {(selected.filings||[]).slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map((f,i)=>(
+                            <div key={f.id||i} className="hearing-item" style={{borderLeftColor:"var(--navy)"}}>
+                                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                                    <span style={{color:"var(--text)",fontWeight:700,fontSize:14}}>{f.type}</span>
+                                    <span style={{color:"var(--navy)",fontSize:12,fontVariantNumeric:"tabular-nums"}}>遞狀 {f.date}</span>
+                                </div>
+                                {f.summary && <div style={{color:"var(--text3)",fontSize:12,marginTop:3}}>{f.summary}</div>}
                             </div>
                         ))}
                     </div>
@@ -2889,6 +2921,38 @@ function App({user}){
                     <input className="fi" style={{flex:"2 1 180px"}} value={newT.text} onChange={e=>setNewT(t=>({...t,text:e.target.value}))} placeholder="待辦事項內容"/>
                     <input className="fi" type="date" style={{flex:"1 1 140px"}} value={newT.due} onChange={e=>setNewT(t=>({...t,due:e.target.value}))}/>
                     <button className="btn btn-gold btn-sm" onClick={addTodo}>＋ 新增</button>
+                </div>
+
+                {/* 書狀 */}
+                <div className="section-hdr">📄 書狀（遞狀記錄）</div>
+                {(F.filings||[]).slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map((f)=>{
+                    const idx=(F.filings||[]).indexOf(f);
+                    return(
+                    <div key={f.id||idx} className="item-row">
+                        <div style={{flex:1}}>
+                            <div style={{color:"var(--text)",fontSize:13,fontWeight:700}}>{f.type} <span style={{color:"var(--navy)",fontWeight:400,fontSize:12}}>· {f.date}</span></div>
+                            {f.summary && <div style={{color:"var(--text3)",fontSize:12,marginTop:2}}>{f.summary}</div>}
+                        </div>
+                        <button className="btn btn-danger btn-icon" onClick={()=>removeFiling(idx)}>✕</button>
+                    </div>
+                    );
+                })}
+                <div className="add-row" style={{alignItems:"flex-end"}}>
+                    <div className="fg" style={{flex:"0 0 130px"}}>
+                        <label className="fl">書狀種類</label>
+                        <select className="fi" value={newFiling.type} onChange={e=>setNewFiling(f=>({...f,type:e.target.value}))}>
+                            {FILING_TYPES.map(t=><option key={t}>{t}</option>)}
+                        </select>
+                    </div>
+                    <div className="fg" style={{flex:"0 0 140px"}}>
+                        <label className="fl">遞狀日期</label>
+                        <input className="fi" type="date" value={newFiling.date} onChange={e=>setNewFiling(f=>({...f,date:e.target.value}))}/>
+                    </div>
+                    <div className="fg" style={{flex:"2 1 200px"}}>
+                        <label className="fl">書狀摘要</label>
+                        <input className="fi" value={newFiling.summary} onChange={e=>setNewFiling(f=>({...f,summary:e.target.value}))} placeholder="例如：就對造○○抗辯提出反駁…"/>
+                    </div>
+                    <button className="btn btn-gold btn-sm" onClick={addFiling} style={{flexShrink:0}}>＋ 新增</button>
                 </div>
 
                 {/* 電子卷證 */}

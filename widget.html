@@ -10,6 +10,7 @@
 <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-widget.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-widget.png">
 <link rel="manifest" href="manifest-widget.json">
+<script src="shared/tw-dates.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>⚖ 今日庭期</title>
 <style>
@@ -162,6 +163,11 @@ html,body{min-height:100vh;padding-top:40px;background:var(--paper);color:var(--
 .wcal-dot{width:4px;height:4px;border-radius:50%;margin:1px auto;}
 .wcal-dots{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;align-items:center;}
 .wcal-todo-dot{width:5px;height:5px;border-radius:1px;background:var(--warning);transform:rotate(45deg);}
+.wcal-filing-dot{width:5px;height:5px;border-radius:1px;background:var(--navy);}
+.wcal-hol{font-size:7px;line-height:1.3;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
+.wcal-hol.hol{color:var(--seal);}
+.wcal-hol.sch{color:var(--navy);}
+.wcal-dl{font-size:7px;line-height:1.4;font-weight:700;color:var(--seal);background:var(--seal-wash);border-radius:2px;padding:0 1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
 .wcal-todo-dot.done{background:transparent;border:1px solid var(--warning);}
 .mode-toggle{display:flex;gap:4px;background:var(--paper-sunken);border:1px solid var(--rule);border-radius:3px;padding:3px;margin-bottom:12px;}
 .mode-btn{flex:1;padding:7px 12px;border-radius:2px;background:transparent;border:none;color:var(--ink-soft);font-family:var(--font-kai);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
@@ -611,30 +617,47 @@ function buildCalendar(){
         tmap[t.date].push(t);
     });
 
+    // 遞狀（書狀）與期限（上訴/抗告末日、收受判決）——與案件系統同步
+    const fmap={}, dlmap={};
+    state.cases.forEach(c=>{
+        (c.filings||[]).forEach(f=>{ if(!f.date)return; (fmap[f.date]=fmap[f.date]||[]).push({...f,clientName:c.clientName}); });
+        if(c.appealDeadline) (dlmap[c.appealDeadline]=dlmap[c.appealDeadline]||[]).push({kind:"末日",clientName:c.clientName});
+        if(c.judgmentReceivedDate) (dlmap[c.judgmentReceivedDate]=dlmap[c.judgmentReceivedDate]||[]).push({kind:"收判",clientName:c.clientName});
+    });
+    const HOL=window.TW_HOLIDAYS||{}, SCH=window.SCHOOL_EVENTS||{};
+
     const todayStr=today();
-    
+
     return cells.map((cell,i)=>{
         const dow=i%7;
         const dateStr=cell.cur?`${y}-${pad(m+1)}-${pad(cell.day)}`:"";
         const events=dateStr?hmap[dateStr]||[]:[];
         const dayTodos=dateStr?tmap[dateStr]||[]:[];
+        const dayFilings=dateStr?fmap[dateStr]||[]:[];
+        const dayDl=dateStr?dlmap[dateStr]||[]:[];
+        const hol=dateStr?HOL[dateStr]:"";
+        const sch=dateStr?SCH[dateStr]:"";
         const isToday=dateStr===todayStr;
+        const isHoliday=!!hol && dow!==0 && dow!==6;
         const cls=["wcal-cell",
             !cell.cur?"other-month":"",
             isToday?"today":"",
             dow===0?"is-sun":"",
             dow===6?"is-sat":"",
         ].filter(Boolean).join(" ");
-        
+
         const hasTodo=dayTodos.length>0;
         const todoAllDone=hasTodo && dayTodos.every(t=>t.done);
         return `<div class="${cls}" data-date="${dateStr}" style="cursor:${dateStr?'pointer':'default'}">
-            <div class="wcal-num">${cell.day}</div>
+            <div class="wcal-num"${isHoliday?' style="color:var(--seal)"':''}>${cell.day}</div>
+            ${hol?`<div class="wcal-hol hol" title="${esc(hol)}">${esc(hol)}</div>`:sch?`<div class="wcal-hol sch" title="學校：${esc(sch)}">${esc(sch)}</div>`:""}
+            ${dayDl.length?`<div class="wcal-dl" title="${esc(dayDl.map(d=>(d.kind==="末日"?"上訴/抗告末日：":"收受判決：")+d.clientName).join("、"))}">⏰${esc(dayDl[0].kind)}</div>`:""}
             <div class="wcal-dots">
                 ${events.slice(0,3).map(e=>{
                     const c=TYPE_COLOR[e.caseType]||"var(--ink-faint)";
                     return `<div class="wcal-dot" style="background:${c}"></div>`;
                 }).join("")}
+                ${dayFilings.length?`<div class="wcal-filing-dot" title="遞狀"></div>`:""}
                 ${hasTodo?`<div class="wcal-todo-dot${todoAllDone?" done":""}" title="待辦事項"></div>`:""}
             </div>
             ${events.length>3?`<div style="font-size:8px;color:var(--text4);text-align:center">+${events.length-3}</div>`:""}
@@ -714,7 +737,9 @@ function buildWidget(){
     <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:11px;color:var(--text4);margin-bottom:12px">
         <span>點選日期檢視該日庭期／待辦</span>
         <span style="display:inline-flex;align-items:center;gap:5px"><span class="wcal-dot" style="background:var(--ink-faint);margin:0"></span>庭期</span>
+        <span style="display:inline-flex;align-items:center;gap:5px"><span class="wcal-filing-dot" style="margin:0"></span>遞狀</span>
         <span style="display:inline-flex;align-items:center;gap:5px"><span class="wcal-todo-dot" style="margin:0"></span>待辦</span>
+        <span style="color:var(--seal);font-weight:700">⏰末日/收判</span>
     </div>
     
     ${state.selectedDate?`
@@ -728,11 +753,26 @@ function buildWidget(){
                 const hearings=[...state.cases.flatMap(c=>(c.hearings||[]).filter(h=>h.date===ds).map(h=>({...h,caseType:c.caseType,clientName:c.clientName,firmCaseNo:c.firmCaseNo,caseId:c.id}))),
                     ...state.widgetHearings.filter(h=>h.date===ds)];
                 const todos=(state.calTodos||[]).filter(t=>t.date===ds && !t.archived);
+                const filings=state.cases.flatMap(c=>(c.filings||[]).filter(f=>f.date===ds).map(f=>({...f,clientName:c.clientName})));
+                const deadlines=[];
+                state.cases.forEach(c=>{ if(c.appealDeadline===ds)deadlines.push({kind:"上訴/抗告末日",clientName:c.clientName}); if(c.judgmentReceivedDate===ds)deadlines.push({kind:"收受判決",clientName:c.clientName}); });
+                const HOL=window.TW_HOLIDAYS||{}, SCH=window.SCHOOL_EVENTS||{};
+                const empty=hearings.length===0&&todos.length===0&&filings.length===0&&deadlines.length===0;
                 return `
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                     <div style="font-size:17px;font-weight:700;color:var(--gold)">${label}</div>
                     <button onclick="state.selectedDate=null;render()" style="background:var(--bg4);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;color:var(--text2);fontSize:18px">✕</button>
                 </div>
+                ${HOL[ds]?`<div style="font-size:12px;color:var(--seal);margin-bottom:6px">🎌 ${esc(HOL[ds])}</div>`:""}
+                ${SCH[ds]?`<div style="font-size:12px;color:var(--navy);margin-bottom:6px">📚 ${esc(SCH[ds])}</div>`:""}
+                ${deadlines.length>0?`
+                <div style="font-size:11px;color:var(--text4);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:10px 0 8px">⏰ 期限</div>
+                ${deadlines.map(dl=>`<div style="background:var(--seal-wash);border:1px solid var(--seal);border-radius:8px;padding:10px 12px;margin-bottom:8px;color:var(--seal);font-weight:700;font-size:13px">⏰ ${esc(dl.kind)}　${esc(dl.clientName)}</div>`).join("")}
+                `:""}
+                ${filings.length>0?`
+                <div style="font-size:11px;color:var(--text4);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:10px 0 8px">📄 遞狀</div>
+                ${filings.map(f=>`<div style="background:var(--bg3);border:1px solid var(--navy)44;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--text)">${esc(f.type)} <span style="color:var(--navy);font-weight:400">· ${esc(f.clientName)}</span></div>${f.summary?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${esc(f.summary)}</div>`:""}</div>`).join("")}
+                `:""}
                 ${hearings.length>0?`
                 <div style="font-size:11px;color:var(--text4);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">🏛 庭期（${hearings.length}場）</div>
                 ${hearings.map(h=>{
@@ -757,7 +797,7 @@ function buildWidget(){
                     </div>
                 </div>`).join("")}
                 `:""} 
-                ${hearings.length===0&&todos.length===0?`<div style="text-align:center;padding:30px 20px;color:var(--text4)">此日無庭期或待辦</div>`:""}
+                ${empty?`<div style="text-align:center;padding:30px 20px;color:var(--text4)">此日無庭期、期限、遞狀或待辦</div>`:""}
                 `;
             })()}
         </div>

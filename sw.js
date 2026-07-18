@@ -1,8 +1,9 @@
-const CACHE = "case-mgr-v22";
+const CACHE = "case-mgr-v23";
 
 const PRECACHE = [
   "./",
   "./shared/sys-nav.js",
+  "./shared/tw-dates.js",
   "./index.html",
   "./clients.html",
   "./letters.html",

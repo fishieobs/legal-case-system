@@ -1268,6 +1268,26 @@ function bindEvents(){
         render();
     });
 
+    // 月曆左右滑動切換月份（手機）
+    const calGrid=document.querySelector(".cal-grid");
+    if(calGrid){
+        let sx=null, sy=null;
+        calGrid.addEventListener("touchstart",e=>{
+            const t=e.changedTouches[0]; sx=t.clientX; sy=t.clientY;
+        },{passive:true});
+        calGrid.addEventListener("touchend",e=>{
+            if(sx===null)return;
+            const t=e.changedTouches[0];
+            const dx=t.clientX-sx, dy=t.clientY-sy;
+            sx=sy=null;
+            if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){
+                const delta=dx<0?1:-1; // 左滑→下個月，右滑→上個月
+                state.calDate=new Date(state.calDate.getFullYear(),state.calDate.getMonth()+delta,1);
+                render();
+            }
+        },{passive:true});
+    }
+
     // Days ahead selector
     document.querySelectorAll("[data-days]").forEach(btn=>{
         btn.addEventListener("click",()=>{

@@ -541,14 +541,16 @@ let S={
 // HELPERS
 // ══════════════════════════════════════════════════════════
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
 function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400);}
 function applyTheme(m){if(m==="auto"){const h=new Date().getHours();m=(h>=6&&h<20)?"light":"dark";}document.documentElement.classList.toggle("light",m==="light");}
 applyTheme(S.themeMode);
 
 function fillContent(content,values){
-  return content.replace(/\{(\w+)\}/g,(_,k)=>{
-    const v=values[k]||(FIELDS.find(f=>f.key===k)?.ex||`{${k}}`);
-    return values[k]?`<span class="filled">${v}</span>`:`<span style="color:var(--text4)">{${k}}</span>`;
+  // 先跳脫全文（{欄位}為 ASCII 大括號＋英數，不受 esc 影響），再替換欄位，避免範本內容或填入值造成 XSS
+  return esc(content).replace(/\{(\w+)\}/g,(_,k)=>{
+    const raw=values[k]||(FIELDS.find(f=>f.key===k)?.ex||`{${k}}`);
+    return values[k]?`<span class="filled">${esc(raw)}</span>`:`<span style="color:var(--text4)">{${esc(k)}}</span>`;
   });
 }
 
@@ -790,17 +792,17 @@ function renderListView(){
             <div class="tmpl-card" data-open="${t.id}" style="border-top:3px solid ${cat.color}">
               <div class="tmpl-card-hdr">
                 <div class="tmpl-card-meta">
-                  <div class="tmpl-card-title">${t.title}</div>
+                  <div class="tmpl-card-title">${esc(t.title)}</div>
                   <div style="display:flex;gap:5px;flex-shrink:0">
                     ${renderBadge(t.category)}
                   </div>
                 </div>
-                ${t.docType?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${t.docType}</div>`:""}
+                ${t.docType?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${esc(t.docType)}</div>`:""}
               </div>
               <div class="tmpl-card-body">
-                <div class="tmpl-preview">${preview}</div>
+                <div class="tmpl-preview">${esc(preview)}</div>
                 <div class="tmpl-tags">
-                  ${(t.tags||[]).map(tag=>`<span class="badge" style="background:var(--bg5);color:var(--text3);border-color:var(--border2)">${tag}</span>`).join("")}
+                  ${(t.tags||[]).map(tag=>`<span class="badge" style="background:var(--bg5);color:var(--text3);border-color:var(--border2)">${esc(tag)}</span>`).join("")}
                 </div>
               </div>
               <div class="tmpl-card-footer">
@@ -917,7 +919,7 @@ function renderEditor(){
     <div class="editor-toolbar">
       <div class="editor-toolbar-left">
         <button class="btn btn-outline btn-sm" id="btn-back">← 返回</button>
-        <div style="font-size:14px;font-weight:700;color:var(--text)">${isNew?"新增範本":f.title||"編輯範本"}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text)">${isNew?"新增範本":esc(f.title||"編輯範本")}</div>
         ${renderBadge(f.category)}
       </div>
       <div style="display:flex;gap:6px;align-items:center">
@@ -937,7 +939,7 @@ function renderEditor(){
         <div class="section-hdr">📋 基本資訊</div>
         <div class="fg">
           <label class="fl">範本名稱</label>
-          <input class="fi fi-full" id="f-title" value="${(f.title||"").replace(/"/g,"&quot;")}" placeholder="例：損害賠償起訴狀">
+          <input class="fi fi-full" id="f-title" value="${esc(f.title)}" placeholder="例：損害賠償起訴狀">
         </div>
         <div class="fg">
           <label class="fl">文書類別</label>
@@ -955,7 +957,7 @@ function renderEditor(){
         <div class="fg">
           <label class="fl">標籤</label>
           <div class="tag-input-wrap">
-            ${(f.tags||[]).map(tag=>`<span class="tag-pill">${tag}<span class="tag-pill-del" data-del-tag="${tag}">✕</span></span>`).join("")}
+            ${(f.tags||[]).map(tag=>`<span class="tag-pill">${esc(tag)}<span class="tag-pill-del" data-del-tag="${esc(tag)}">✕</span></span>`).join("")}
             <input id="f-tag-input" placeholder="輸入標籤後按 Enter" value="${S.tagInput}">
           </div>
         </div>
@@ -968,7 +970,7 @@ function renderEditor(){
           if(!fd)return"";
           return`<div class="fg">
             <div class="fill-field-lbl">${fd.label}</div>
-            <input class="fi fi-full fill-field" id="fv-${key}" value="${(f.fillValues?.[key]||"").replace(/"/g,"&quot;")}" placeholder="${fd.ex}">
+            <input class="fi fi-full fill-field" id="fv-${key}" value="${esc(f.fillValues?.[key])}" placeholder="${esc(fd.ex)}">
           </div>`;
         }).join("")}`:""}
 
@@ -977,15 +979,15 @@ function renderEditor(){
         <div style="font-size:10px;color:var(--text4);margin-bottom:10px;display:flex;flex-wrap:wrap;gap:4px">
           ${FIELDS.map(f=>`<span style="cursor:pointer;padding:2px 7px;background:var(--bg4);border-radius:4px;font-family:monospace" data-ins-field="{${f.key}}" title="${f.label}（點擊插入）">{${f.key}}</span>`).join("")}
         </div>
-        <textarea class="fi fi-full" id="f-content" style="min-height:500px">${(f.content||"").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</textarea>
+        <textarea class="fi fi-full" id="f-content" style="min-height:500px">${esc(f.content)}</textarea>
       </div>
 
       <!-- Right: preview -->
       <div class="editor-preview">
         <div class="doc-paper">
-          ${f.title?`<div class="doc-title">${f.title}</div>`:""}
-          <div class="doc-subtitle">${cat.icon} ${cat.label}${f.docType?" · "+f.docType:""}</div>
-          ${f.tags&&f.tags.length?`<div style="text-align:center;margin-bottom:16px">${f.tags.map(t=>`<span class="badge" style="background:var(--bg4);color:var(--text3);margin:0 3px">${t}</span>`).join("")}</div>`:""}
+          ${f.title?`<div class="doc-title">${esc(f.title)}</div>`:""}
+          <div class="doc-subtitle">${cat.icon} ${esc(cat.label)}${f.docType?" · "+esc(f.docType):""}</div>
+          ${f.tags&&f.tags.length?`<div style="text-align:center;margin-bottom:16px">${f.tags.map(t=>`<span class="badge" style="background:var(--bg4);color:var(--text3);margin:0 3px">${esc(t)}</span>`).join("")}</div>`:""}
           <div class="doc-body">${previewHtml}</div>
         </div>
       </div>

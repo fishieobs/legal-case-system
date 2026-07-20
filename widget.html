@@ -194,6 +194,8 @@ html,body{min-height:100vh;padding-top:40px;background:var(--paper);color:var(--
 .cal-school-label{font-size:8px;color:var(--navy);font-weight:700;margin-bottom:1px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;background:rgba(42,61,79,.08);border-radius:2px;padding:0 2px;}
 .cal-deadline-label{font-size:8px;color:var(--seal);background:var(--seal-wash);font-weight:700;border-radius:2px;padding:0 2px;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.5;}
 .cal-event{font-size:9px;border-radius:2px;padding:1px 4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;line-height:1.5;}
+.cal-todo-dot{font-size:8px;font-weight:700;padding:1px 4px;border-radius:2px;margin-bottom:1px;background:var(--warning-wash);color:var(--warning);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cal-todo-dot.done{opacity:.45;text-decoration:line-through;}
 .cal-legend{display:flex;gap:12px;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--rule);}
 .cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-soft);}
 @media(max-width:480px){
@@ -702,7 +704,8 @@ function buildCalendar(){
                 const col=isW?"#9E2A24":(TYPE_COLOR[e.caseType]||"#8A8377");
                 return `<div class="cal-event" style="background:${col}33;color:${col}" title="${esc((isW?"⚡ ":"")+(e.clientName||"")+" "+(e.time||"")+" "+(e.note||e.agency||""))}">${e.time?esc(e.time)+" ":""}${isW?"⚡":""}${esc(e.clientName||"")}</div>`;
             }).join("")}
-            ${(events.length>2||dayTodos.length>0||dayFilings.length>0)?`<div style="font-size:8px;color:var(--text4);padding-left:2px;line-height:1.3">${[events.length>2?`+${events.length-2}庭`:null,dayFilings.length>0?`📄${dayFilings.length}狀`:null,dayTodos.length>0?`${dayTodos.filter(t=>!t.done).length}待辦`:null].filter(Boolean).join(" ")}</div>`:""}
+            ${dayTodos.slice(0,2).map(t=>`<div class="cal-todo-dot${t.done?" done":""}" title="待辦：${esc(t.text)}">${t.done?"✓":"○"}${t.time?" "+esc(t.time):""} ${esc(t.text)}</div>`).join("")}
+            ${(events.length>2||dayTodos.length>2||dayFilings.length>0)?`<div style="font-size:8px;color:var(--text4);padding-left:2px;line-height:1.3">${[events.length>2?`+${events.length-2}庭`:null,dayFilings.length>0?`📄${dayFilings.length}狀`:null,dayTodos.length>2?`+${dayTodos.length-2}待辦`:null].filter(Boolean).join(" ")}</div>`:""}
         </div>`;
     }).join("");
 }

@@ -232,17 +232,21 @@ async function saveClient(){
   if(!f.name||!f.name.trim()){toast("⚠️ 請輸入客戶名稱");return;}
   const id=S.editId||uid();
   const existing=S.clients.find(c=>c.id===id);
-  await setDoc(doc(db,"clients",id),{
-    ...f,name:f.name.trim(),id,
-    comms:existing?.comms||[],
-    createdAt:existing?.createdAt||new Date().toISOString(),
-    updatedAt:new Date().toISOString(),
-  });
+  try{
+    await setDoc(doc(db,"clients",id),{
+      ...f,name:f.name.trim(),id,
+      comms:existing?.comms||[],
+      createdAt:existing?.createdAt||new Date().toISOString(),
+      updatedAt:new Date().toISOString(),
+    });
+  }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
   toast(S.editId?"✅ 客戶已更新":"✅ 客戶已新增");
   S.showForm=false;S.editId=null;S.form=newForm();render();
 }
 async function delClient(id){
-  await deleteDoc(doc(db,"clients",id));
+  try{
+    await deleteDoc(doc(db,"clients",id));
+  }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
   toast("🗑 已刪除客戶");S.delConfirm=null;if(S.viewId===id){S.viewId=null;S.tab="clients";}render();
 }
 async function saveComm(){
@@ -250,13 +254,17 @@ async function saveComm(){
   const f=S.commForm;
   if(!f.content||!f.content.trim()){toast("⚠️ 請輸入溝通內容");return;}
   const comms=[...(c.comms||[]),{id:uid(),date:f.date,type:f.type,content:f.content.trim()}];
-  await setDoc(doc(db,"clients",c.id),{...c,comms,updatedAt:new Date().toISOString()});
+  try{
+    await setDoc(doc(db,"clients",c.id),{...c,comms,updatedAt:new Date().toISOString()});
+  }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
   toast("✅ 已記錄溝通");S.showCommForm=false;S.commForm={date:twToday(),type:"phone",content:""};render();
 }
 async function delCommItem(commId){
   const c=S.clients.find(x=>x.id===S.viewId);if(!c)return;
   const comms=(c.comms||[]).filter(x=>x.id!==commId);
-  await setDoc(doc(db,"clients",c.id),{...c,comms,updatedAt:new Date().toISOString()});
+  try{
+    await setDoc(doc(db,"clients",c.id),{...c,comms,updatedAt:new Date().toISOString()});
+  }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
   toast("🗑 已刪除記錄");S.delComm=null;render();
 }
 

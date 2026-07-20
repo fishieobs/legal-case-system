@@ -508,7 +508,7 @@ let state = {
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
 function init(){
-  const today = new Date().toISOString().slice(0,10);
+  const today = new Date(Date.now()+8*3600000).toISOString().slice(0,10); // 以台灣時間（UTC+8）為準，避免午夜前後日期錯位
   document.getElementById("f-date").value = today;
   renderTypeTags();
   renderSaved();

@@ -796,7 +796,7 @@ function persistAll(){
     },
     updatedAt: new Date().toISOString(),
   };
-  window.fbMethods.setDoc(window.fbMethods.doc(window.db,"feesData","main"),data).catch(e=>console.error(e));
+  window.fbMethods.setDoc(window.fbMethods.doc(window.db,"feesData","main"),data).catch(e=>{console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試");});
   try{ localStorage.setItem("feesData_cache",JSON.stringify(data)); }catch(e){}
 }
 

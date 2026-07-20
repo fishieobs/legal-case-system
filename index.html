@@ -796,7 +796,8 @@ function App({user}){
 
     const toggleTodo = async(c, todoId)=>{
         const todos = (c.todos||[]).map(t=>t.id===todoId?{...t,done:!t.done}:t);
-        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{todos});
+        try{ await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{todos}); }
+        catch(e){ console.error(e); toast("⚠️ 更新失敗，請檢查網路後重試"); }
     };
 
     // ── Form helpers ──
@@ -959,25 +960,29 @@ function App({user}){
         const note={id:uid(),text:noteInput.trim(),tag:noteTag,pinned:false,
             createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
         const notes=[note,...(c.notes_list||[])];
-        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+        try{ await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes}); }
+        catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
         setNoteInput(""); toast("✅ 筆記已儲存");
     };
     const saveEditNote=async(c)=>{
         if(!editingNote||!editingNote.text.trim()){ toast("請輸入筆記內容"); return; }
         const notes=(c.notes_list||[]).map(n=>n.id===editingNote.id
             ?{...n,text:editingNote.text.trim(),tag:editingNote.tag,updatedAt:new Date().toISOString()}:n);
-        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+        try{ await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes}); }
+        catch(e){ console.error(e); toast("⚠️ 更新失敗，請檢查網路後重試"); return; }
         setEditingNote(null); toast("✅ 筆記已更新");
     };
     const deleteNote=async(c,id)=>{
         if(!confirm("確認刪除這則筆記？")) return;
         const notes=(c.notes_list||[]).filter(n=>n.id!==id);
-        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+        try{ await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes}); }
+        catch(e){ console.error(e); toast("⚠️ 刪除失敗，請檢查網路後重試"); return; }
         toast("🗑 已刪除");
     };
     const togglePin=async(c,id)=>{
         const notes=(c.notes_list||[]).map(n=>n.id===id?{...n,pinned:!n.pinned}:n);
-        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes});
+        try{ await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{notes_list:notes}); }
+        catch(e){ console.error(e); toast("⚠️ 更新失敗，請檢查網路後重試"); }
     };
     const fmtNoteDate=(iso)=>{
         if(!iso) return "";
@@ -1117,7 +1122,8 @@ function App({user}){
     };
     const toggleCaseTag=async(c,tagName)=>{
         const tags=(c.tags||[]).includes(tagName)?(c.tags||[]).filter(t=>t!==tagName):[...(c.tags||[]),tagName];
-        await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{tags});
+        try{ await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{tags}); }
+        catch(e){ console.error(e); toast("⚠️ 更新失敗，請檢查網路後重試"); }
     };
 
     // ── Excel export ──

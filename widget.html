@@ -432,6 +432,9 @@ function saveWidgetHearings(items){
                 if(e.code==="permission-denied"){
                     state.notice="⚠️ 跨裝置同步失敗：請至 Firebase 更新 Firestore 規則（詳見說明）";
                     render();
+                }else{
+                    state.notice="⚠️ 儲存失敗，請檢查網路後重試";
+                    render();
                 }
             });
     }
@@ -446,6 +449,9 @@ function saveCalTodos(items){
                 console.warn("calTodos 儲存失敗：",e.code);
                 if(e.code==="permission-denied"){
                     state.notice="⚠️ 待辦已先存在本機，請確認 Firebase calTodos 寫入權限";
+                    render();
+                }else{
+                    state.notice="⚠️ 儲存失敗，請檢查網路後重試";
                     render();
                 }
             });

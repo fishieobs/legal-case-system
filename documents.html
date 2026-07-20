@@ -229,22 +229,28 @@ async function saveDocForm(){
       const docs=(c.docs||[]).slice();
       entry.id=docs[idx]?.id||uid();
       docs[idx]={...docs[idx],...entry};
-      await setDoc(doc(db,"cases",oldCaseId),{...c,docs,updatedAt:new Date().toISOString()});
+      try{
+        await setDoc(doc(db,"cases",oldCaseId),{...c,docs,updatedAt:new Date().toISOString()});
+      }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
     }else{
       const oldC=S.cases.find(x=>x.id===oldCaseId);
       const newC=S.cases.find(x=>x.id===f.caseId);
       const oldDocs=(oldC.docs||[]).filter((_,i)=>i!==idx);
       entry.id=uid();
       const newDocs=[...(newC.docs||[]),entry];
-      await setDoc(doc(db,"cases",oldCaseId),{...oldC,docs:oldDocs,updatedAt:new Date().toISOString()});
-      await setDoc(doc(db,"cases",f.caseId),{...newC,docs:newDocs,updatedAt:new Date().toISOString()});
+      try{
+        await setDoc(doc(db,"cases",oldCaseId),{...oldC,docs:oldDocs,updatedAt:new Date().toISOString()});
+        await setDoc(doc(db,"cases",f.caseId),{...newC,docs:newDocs,updatedAt:new Date().toISOString()});
+      }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
     }
     toast("✅ 文件已更新");
   }else{
     entry.id=uid();
     const c=S.cases.find(x=>x.id===f.caseId);
     const docs=[...(c.docs||[]),entry];
-    await setDoc(doc(db,"cases",f.caseId),{...c,docs,updatedAt:new Date().toISOString()});
+    try{
+      await setDoc(doc(db,"cases",f.caseId),{...c,docs,updatedAt:new Date().toISOString()});
+    }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
     toast("✅ 文件已新增");
   }
   S.showForm=false;S.editTarget=null;S.form=newForm();render();
@@ -254,7 +260,9 @@ async function delDocConfirmed(){
   const c=S.cases.find(x=>x.id===caseId);
   if(!c){S.delConfirm=null;render();return;}
   const docs=(c.docs||[]).filter((_,i)=>i!==idx);
-  await setDoc(doc(db,"cases",caseId),{...c,docs,updatedAt:new Date().toISOString()});
+  try{
+    await setDoc(doc(db,"cases",caseId),{...c,docs,updatedAt:new Date().toISOString()});
+  }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
   toast("🗑 已刪除文件");S.delConfirm=null;render();
 }
 
@@ -263,12 +271,16 @@ async function delDocConfirmed(){
 // ══════════════════════════════════════════
 async function saveFolder(caseId){
   const c=S.cases.find(x=>x.id===caseId);if(!c)return;
-  await setDoc(doc(db,"cases",caseId),{...c,driveFolderUrl:S.folderInput.trim(),updatedAt:new Date().toISOString()});
+  try{
+    await setDoc(doc(db,"cases",caseId),{...c,driveFolderUrl:S.folderInput.trim(),updatedAt:new Date().toISOString()});
+  }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
   toast("✅ 雲端資料夾連結已更新");S.folderEditId=null;S.folderInput="";render();
 }
 async function removeFolder(caseId){
   const c=S.cases.find(x=>x.id===caseId);if(!c)return;
-  await setDoc(doc(db,"cases",caseId),{...c,driveFolderUrl:"",updatedAt:new Date().toISOString()});
+  try{
+    await setDoc(doc(db,"cases",caseId),{...c,driveFolderUrl:"",updatedAt:new Date().toISOString()});
+  }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
   toast("🗑 已移除雲端資料夾連結");render();
 }
 

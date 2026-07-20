@@ -245,7 +245,9 @@ async function saveIncome(){
   const id=S.editIncomeId||uid();
   const amt=parseFloat(f.amount)||0;
   const supp=amt>=SUPP_PREMIUM_THRESHOLD?Math.round(amt*SUPP_PREMIUM_RATE):0;
-  await setDoc(doc(db,"taxIncomes",id),{...f,amount:amt,suppPremium:f.hasSuppPremium?supp:0,id,updatedAt:new Date().toISOString()});
+  try{
+    await setDoc(doc(db,"taxIncomes",id),{...f,amount:amt,suppPremium:f.hasSuppPremium?supp:0,id,updatedAt:new Date().toISOString()});
+  }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
   toast("✅ 收入已記錄");S.showIncomeForm=false;S.editIncomeId=null;
   S.incomeForm={date:twToday(),type:"律師費",amount:"",client:"",note:"",hasSuppPremium:false};render();
 }
@@ -253,12 +255,16 @@ async function saveExpense(){
   const f=S.expenseForm;
   if(!f.amount||!f.date){toast("⚠️ 請填寫日期和金額");return;}
   const id=S.editExpenseId||uid();
-  await setDoc(doc(db,"taxExpenses",id),{...f,amount:parseFloat(f.amount)||0,id,updatedAt:new Date().toISOString()});
+  try{
+    await setDoc(doc(db,"taxExpenses",id),{...f,amount:parseFloat(f.amount)||0,id,updatedAt:new Date().toISOString()});
+  }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
   toast("✅ 支出已記錄");S.showExpenseForm=false;S.editExpenseId=null;
   S.expenseForm={date:twToday(),category:"辦公室租金",amount:"",note:"",receipt:false};render();
 }
 async function delRecord(col,id){
-  await deleteDoc(doc(db,col,id));
+  try{
+    await deleteDoc(doc(db,col,id));
+  }catch(e){ console.error(e); toast("⚠️ 儲存失敗，請檢查網路後重試"); return; }
   toast("🗑 已刪除");S.delConfirm=null;render();
 }
 

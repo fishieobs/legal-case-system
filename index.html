@@ -414,7 +414,7 @@ const emptyCase = {
     caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
     attorney:"", retainerDate:"", opposingParty:"", opposingCounsel:[], caseReason:"", judgementLink:"", notes:"",
     judgmentReceivedDate:"", appealDeadline:"",
-    hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[]
+    hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[], shareToken:""
 };
 // 書狀種類
 const FILING_TYPES = ["起訴狀","答辯狀","準備書狀","準備程序書狀","言詞辯論意旨狀","上訴狀","上訴理由狀","抗告狀","聲請狀","陳報狀","調查證據聲請狀","刑事辯護意旨狀","告訴狀","再議聲請狀","強制執行聲請狀","其他"];
@@ -781,6 +781,8 @@ function App({user}){
             };
             toast("⏳ 儲存中…");
             await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"cases",id), data);
+            // 若此案件已開啟當事人連結，同步更新其可見的時間軸快照
+            if(data.shareToken){ try{ await writeShareSnap(data, data.shareToken); }catch(err){ console.warn("share snapshot refresh failed:",err); } }
             toast("✅ 已儲存至雲端");
             setSelectedId(id);
             setView(editId?"detail":"list");
@@ -796,11 +798,55 @@ function App({user}){
 
     const deleteCase = async()=>{
         try{
+            // 一併清除已發出的當事人連結，避免刪案後連結仍可讀
+            const cur=cases.find(c=>c.id===selectedId);
+            if(cur&&cur.shareToken){ try{ await window.fbMethods.deleteDoc(window.fbMethods.doc(window.db,"caseShares",cur.shareToken)); }catch(_){} }
             await window.fbMethods.deleteDoc(window.fbMethods.doc(window.db,"cases",selectedId));
             toast("🗑 案件已刪除");
             setDeleteConfirm(false); setView("list");
         }catch(e){ toast("❌ 刪除失敗"); }
     };
+
+    // ── 當事人時間軸分享連結 ──
+    const genShareToken=()=>{const a=new Uint8Array(18);crypto.getRandomValues(a);return Array.from(a,b=>b.toString(16).padStart(2,"0")).join("");};
+    const shareUrl=token=>new URL("case-view.html?t="+token,location.href).href;
+    const buildShareSnapshot=(c,token)=>{
+        const tl=[];
+        (c.hearings||[]).forEach(h=>{ if(h.date) tl.push({date:h.date,time:h.time||"",kind:"開庭",title:(h.agency||"開庭")+(h.courtroom?(" "+h.courtroom):""),detail:h.note||""}); });
+        (c.filings||[]).forEach(f=>{ if(f.date) tl.push({date:f.date,time:"",kind:"遞狀",title:f.type||"書狀",detail:f.summary||""}); });
+        if(c.judgmentReceivedDate) tl.push({date:c.judgmentReceivedDate,time:"",kind:"收判",title:"收受判決",detail:""});
+        if(c.appealDeadline) tl.push({date:c.appealDeadline,time:"",kind:"末日",title:"上訴/抗告期限",detail:""});
+        tl.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+        return {
+            caseId:c.id, firmCaseNo:c.firmCaseNo||"", clientName:c.clientName||"",
+            caseType:c.caseType||"", status:c.status||"", court:c.court||"", currentAgency:c.currentAgency||"",
+            opposingParty:c.opposingParty||"", courtCaseNos:(c.courtCaseNos||[]).filter(Boolean),
+            attorney:c.attorney||"", timeline:tl, revoked:false, updatedAt:new Date().toISOString(), token,
+        };
+    };
+    const writeShareSnap=async(c,token)=>{
+        await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"caseShares",token), buildShareSnapshot(c,token));
+    };
+    const genCaseShare=async(c)=>{
+        try{
+            const token=c.shareToken||genShareToken();
+            await writeShareSnap(c,token);
+            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{shareToken:token});
+            toast("✅ 已產生當事人連結");
+        }catch(e){ console.error(e); toast("⚠️ 產生失敗，請檢查網路後重試"); }
+    };
+    const refreshCaseShare=async(c)=>{
+        try{ await writeShareSnap(c,c.shareToken); toast("✅ 已更新當事人可見內容"); }
+        catch(e){ console.error(e); toast("⚠️ 更新失敗，請檢查網路後重試"); }
+    };
+    const revokeCaseShare=async(c)=>{
+        try{
+            await window.fbMethods.deleteDoc(window.fbMethods.doc(window.db,"caseShares",c.shareToken));
+            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{shareToken:""});
+            toast("🗑 已停用當事人連結");
+        }catch(e){ console.error(e); toast("⚠️ 停用失敗，請檢查網路後重試"); }
+    };
+    const copyShareUrl=token=>{ try{ navigator.clipboard.writeText(shareUrl(token)); toast("✅ 已複製連結"); }catch(_){ toast("請長按網址手動複製"); } };
 
     const toggleTodo = async(c, todoId)=>{
         const todos = (c.todos||[]).map(t=>t.id===todoId?{...t,done:!t.done}:t);
@@ -1940,7 +1986,25 @@ function App({user}){
                         if(p.date) events.push({date:p.date,type:"payment",tag:"收款",icon:"💰",label:`收款 ${Number(p.amount||0).toLocaleString()} 元`,detail:`${p.method||""}${p.note?` · ${p.note}`:""}`.trim(),color:"var(--positive)"});
                     });
                     events.sort((a,b)=>a.date.localeCompare(b.date));
-                    return(
+                    return(<>
+                        <div style={{background:"var(--paper-raised)",border:"1px solid var(--rule)",borderRadius:3,padding:"12px 14px",marginBottom:14}}>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
+                                <div style={{fontWeight:700,color:"var(--seal)",fontSize:13}}>🔗 當事人時間軸連結</div>
+                                {!selected.shareToken
+                                    ? <button className="btn btn-gold btn-sm" onClick={()=>genCaseShare(selected)}>產生連結</button>
+                                    : <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                                        <button className="btn btn-outline btn-sm" onClick={()=>copyShareUrl(selected.shareToken)}>📋 複製</button>
+                                        <button className="btn btn-outline btn-sm" onClick={()=>refreshCaseShare(selected)}>🔄 更新內容</button>
+                                        <button className="btn btn-danger btn-sm" onClick={()=>revokeCaseShare(selected)}>停用</button>
+                                      </div>}
+                            </div>
+                            {selected.shareToken
+                                ? <div style={{fontSize:11,color:"var(--text3)",wordBreak:"break-all",background:"var(--paper-sunken)",border:"1px solid var(--rule)",borderRadius:2,padding:"6px 8px",marginTop:8}}>
+                                    {shareUrl(selected.shareToken)}
+                                    <div style={{marginTop:4,color:"var(--text4)"}}>當事人開啟即可檢視本案的開庭、遞狀、期限等辦案進度（唯讀，不含費用與內部筆記）。編輯案件存檔後會自動更新。</div>
+                                  </div>
+                                : <div style={{fontSize:11,color:"var(--text4)",marginTop:6}}>產生一組專屬連結傳給當事人，讓其檢視本案的辦案時間軸（開庭、遞狀、期限；不含費用與內部筆記）。</div>}
+                        </div>
                         <div className="tl-wrap">
                             {events.length===0 && <div className="empty"><div className="ico">🕐</div>尚無時間軸事件</div>}
                             {events.map((ev,i)=>{
@@ -1962,7 +2026,7 @@ function App({user}){
                                 );
                             })}
                         </div>
-                    );
+                    </>);
                 })()}
 
                 {/* ── INFO TAB ── */}

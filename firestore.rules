@@ -45,6 +45,14 @@ service cloud.firestore {
       );
     }
 
+    // 當事人案件進度分享（唯讀時間軸快照）
+    match /caseShares/{token} {
+      // 只有管理員（律師）可建立、更新、列舉、刪除
+      allow create, update, list, delete: if isAdmin();
+      // 持有連結者（含匿名）可讀取自己這一份（token 為 144-bit 隨機值，無法猜測）
+      allow get: if request.auth != null;
+    }
+
     // 其餘所有資料（clients、cases、calTodos、widgetHearings …）：僅管理員
     match /{document=**} {
       allow read, write: if isAdmin();

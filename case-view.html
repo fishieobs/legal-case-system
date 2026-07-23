@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#FAF7F0">
+<title>案件進度 · 禹河法律事務所</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%96%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'ChenYuluoyan';src:url('https://cdn.jsdelivr.net/gh/Chenyu-otf/chenyuluoyan_thin@6e36815b0bec9f4f948298698d00b27a5f0b65c1/ChenYuluoyan-2.0-Thin.ttf') format('truetype');font-weight:400;font-display:swap;}
+:root{
+  --paper:#FAF7F0;--paper-raised:#FFFFFF;--paper-sunken:#F1ECE1;
+  --ink:#211E1A;--ink-soft:#5B554D;--ink-faint:#8A8377;
+  --seal:#9E2A24;--seal-bright:#C0392B;--seal-wash:#F3E3DF;
+  --navy:#2A3D4F;--positive:#3A6B4F;--warning:#A6741C;
+  --rule:#DDD5C7;--rule-strong:#C4BAA6;
+  --font-kai:"BiauKai","DFKai-SB","標楷體","KaiTi","STKaiti","Kaiti TC","Noto Serif TC",serif;
+  --font-song:"Noto Serif TC","Source Han Serif TC","PMingLiU","新細明體","Songti TC",serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;background:var(--paper);color:var(--ink);font-family:var(--font-song);line-height:1.7;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+.wrap{max-width:600px;margin:0 auto;padding:28px 18px 60px;}
+.brand{text-align:center;margin:10px 0 22px;padding-bottom:18px;border-bottom:2px solid var(--seal);}
+.brand-name{font-family:'ChenYuluoyan',var(--font-kai);font-size:34px;font-weight:400;color:var(--ink);letter-spacing:.06em;}
+.brand-sub{font-family:var(--font-kai);font-size:11px;color:var(--ink-faint);letter-spacing:.22em;margin-top:8px;}
+.card{background:var(--paper-raised);border:1px solid var(--rule-strong);border-radius:4px;padding:22px 20px;box-shadow:0 2px 10px rgba(33,30,26,.06);margin-bottom:16px;}
+.title{font-family:var(--font-kai);font-size:19px;font-weight:700;letter-spacing:.04em;margin-bottom:6px;color:var(--ink);}
+.lead{font-size:14px;color:var(--ink-soft);line-height:1.8;}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:14px;}
+@media(max-width:440px){.meta-grid{grid-template-columns:1fr;}}
+.meta-row{display:flex;flex-direction:column;gap:1px;}
+.meta-lbl{font-size:11px;color:var(--ink-faint);letter-spacing:.04em;}
+.meta-val{font-size:14px;color:var(--ink);font-weight:600;}
+.badge{display:inline-block;border-radius:3px;padding:2px 9px;font-size:12px;font-weight:700;border:1px solid transparent;}
+.sec{font-family:var(--font-kai);font-size:14px;font-weight:700;color:var(--seal);border-left:4px solid var(--seal);padding-left:10px;margin:4px 0 16px;letter-spacing:.06em;}
+/* timeline */
+.tl{position:relative;padding-left:22px;}
+.tl::before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--rule);}
+.tl-item{position:relative;padding-bottom:20px;}
+.tl-item:last-child{padding-bottom:0;}
+.tl-dot{position:absolute;left:-22px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--paper-raised);border:3px solid var(--rule-strong);}
+.tl-dot.upcoming{border-color:var(--seal);}
+.tl-dot.today{border-color:var(--seal);background:var(--seal);}
+.tl-dot.hearing{border-color:var(--navy);}
+.tl-dot.filing{border-color:var(--navy);}
+.tl-date{font-size:12px;color:var(--ink-faint);font-variant-numeric:tabular-nums;}
+.tl-tag{font-size:11px;font-weight:700;margin:2px 0;}
+.tl-title{font-size:15px;font-weight:700;color:var(--ink);}
+.tl-detail{font-size:13px;color:var(--ink-soft);margin-top:2px;}
+.tl-when{display:inline-block;font-size:11px;font-weight:700;color:var(--seal);background:var(--seal-wash);border-radius:2px;padding:1px 8px;margin-top:5px;}
+.state{text-align:center;padding:44px 20px;}
+.state-ico{font-size:52px;margin-bottom:16px;}
+.state-title{font-family:var(--font-kai);font-size:19px;font-weight:700;letter-spacing:.04em;margin-bottom:8px;color:var(--ink);}
+.state-msg{font-size:14px;color:var(--ink-soft);line-height:1.8;}
+.spinner{width:34px;height:34px;border:3px solid var(--paper-sunken);border-top-color:var(--seal);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.note{display:flex;gap:8px;align-items:flex-start;background:var(--paper-sunken);border:1px solid var(--rule);border-radius:3px;padding:12px 14px;font-size:12px;color:var(--ink-soft);line-height:1.7;}
+.footer{text-align:center;font-family:var(--font-kai);font-size:11px;color:var(--ink-faint);margin-top:22px;letter-spacing:.16em;}
+.updated{font-size:11px;color:var(--ink-faint);text-align:right;margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="brand-name">禹河法律事務所</div>
+    <div class="brand-sub">Case Progress · 案件辦理進度</div>
+  </div>
+  <div id="root"></div>
+  <div class="footer">🔒 本連結為您專屬，請勿轉發他人</div>
+</div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getFirestore,doc,getDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import{getAuth,signInAnonymously,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+const cfg={apiKey:"AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",authDomain:"legalcasemanageer.firebaseapp.com",projectId:"legalcasemanageer",storageBucket:"legalcasemanageer.firebasestorage.app",messagingSenderId:"559838504556",appId:"1:559838504556:web:ba10c071a12650bbd85a49"};
+const app=initializeApp(cfg);
+const db=getFirestore(app);
+const auth=getAuth(app);
+
+const root=document.getElementById("root");
+const params=new URLSearchParams(location.search);
+const token=(params.get("t")||"").trim();
+
+const esc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const TYPE_COLOR={刑事:"#9E2A24",民事:"#2A3D4F",行政:"#A6741C",家事:"#99604F",勞動:"#3A6B4F",智財:"#3E6B6B",非訟:"#6B6250"};
+const twToday=()=>new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+const daysUntil=ds=>{ if(!ds) return null; return Math.round((Date.parse(ds+"T00:00:00+08:00")-Date.parse(twToday()+"T00:00:00+08:00"))/86400000); };
+
+function stateView(ico,title,msg){
+  root.innerHTML=`<div class="card"><div class="state"><div class="state-ico">${ico}</div><div class="state-title">${title}</div><div class="state-msg">${msg}</div></div></div>`;
+}
+function loadingView(msg){
+  root.innerHTML=`<div class="card"><div class="state"><div class="spinner"></div><div class="state-msg">${msg||"載入中…"}</div></div></div>`;
+}
+
+const KIND_META={
+  "開庭":{ico:"🏛",cls:"hearing",label:"開庭"},
+  "遞狀":{ico:"📄",cls:"filing",label:"遞狀"},
+  "收判":{ico:"⚖",cls:"",label:"收受判決"},
+  "末日":{ico:"⏰",cls:"upcoming",label:"上訴／抗告期限"},
+};
+
+function render(d){
+  const ct=d.caseType||"";
+  const col=TYPE_COLOR[ct]||"#8A8377";
+  const nos=(d.courtCaseNos||[]).filter(Boolean);
+  const tl=(d.timeline||[]).slice().sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+  const upcoming=tl.filter(e=>{const n=daysUntil(e.date);return n!==null&&n>=0;});
+
+  const metaRows=[
+    ["當事人",d.clientName],
+    ["對造",d.opposingParty],
+    ["案件類型",ct?`<span class="badge" style="background:${col}22;color:${col};border-color:${col}55">${esc(ct)}</span>`:"",true],
+    ["目前狀態",d.status],
+    ["法院／機關",d.court||d.currentAgency],
+    ["案號",nos.length?nos.map(esc).join("<br>"):""],
+    ["承辦律師",d.attorney],
+  ].filter(r=>r[1]);
+
+  const header=`<div class="card">
+    <div class="title">📂 案件辦理進度</div>
+    <div class="lead">${d.clientName?`${esc(d.clientName)} 您好，`:"您好，"}以下為本案目前的辦理進度，供您參考。</div>
+    <div class="meta-grid">
+      ${metaRows.map(([l,v,raw])=>`<div class="meta-row"><div class="meta-lbl">${esc(l)}</div><div class="meta-val">${raw?v:esc(v)}</div></div>`).join("")}
+    </div>
+  </div>`;
+
+  const nextH=upcoming.find(e=>e.kind==="開庭");
+  const nextBanner=nextH?`<div class="card" style="border-left:4px solid var(--seal)">
+      <div class="meta-lbl">下次開庭</div>
+      <div style="font-family:var(--font-kai);font-size:22px;font-weight:800;color:var(--seal);margin-top:2px">${esc(nextH.date)}${nextH.time?` ${esc(nextH.time)}`:""}</div>
+      <div style="font-size:13px;color:var(--ink-soft);margin-top:2px">${esc(nextH.title||"")}${(()=>{const n=daysUntil(nextH.date);return n===0?"（今天）":n===1?"（明天）":n>0?`（${n} 天後）`:"";})()}</div>
+    </div>`:"";
+
+  const items=tl.length?tl.map(e=>{
+    const m=KIND_META[e.kind]||{ico:"•",cls:"",label:e.kind||""};
+    const n=daysUntil(e.date);
+    const dotCls=n===0?"today":(n!==null&&n>0?"upcoming":m.cls);
+    const when=n===null?"":n===0?"今天":n===1?"明天":n>1?`${n} 天後`:"";
+    return `<div class="tl-item">
+      <div class="tl-dot ${dotCls}"></div>
+      <div class="tl-date">${esc(e.date)}${e.time?` ${esc(e.time)}`:""}</div>
+      <div class="tl-tag" style="color:${e.kind==="收判"||e.kind==="末日"?"var(--seal)":"var(--navy)"}">${m.ico} ${esc(m.label)}</div>
+      <div class="tl-title">${esc(e.title||"")}</div>
+      ${e.detail?`<div class="tl-detail">${esc(e.detail)}</div>`:""}
+      ${when&&n>=0?`<div class="tl-when">📅 ${when}</div>`:""}
+    </div>`;
+  }).join(""):`<div style="color:var(--ink-faint);font-size:14px;padding:8px 0">目前尚無可顯示的進度紀錄。</div>`;
+
+  const timeline=`<div class="card">
+    <div class="sec">🕐 辦案時間軸</div>
+    <div class="tl">${items}</div>
+    ${d.updatedAt?`<div class="updated">更新時間：${esc((d.updatedAt||"").slice(0,10))}</div>`:""}
+  </div>`;
+
+  const foot=`<div class="note">🔒 <div>本頁僅顯示本案的程序進度（開庭、遞狀、期限等），不含費用及內部工作紀錄。如有疑問，請與承辦律師聯繫。</div></div>`;
+
+  root.innerHTML=header+nextBanner+timeline+foot;
+}
+
+async function start(){
+  if(!token){ stateView("🔗","連結無效","此連結不完整，請向承辦律師索取正確的連結。"); return; }
+  loadingView("讀取案件進度中…");
+  try{ await signInAnonymously(auth); }
+  catch(e){ stateView("⚠️","暫時無法連線","系統暫時無法連線，請稍後再試。若持續發生，請與律師聯繫。"); return; }
+  try{
+    const snap=await getDoc(doc(db,"caseShares",token));
+    if(!snap.exists()){ stateView("❌","連結無效或已停用","找不到對應的案件進度，可能連結已由律師停用，請向承辦律師確認。"); return; }
+    const d=snap.data();
+    if(d.revoked){ stateView("🚫","連結已停用","此連結已停用，如需查看請向承辦律師索取新的連結。"); return; }
+    render(d);
+  }catch(e){
+    console.warn("load failed:",e.code||e.message);
+    stateView("⚠️","無法讀取","請確認連結是否正確，或稍後再試。");
+  }
+}
+
+onAuthStateChanged(auth,()=>{});
+start();
+</script>
+</body>
+</html>

@@ -621,8 +621,9 @@ function App({user}){
     const [calEditTodoText, setCalEditTodoText] = useState("");
     const [calEditTodoTime, setCalEditTodoTime] = useState("");
     const [filterTag, setFilterTag] = useState("全部");
-    const [sortBy, setSortBy] = useState("retainerDate"); // retainerDate | feeReceived | feeUnpaid | nextHearing | todoCount
-    const [sortDir, setSortDir] = useState("desc");
+    const [sortBy, setSortBy] = useState("nextHearing"); // retainerDate | feeReceived | feeUnpaid | nextHearing | todoCount
+    const [sortDir, setSortDir] = useState("asc");
+    const [upcomingDays, setUpcomingDays] = useState(()=>{const v=parseInt(localStorage.getItem("caseUpcomingDays"));return [30,60,120].includes(v)?v:30;});
     const [allTags, setAllTags] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("caseTags")||"[]"); }catch(e){ return []; } });
     const [tagModal, setTagModal] = useState(false);
     const [tagForm, setTagForm] = useState({name:"",color:"#9E2A24"});
@@ -753,10 +754,12 @@ function App({user}){
     cases.forEach(c=>{
         (c.hearings||[]).forEach(h=>{
             const d=daysUntil(h.date);
-            if(d>=0&&d<=30) upcoming.push({...h,caseId:c.id,clientName:c.clientName,firmCaseNo:c.firmCaseNo,appealDeadline:c.appealDeadline});
+            if(d>=0&&d<=upcomingDays) upcoming.push({...h,caseId:c.id,clientName:c.clientName,firmCaseNo:c.firmCaseNo,appealDeadline:c.appealDeadline});
         });
     });
     upcoming.sort((a,b)=>a.date.localeCompare(b.date));
+    const hasFutureHearing = cases.some(c=>(c.hearings||[]).some(h=>daysUntil(h.date)>=0));
+    const pickUpcomingDays = v=>{ setUpcomingDays(v); try{localStorage.setItem("caseUpcomingDays",String(v));}catch(_){} };
 
     // ── Save to Firebase ──
     const saveCase = async()=>{
@@ -1263,9 +1266,22 @@ function App({user}){
             </div>
 
             {/* Upcoming hearings */}
-            {upcoming.length>0 && (
+            {hasFutureHearing && (
                 <div className="upcoming">
-                    <div className="sec-title">🗓 近30日開庭（{upcoming.length}場）</div>
+                    <div className="sec-title" style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
+                        <span>🗓 近{upcomingDays}日開庭（{upcoming.length}場）</span>
+                        <div style={{display:"inline-flex",border:"1px solid var(--border)",borderRadius:3,overflow:"hidden"}}>
+                            {[30,60,120].map(d=>(
+                                <button key={d} onClick={()=>pickUpcomingDays(d)} style={{
+                                    padding:"4px 12px",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:12,
+                                    fontWeight:upcomingDays===d?700:400,
+                                    background:upcomingDays===d?"var(--gold)":"transparent",
+                                    color:upcomingDays===d?"#fff":"var(--text3)",
+                                }}>{d}日</button>
+                            ))}
+                        </div>
+                    </div>
+                    {upcoming.length>0 ? (
                     <div className="chip-row">
                         {upcoming.map((h,i)=>{
                             const d=daysUntil(h.date);
@@ -1280,6 +1296,9 @@ function App({user}){
                             );
                         })}
                     </div>
+                    ) : (
+                        <div style={{fontSize:12,color:"var(--text3)",paddingTop:4}}>近{upcomingDays}日內無開庭，可調整上方天數查看更遠期程。</div>
+                    )}
                 </div>
             )}
 

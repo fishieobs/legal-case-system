@@ -412,7 +412,7 @@ const emptyCase = {
     clientName:"", phone:"", clientParties:[{name:"",phone:""}], opposingParties:[""],
     totalFee:0, payments:[], disbursements:0,
     caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
-    attorney:"", retainerDate:"", opposingParty:"", caseReason:"", judgementLink:"", notes:"",
+    attorney:"", retainerDate:"", opposingParty:"", opposingCounsel:[], caseReason:"", judgementLink:"", notes:"",
     judgmentReceivedDate:"", appealDeadline:"",
     hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[]
 };
@@ -715,6 +715,7 @@ function App({user}){
         const searchFields=[
             c.clientName, c.firmCaseNo, c.opposingParty, c.attorney,
             ...(c.clientParties||[]).flatMap(p=>[p.name,p.phone]),
+            ...(c.opposingCounsel||[]).flatMap(L=>[L.name,L.mobile,L.tel,L.office]),
             c.currentAgency, c.court, c.division, c.notes, c.judgementLink, ...(c.judgementLinks||[]), c.caseReason||"",
             ...(c.courtCaseNos||[]),
             ...(c.hearings||[]).map(h=>[h.agency,h.note,h.courtroom].filter(Boolean).join(" ")),
@@ -761,6 +762,7 @@ function App({user}){
     const saveCase = async()=>{
         const parties=(formData.clientParties||[]).map(p=>({name:(p.name||"").trim(),phone:(p.phone||"").trim()})).filter(p=>p.name||p.phone);
         const opp=(formData.opposingParties||[]).map(s=>(s||"").trim()).filter(Boolean);
+        const oppCounsel=(formData.opposingCounsel||[]).map(L=>({name:(L.name||"").trim(),mobile:(L.mobile||"").trim(),office:(L.office||"").trim(),tel:(L.tel||"").trim()})).filter(L=>L.name||L.mobile||L.office||L.tel);
         if(!parties.some(p=>p.name)){ toast("⚠️ 請輸入當事人姓名"); return; }
         if(!formData.firmCaseNo.trim()){ toast("⚠️ 請輸入事務所案件編號"); return; }
         try{
@@ -769,6 +771,7 @@ function App({user}){
             const data = {...formData, id,
                 clientParties: parties,
                 opposingParties: opp,
+                opposingCounsel: oppCounsel,
                 clientName: parties.map(p=>p.name).filter(Boolean).join("、"),
                 phone: (parties.find(p=>p.phone)||{}).phone || "",
                 opposingParty: opp.join("、"),
@@ -839,7 +842,8 @@ function App({user}){
         const op=(Array.isArray(c.opposingParties)&&c.opposingParties.length)
             ? c.opposingParties.slice()
             : (c.opposingParty?[c.opposingParty]:[""]);
-        return {...c, clientParties:cp, opposingParties:op};
+        const oc=Array.isArray(c.opposingCounsel)?c.opposingCounsel.map(L=>({name:L.name||"",mobile:L.mobile||"",office:L.office||"",tel:L.tel||""})):[];
+        return {...c, clientParties:cp, opposingParties:op, opposingCounsel:oc};
     };
     const addClientParty=()=>sf("clientParties",[...(formData.clientParties||[]),{name:"",phone:""}]);
     const updateClientParty=(i,key,v)=>sf("clientParties",(formData.clientParties||[]).map((p,idx)=>idx===i?{...p,[key]:v}:p));
@@ -847,6 +851,10 @@ function App({user}){
     const addOpposing=()=>sf("opposingParties",[...(formData.opposingParties||[]),""]);
     const updateOpposing=(i,v)=>{const a=[...(formData.opposingParties||[])];a[i]=v;sf("opposingParties",a);};
     const removeOpposing=i=>sf("opposingParties",(formData.opposingParties||[]).filter((_,idx)=>idx!==i));
+    // 對造律師（可多位，含行動電話、事務所地址、市話）
+    const addOppCounsel=()=>sf("opposingCounsel",[...(formData.opposingCounsel||[]),{name:"",mobile:"",office:"",tel:""}]);
+    const updateOppCounsel=(i,key,v)=>sf("opposingCounsel",(formData.opposingCounsel||[]).map((L,idx)=>idx===i?{...L,[key]:v}:L));
+    const removeOppCounsel=i=>sf("opposingCounsel",(formData.opposingCounsel||[]).filter((_,idx)=>idx!==i));
     // 判決書連結（多筆；相容舊版單筆 judgementLink 字串）
     const getJudgements=()=>(formData.judgementLinks&&formData.judgementLinks.length)?formData.judgementLinks:(formData.judgementLink?[formData.judgementLink]:[""]);
     const addJudgement=()=>sf("judgementLinks",[...getJudgements(),""]);
@@ -1130,9 +1138,13 @@ function App({user}){
 
     // ── Excel export ──
     const exportExcel=()=>{
-        const headers=["事務所案件編號","當事人姓名","連絡電話","對造","法院案號","股別","法院/檢察署","審級","案件類型","案由","狀態","承辦律師","委任日期","本件律師費","已收款合計","未收款","代墊款項","標籤","備註"];
+        const oppCounselStr=c=>(c.opposingCounsel||[]).map(L=>{
+            const contacts=[L.mobile&&`行動:${L.mobile}`,L.tel&&`市話:${L.tel}`,L.office&&`地址:${L.office}`].filter(Boolean).join(" / ");
+            return `${L.name||""}${contacts?`（${contacts}）`:""}`;
+        }).filter(Boolean).join("；");
+        const headers=["事務所案件編號","當事人姓名","連絡電話","對造","對造律師","法院案號","股別","法院/檢察署","審級","案件類型","狀態","承辦律師","委任日期","本件律師費","已收款合計","未收款","代墊款項","案由","標籤","備註"];
         const rows=cases.map(c=>[
-            c.firmCaseNo||"", c.clientName||"", c.phone||"", c.opposingParty||"",
+            c.firmCaseNo||"", c.clientName||"", c.phone||"", c.opposingParty||"", oppCounselStr(c),
             (c.courtCaseNos||[]).filter(Boolean).join("、"), c.division||"", c.court||"", c.instance||"",
             c.caseType||"", c.status||"", c.attorney||"", c.retainerDate||"",
             Number(c.totalFee||0), getReceived(c), getUnpaid(c), Number(c.disbursements||0), c.caseReason||"",
@@ -2083,6 +2095,8 @@ function App({user}){
                         {(()=>{
                             const cps=(Array.isArray(selected.clientParties)&&selected.clientParties.length)?selected.clientParties:[{name:selected.clientName,phone:selected.phone}];
                             const ops=(Array.isArray(selected.opposingParties)&&selected.opposingParties.length)?selected.opposingParties.filter(Boolean):(selected.opposingParty?[selected.opposingParty]:[]);
+                            const ocs=Array.isArray(selected.opposingCounsel)?selected.opposingCounsel.filter(L=>L&&(L.name||L.mobile||L.tel||L.office)):[];
+                            const telHref=s=>`tel:${(s||"").replace(/[^0-9+]/g,"")}`;
                             return(<>
                                 <div className="info-row" style={{alignItems:"flex-start"}}>
                                     <div className="info-lbl">當事人</div>
@@ -2099,6 +2113,21 @@ function App({user}){
                                     <div className="info-lbl">對造當事人</div>
                                     <div className="info-val">{ops.length?ops.map((o,i)=><div key={i}>{o}</div>):"—"}</div>
                                 </div>
+                                {ocs.length>0 && (
+                                    <div className="info-row" style={{alignItems:"flex-start"}}>
+                                        <div className="info-lbl">對造律師</div>
+                                        <div className="info-val">
+                                            {ocs.map((L,i)=>(
+                                                <div key={i} style={{marginBottom:i<ocs.length-1?8:0}}>
+                                                    <div style={{fontWeight:700,color:"var(--text)"}}>{L.name||"—"}</div>
+                                                    {L.mobile?<div style={{fontSize:12}}>📱 <a href={telHref(L.mobile)}>{L.mobile}</a></div>:null}
+                                                    {L.tel?<div style={{fontSize:12}}>☎ <a href={telHref(L.tel)}>{L.tel}</a></div>:null}
+                                                    {L.office?<div style={{fontSize:12,color:"var(--text3)"}}>🏢 {L.office}</div>:null}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </>);
                         })()}
                         <hr className="divider"/>
@@ -2921,6 +2950,26 @@ function App({user}){
                             {(F.opposingParties||[]).length>1 && <button className="btn btn-danger btn-icon" type="button" onClick={()=>removeOpposing(i)}>✕</button>}
                         </div>
                     ))}
+                </div>
+                <div className="fg" style={{marginBottom:12}}>
+                    <label className="fl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span>對造律師（可多位）</span>
+                        <button className="btn btn-outline btn-sm" type="button" onClick={addOppCounsel}>＋ 新增對造律師</button>
+                    </label>
+                    {(F.opposingCounsel||[]).map((L,i)=>(
+                        <div key={i} style={{border:"1px solid var(--border)",borderRadius:3,padding:10,marginBottom:8,display:"flex",flexDirection:"column",gap:6}}>
+                            <div style={{display:"flex",gap:8}}>
+                                <input className="fi" style={{flex:1}} placeholder="律師姓名" value={L.name||""} onChange={e=>updateOppCounsel(i,"name",e.target.value)}/>
+                                <button className="btn btn-danger btn-icon" type="button" onClick={()=>removeOppCounsel(i)}>✕</button>
+                            </div>
+                            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                                <input className="fi" style={{flex:"1 1 140px"}} type="tel" placeholder="行動電話" value={L.mobile||""} onChange={e=>updateOppCounsel(i,"mobile",e.target.value)}/>
+                                <input className="fi" style={{flex:"1 1 140px"}} type="tel" placeholder="市話" value={L.tel||""} onChange={e=>updateOppCounsel(i,"tel",e.target.value)}/>
+                            </div>
+                            <input className="fi" placeholder="事務所地址" value={L.office||""} onChange={e=>updateOppCounsel(i,"office",e.target.value)}/>
+                        </div>
+                    ))}
+                    {(F.opposingCounsel||[]).length===0 && <div style={{fontSize:11,color:"var(--text4)",padding:"2px 2px 0"}}>可記錄對造律師姓名、行動電話、市話與事務所地址</div>}
                 </div>
                 <div className="form-grid">
                     <div className="fg">

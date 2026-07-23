@@ -399,9 +399,6 @@ function App(){
             <div className="header">
                 <div className="header-title">📮 信函管理系統</div>
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <button className="btn btn-outline btn-sm" onClick={cycle}>
-                        {mode==="auto"?"🕐":mode==="light"?"☀️":"🌙"}
-                    </button>
                     <a href="index.html" className="btn btn-outline btn-sm">⚖ 案件系統</a>
                     <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
                     <button className="btn btn-outline btn-sm" onClick={()=>{if(confirm("確認登出？"))window.fbAuth.signOut(window.auth);}}>🚪</button>

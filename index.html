@@ -1235,9 +1235,6 @@ function App({user}){
             <div className="header">
                 <div className="header-title">⚖ 案件管理系統</div>
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <button className="theme-btn" onClick={cycleMode} title="切換主題">
-                        {mode==="auto" ? "🕐 自動" : mode==="light" ? "☀️ 白天" : "🌙 夜間"}
-                    </button>
                     <button className="btn btn-outline btn-sm" onClick={()=>setView("tools")}>🔧 工具箱</button>
                     <button className="btn btn-outline btn-sm" onClick={()=>setView("stats")}>📊 統計</button>
                     <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>

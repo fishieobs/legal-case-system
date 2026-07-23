@@ -407,7 +407,6 @@ function renderApp(){
       <div><div class="hdr-title">稅務管理系統</div><div class="hdr-sub">Tax Management · ${S.year}</div></div>
     </div>
     <div class="hdr-actions">
-      <button class="btn btn-ghost" style="padding:7px 10px;font-size:15px" id="btn-theme">${thIcon}</button>
       <select class="fi" style="width:90px;padding:6px 10px" id="sel-year">
         ${[2023,2024,2025,2026].map(y=>`<option${S.year===y?" selected":""}>${y}</option>`).join("")}
       </select>

@@ -347,6 +347,7 @@ function filtered(){
 // FIREBASE
 // ══════════════════════════════════════════
 onAuthStateChanged(auth,u=>{
+  u = (u && !u.isAnonymous) ? u : null; // 忽略匿名登入（僅帳號密碼登入者為管理員）
   S.user=u; S.authChecked=true;
   if(u){
     try{const c=localStorage.getItem("judgments_cache");if(c){S.judgments=JSON.parse(c);S.loading=false;render();}}catch(_){}

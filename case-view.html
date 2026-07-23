@@ -73,7 +73,7 @@ html,body{min-height:100%;background:var(--paper);color:var(--ink);font-family:v
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import{getFirestore,doc,getDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import{getAuth,signInAnonymously,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import{getAuth,signInAnonymously,onAuthStateChanged,setPersistence,inMemoryPersistence}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const cfg={apiKey:"AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",authDomain:"legalcasemanageer.firebaseapp.com",projectId:"legalcasemanageer",storageBucket:"legalcasemanageer.firebasestorage.app",messagingSenderId:"559838504556",appId:"1:559838504556:web:ba10c071a12650bbd85a49"};
 const app=initializeApp(cfg);
@@ -164,7 +164,10 @@ function render(d){
 async function start(){
   if(!token){ stateView("🔗","連結無效","此連結不完整，請向承辦律師索取正確的連結。"); return; }
   loadingView("讀取案件進度中…");
-  try{ await signInAnonymously(auth); }
+  try{
+    await setPersistence(auth, inMemoryPersistence); // 僅此分頁記憶體登入，避免覆蓋律師在同瀏覽器的管理員登入
+    await signInAnonymously(auth);
+  }
   catch(e){ stateView("⚠️","暫時無法連線","系統暫時無法連線，請稍後再試。若持續發生，請與律師聯繫。"); return; }
   try{
     const snap=await getDoc(doc(db,"caseShares",token));

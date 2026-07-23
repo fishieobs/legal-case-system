@@ -248,7 +248,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 let currentUser = null;
-onAuthStateChanged(auth, u => { currentUser = u; });
+onAuthStateChanged(auth, u => { currentUser = (u && !u.isAnonymous) ? u : null; });
 
 // ── 台灣國定假日 2024-2027 ──
 const TW_HOLIDAYS = {

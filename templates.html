@@ -1077,6 +1077,7 @@ render(); // Show spinner
 
 waitFirebase(()=>{
   window._fbAuth.onAuthStateChanged(window._auth,user=>{
+    user = (user && !user.isAnonymous) ? user : null; // 忽略匿名登入（僅帳號密碼登入者為管理員）
     S.user=user;S.authChecked=true;
     if(user){initFirebase();}
     else{S.loading=false;render();}

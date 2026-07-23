@@ -525,7 +525,7 @@ function Root(){
         const wait = setInterval(()=>{
             if(!window.auth) return;
             clearInterval(wait);
-            window.fbAuth.onAuthStateChanged(window.auth, u=>setUser(u||null));
+            window.fbAuth.onAuthStateChanged(window.auth, u=>setUser(u&&!u.isAnonymous?u:null));
         },100);
         return ()=>clearInterval(wait);
     },[]);

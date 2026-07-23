@@ -499,6 +499,7 @@ async function ensureNotificationPermission(){
 
 // ── Auth ──
 onAuthStateChanged(auth, u=>{
+    u = (u && !u.isAnonymous) ? u : null; // 忽略匿名登入（僅帳號密碼登入者為管理員）
     state.user=u;
     state.authChecked=true;
     if(u && !unsubCases){

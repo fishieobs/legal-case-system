@@ -882,6 +882,7 @@ document.getElementById("btn-logout")?.addEventListener("click",async()=>{
 
 waitForFirebase(()=>{
   window.fbAuth.onAuthStateChanged(window.auth, u=>{
+    u = (u && !u.isAnonymous) ? u : null; // 忽略匿名登入（僅帳號密碼登入者為管理員）
     if(u) showApp(); else showLogin();
   });
 });

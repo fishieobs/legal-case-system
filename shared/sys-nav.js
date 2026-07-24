@@ -13,7 +13,6 @@
     { id: "court",     href: "court_nav.html",   label: "🗺 開庭助理" },
     { id: "deadline",  href: "deadline.html",    label: "⏱ 時效計算器" },
     { id: "checklist",      href: "checklist.html",      label: "📋 開庭清單" },
-    { id: "judicial-search",href: "judicial-search.html",label: "🔍 裁判書查詢" },
   ];
 
   // ── Global theme (dark / light), shared across all pages ──

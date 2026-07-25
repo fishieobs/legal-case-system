@@ -407,12 +407,13 @@ const STATUS_COLOR={"進行中":"#3A6B4F","已結案":"#8A8377","上訴中":"#A6
 
 const SCHOOL_EVENTS = window.SCHOOL_EVENTS || {};
 
+const FIRM_ATTORNEY = "張世東律師"; // 事務所固定承辦律師（未填時一律以此為準）
 const emptyCase = {
     id:"", firmCaseNo:"", courtCaseNos:[""], division:"",
     clientName:"", phone:"", clientParties:[{name:"",phone:""}], opposingParties:[""],
     totalFee:0, payments:[], disbursements:0,
     caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
-    attorney:"", retainerDate:"", opposingParty:"", opposingCounsel:[], caseReason:"", judgementLink:"", notes:"",
+    attorney:FIRM_ATTORNEY, retainerDate:"", opposingParty:"", opposingCounsel:[], caseReason:"", judgementLink:"", notes:"",
     judgmentReceivedDate:"", appealDeadline:"",
     hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[], shareToken:""
 };
@@ -775,6 +776,7 @@ function App({user}){
                 clientParties: parties,
                 opposingParties: opp,
                 opposingCounsel: oppCounsel,
+                attorney: (formData.attorney||"").trim()||FIRM_ATTORNEY,
                 clientName: parties.map(p=>p.name).filter(Boolean).join("、"),
                 phone: (parties.find(p=>p.phone)||{}).phone || "",
                 opposingParty: opp.join("、"),
@@ -821,7 +823,7 @@ function App({user}){
             caseId:c.id, firmCaseNo:c.firmCaseNo||"", clientName:c.clientName||"",
             caseType:c.caseType||"", status:c.status||"", court:c.court||"", currentAgency:c.currentAgency||"",
             opposingParty:c.opposingParty||"", courtCaseNos:(c.courtCaseNos||[]).filter(Boolean),
-            attorney:c.attorney||"", timeline:tl, revoked:false, updatedAt:new Date().toISOString(), token,
+            attorney:c.attorney||FIRM_ATTORNEY, timeline:tl, revoked:false, updatedAt:new Date().toISOString(), token,
         };
     };
     const writeShareSnap=async(c,token)=>{
@@ -892,7 +894,7 @@ function App({user}){
             ? c.opposingParties.slice()
             : (c.opposingParty?[c.opposingParty]:[""]);
         const oc=Array.isArray(c.opposingCounsel)?c.opposingCounsel.map(L=>({name:L.name||"",mobile:L.mobile||"",office:L.office||"",tel:L.tel||""})):[];
-        return {...c, clientParties:cp, opposingParties:op, opposingCounsel:oc};
+        return {...c, clientParties:cp, opposingParties:op, opposingCounsel:oc, attorney:c.attorney||FIRM_ATTORNEY};
     };
     const addClientParty=()=>sf("clientParties",[...(formData.clientParties||[]),{name:"",phone:""}]);
     const updateClientParty=(i,key,v)=>sf("clientParties",(formData.clientParties||[]).map((p,idx)=>idx===i?{...p,[key]:v}:p));
@@ -1122,7 +1124,7 @@ function App({user}){
 法院/檢察署：${c.court||""} ${c.instance||""}
 案件類型：${c.caseType||""}
 案件狀態：${c.status||""}
-承辦律師：${c.attorney||""}
+承辦律師：${c.attorney||FIRM_ATTORNEY}
 備註：${c.notes||""}`;
 
         const history=getCaseMsgs(c.id);
@@ -1195,7 +1197,7 @@ function App({user}){
         const rows=cases.map(c=>[
             c.firmCaseNo||"", c.clientName||"", c.phone||"", c.opposingParty||"", oppCounselStr(c),
             (c.courtCaseNos||[]).filter(Boolean).join("、"), c.division||"", c.court||"", c.instance||"",
-            c.caseType||"", c.status||"", c.attorney||"", c.retainerDate||"",
+            c.caseType||"", c.status||"", c.attorney||FIRM_ATTORNEY, c.retainerDate||"",
             Number(c.totalFee||0), getReceived(c), getUnpaid(c), Number(c.disbursements||0), c.caseReason||"",
             (c.tags||[]).join("、"), (c.notes||"").replace(/\n/g," "),
         ]);
@@ -1971,7 +1973,7 @@ function App({user}){
                 {detailTab==="timeline" && (()=>{
                     // Build timeline events
                     const events = [];
-                    if(selected.retainerDate) events.push({date:selected.retainerDate,type:"milestone",icon:"⚖",label:"案件委任",detail:`委任律師 ${selected.attorney||""}`,color:"var(--gold)"});
+                    if(selected.retainerDate) events.push({date:selected.retainerDate,type:"milestone",icon:"⚖",label:"案件委任",detail:`委任律師 ${selected.attorney||FIRM_ATTORNEY}`,color:"var(--gold)"});
                     (selected.hearings||[]).forEach(h=>{
                         const d=daysUntil(h.date);
                         events.push({date:h.date,time:h.time,type:d<0?"past":d===0?"today":"future",icon:"🏛",label:`${h.agency||"開庭"} ${h.note?`· ${h.note}`:""}`,detail:`${h.courtroom||""} ${h.time||""}`.trim(),color:d<0?"var(--text4)":d===0?"var(--red)":d<=7?"var(--yellow)":"var(--gold)"});
@@ -2143,7 +2145,7 @@ function App({user}){
                             ["案由", selected.caseReason],
                             ["案件狀態", selected.status],
                             ["委任日期", selected.retainerDate],
-                            ["承辦律師", selected.attorney],
+                            ["承辦律師", selected.attorney||FIRM_ATTORNEY],
                         ].map(([l,v])=>(
                             <div key={l} className="info-row">
                                 <div className="info-lbl">{l}</div>

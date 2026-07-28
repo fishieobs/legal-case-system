@@ -952,6 +952,8 @@ function App({user}){
         const updated=calTodos.map(t=>t.id===id?{...t,done:!t.done}:t);
         saveCalTodos(updated);
     };
+    const archiveCalTodo=(id)=>{ saveCalTodos(calTodos.map(t=>t.id===id?{...t,archived:true,done:true}:t)); };
+    const unarchiveCalTodo=(id)=>{ saveCalTodos(calTodos.map(t=>t.id===id?{...t,archived:false}:t)); };
     const deleteCalTodo=(id)=>{
         const updated=calTodos.filter(t=>t.id!==id);
         saveCalTodos(updated);
@@ -1563,7 +1565,7 @@ function App({user}){
                                     (deadlineMap[ds]||[]).forEach(dl=>rows.push({date:ds,time:"",icon:"⏰",label:`${dl.kind==="末日"?"上訴/抗告末日":"收受判決"} · ${dl.clientName}`,detail:"",caseId:dl.caseId,color:"var(--seal)",bold:true}));
                                     (hearingMap[ds]||[]).forEach(h=>rows.push({date:ds,time:h.time,icon:h.isWidget?"⚡":"🏛",label:h.clientName,detail:h.note,caseId:h.caseId,color:h.isWidget?"#9E2A24":(TYPE_COLOR[h.caseType]||"#8A8377")}));
                                     (filingMap[ds]||[]).forEach(f=>rows.push({date:ds,time:"",icon:"📄",label:`${f.type} · ${f.clientName}`,detail:f.summary,caseId:f.caseId,color:"var(--navy)"}));
-                                    calTodos.filter(t=>t.date===ds).forEach(t=>rows.push({date:ds,time:"",icon:t.done?"✓":"○",label:t.text,detail:t.done?"已完成":"待辦",caseId:null,color:t.done?"var(--positive)":"var(--warning)"}));
+                                    calTodos.filter(t=>t.date===ds && !t.archived).forEach(t=>rows.push({date:ds,time:"",icon:t.done?"✓":"○",label:t.text,detail:t.done?"已完成":"待辦",caseId:null,color:t.done?"var(--positive)":"var(--warning)"}));
                                 }
                                 rows.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"99:99").localeCompare(b.time||"99:99"));
                                 if(!rows.length) return <div className="empty" style={{padding:"36px 20px"}}><div className="ico">🗓</div>本月無庭期、期限、遞狀或待辦</div>;
@@ -1600,7 +1602,7 @@ function App({user}){
                                         isSat?"is-sat":"",
                                         isHoliday?"is-holiday":"",
                                     ].filter(Boolean).join(" ");
-                                    const dateTodos=dateStr?calTodos.filter(t=>t.date===dateStr):[];
+                                    const dateTodos=dateStr?calTodos.filter(t=>t.date===dateStr && !t.archived):[];
                                     return(
                                         <div key={i} className={cls} style={{cursor:cell.cur?"pointer":"default"}}
                                             onClick={()=>cell.cur&&setCalTodoModal(dateStr)}>
@@ -1671,7 +1673,8 @@ function App({user}){
                     const d=new Date(ds+"T00:00:00+08:00");
                     const wd=["日","一","二","三","四","五","六"][d.getDay()];
                     const label=`${d.getMonth()+1}月${d.getDate()}日（${wd}）`;
-                    const todosForDay=calTodos.filter(t=>t.date===ds).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+                    const todosForDay=calTodos.filter(t=>t.date===ds && !t.archived).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+                    const archivedForDay=calTodos.filter(t=>t.date===ds && t.archived).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
                     const hearingsForDay=(()=>{
                         const hm={};
                         cases.forEach(c=>(c.hearings||[]).forEach(h=>{if(!hm[h.date])hm[h.date]=[];hm[h.date].push({...h,clientName:c.clientName,firmCaseNo:c.firmCaseNo,caseType:c.caseType,caseId:c.id});}));
@@ -1788,11 +1791,27 @@ function App({user}){
                                             {t.time && <div style={{fontSize:11,color:"var(--warning)",fontWeight:700,marginBottom:2}}>⏰ {t.time}</div>}
                                             <div style={{color:t.done?"var(--text4)":"var(--text)",textDecoration:t.done?"line-through":"none",fontSize:14}}>{t.text}</div>
                                         </div>
+                                        {t.done && <button className="cal-todo-del" onClick={e=>{e.stopPropagation();archiveCalTodo(t.id);}} title="封存" style={{color:"var(--warning)"}}>📥</button>}
                                         <button className="cal-todo-del" onClick={e=>{e.stopPropagation();startEditCalTodo(t);}} title="編輯">✏️</button>
                                         <button className="cal-todo-del" onClick={e=>{e.stopPropagation();deleteCalTodo(t.id);}} title="刪除">🗑</button>
                                     </div>
                                     )
                                 ))}
+                                {archivedForDay.length>0 && (
+                                    <div style={{marginTop:10,paddingTop:10,borderTop:"1px dashed var(--border)"}}>
+                                        <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",marginBottom:6}}>📥 已封存（{archivedForDay.length}）</div>
+                                        {archivedForDay.map(t=>(
+                                            <div key={t.id} className="cal-todo-item" style={{opacity:.6}}>
+                                                <div style={{flex:1}}>
+                                                    {t.time && <div style={{fontSize:11,color:"var(--text4)",marginBottom:2}}>⏰ {t.time}</div>}
+                                                    <div style={{color:"var(--text4)",textDecoration:"line-through",fontSize:14}}>{t.text}</div>
+                                                </div>
+                                                <button className="cal-todo-del" onClick={e=>{e.stopPropagation();unarchiveCalTodo(t.id);}} title="取消封存" style={{color:"var(--positive)"}}>↩️</button>
+                                                <button className="cal-todo-del" onClick={e=>{e.stopPropagation();deleteCalTodo(t.id);}} title="刪除">🗑</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
 
                                 {/* Add new todo */}
                                 <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:14}}>

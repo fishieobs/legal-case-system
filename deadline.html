@@ -233,7 +233,7 @@ select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -434,17 +434,26 @@ window.addToTodo = async function(label, dateStr) {
   const btns = document.querySelectorAll(`button[onclick*="${dateStr}"]`);
   btns.forEach(b => { b.disabled=true; b.textContent="加入中…"; });
   try {
-    const existing = JSON.parse(localStorage.getItem("calTodos")||"[]");
     const item = {
       id: uid(), date: dateStr, time: "",
       text: `【時效截止】${label}`,
       note: "由時效計算器自動建立",
       done: false, createdAt: new Date().toISOString()
     };
-    const updated = [...existing, item];
-    localStorage.setItem("calTodos", JSON.stringify(updated));
     if (currentUser) {
+      // 以雲端現有待辦為準再附加，避免用本機（可能過期/空）的清單覆蓋其他頁面已建立的待辦
+      let items = [];
+      try {
+        const snap = await getDoc(doc(db,"calTodos","shared"));
+        if (snap.exists() && Array.isArray(snap.data().items)) items = snap.data().items;
+      } catch(_) {}
+      const updated = [...items, item];
       await setDoc(doc(db,"calTodos","shared"), { items:updated, updatedAt:new Date().toISOString() });
+      localStorage.setItem("calTodos", JSON.stringify(updated));
+    } else {
+      // 未登入（或匿名）：僅存本機，避免覆蓋雲端
+      const existing = JSON.parse(localStorage.getItem("calTodos")||"[]");
+      localStorage.setItem("calTodos", JSON.stringify([...existing, item]));
     }
     btns.forEach(b => {
       b.textContent = "✅ 已加入待辦";

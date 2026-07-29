@@ -631,7 +631,8 @@ function App({user}){
     const [statsMonth, setStatsMonth] = useState("全部");
     const [calDate, setCalDate] = useState(new Date());
     const [calTodos, setCalTodos] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(e){ return []; } });
-    const [calFilings, setCalFilings] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calFilings")||"[]"); }catch(e){ return []; } }); // 單純撰狀（未代理）的遞狀，不綁案件
+    const [calFilings, setCalFilings] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calFilings")||"[]"); }catch(e){ return []; } }); // 舊版單純撰狀（未代理）遞狀；新版改存信函系統
+    const [letterDrafts, setLetterDrafts] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("letterDrafts_cache")||"[]"); }catch(e){ return []; } }); // 信函系統的「書狀代撰」記錄
     const [widgetHearings, setWidgetHearings] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("widgetHearings")||"[]"); }catch(e){ return []; } });
     const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
     const [restoreModal, setRestoreModal] = useState(null); // null | array of {items,at}
@@ -699,6 +700,12 @@ function App({user}){
                     try{ localStorage.setItem("calFilings",JSON.stringify(items)); }catch(_){}
                 }
             }, e=>console.warn("calFilings listen failed:",e));
+            // Load 信函系統「書狀代撰」草稿（type==="draft"），供月曆顯示 & 統整費用/統計
+            onSnapshot(collection(window.db,"letters"), snap=>{
+                const drafts=snap.docs.map(d=>({...d.data(),id:d.id})).filter(l=>l.type==="draft");
+                setLetterDrafts(drafts);
+                try{ localStorage.setItem("letterDrafts_cache",JSON.stringify(drafts)); }catch(_){}
+            }, e=>console.warn("letters listen failed:",e));
             // Load widgetHearings from Firebase (realtime)
             onSnapshot(window.fbMethods.doc(window.db,"widgetHearings","shared"), snap=>{
                 if(snap.exists()){
@@ -1009,12 +1016,26 @@ function App({user}){
     const addCalFiling=async(dateStr)=>{
         const f=calFilingForm;
         if(!f) return;
-        // 單純撰狀（未代理）：存為不綁案件的月曆遞狀
+        // 單純撰狀（未代理）：寫進信函系統成為「書狀代撰」記錄，費用/統計統一在信函系統管理
         if(f.caseId==="__standalone__"){
             if(!(f.clientName||"").trim()){ toast("請填寫委託人／名稱"); return; }
-            saveCalFilings([...calFilings,{id:uid(),date:dateStr,type:f.type||"其他",summary:(f.summary||"").trim(),clientName:f.clientName.trim(),standalone:true}]);
-            toast("✅ 已新增撰狀遞狀");
-            setCalFilingForm(null);
+            const id=uid();
+            const summary=(f.summary||"").trim();
+            const draft={
+                id, type:"draft",
+                subject: summary ? `${f.type||"書狀"} · ${summary}` : (f.type||"書狀"),
+                clientName:f.clientName.trim(), clientPhone:"",
+                opposingParty:"", opposingAddress:"", retainerDate:dateStr,
+                totalFee:0, payments:[], disbursements:0,
+                templateId:"", docLinks:[], shippings:[],
+                replyStatus:"未回覆", notes:summary, tags:[],
+                filingType:f.type||"", filingDate:dateStr, createdAt:new Date().toISOString(),
+            };
+            try{
+                await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"letters",id), draft);
+                toast("✅ 已新增撰狀（已加入信函系統，可於該系統管理費用）");
+                setCalFilingForm(null);
+            }catch(e){ console.error(e); toast("⚠️ 新增失敗，請檢查網路後重試"); }
             return;
         }
         if(!f.caseId){ toast("請先選擇案件"); return; }
@@ -1582,11 +1603,16 @@ function App({user}){
                             deadlineMap[c.judgmentReceivedDate].push({kind:"收判",clientName:c.clientName,caseId:c.id});
                         }
                     });
-                    // 單純撰狀（未代理）的遞狀，不綁案件
+                    // 單純撰狀（未代理）的遞狀：舊版 calFilings + 新版信函系統書狀代撰
                     (calFilings||[]).forEach(f=>{
                         if(!f.date) return;
                         if(!filingMap[f.date]) filingMap[f.date]=[];
                         filingMap[f.date].push({...f,caseId:null,standalone:true});
+                    });
+                    (letterDrafts||[]).forEach(l=>{
+                        const d=l.filingDate||l.retainerDate; if(!d) return;
+                        if(!filingMap[d]) filingMap[d]=[];
+                        filingMap[d].push({type:l.filingType||"書狀",summary:l.notes||"",clientName:l.clientName||"",caseId:null,letterId:l.id,fromLetters:true});
                     });
                     const cells=[];
                     // Previous month padding
@@ -1836,8 +1862,12 @@ function App({user}){
                                                 (c.filings||[]).forEach(f=>{ if(f.date===ds) items.push({t:`📄 ${f.type}：${c.clientName}${f.summary?`（${f.summary}）`:""}`,c:"var(--navy)",b:false,id:c.id}); });
                                             });
                                             (calFilings||[]).forEach(f=>{ if(f.date===ds) items.push({t:`📄 ${f.type}（撰狀）：${f.clientName||"—"}${f.summary?`（${f.summary}）`:""}`,c:"var(--navy)",b:false,standalone:true,filingId:f.id}); });
+                                            (letterDrafts||[]).forEach(l=>{ const d=l.filingDate||l.retainerDate; if(d===ds) items.push({t:`📄 ${l.filingType||l.subject||"書狀"}（撰狀）：${l.clientName||"—"}${l.notes?`（${l.notes}）`:""}`,c:"var(--navy)",b:false,fromLetters:true,letterId:l.id}); });
                                             return items.map((it,ii)=>(
-                                                it.standalone ? (
+                                                it.fromLetters ? (
+                                                    <div key={ii} onClick={()=>{ window.location.href=`letters.html?open=${it.letterId}`; }}
+                                                        style={{fontSize:12,color:it.c,marginTop:2,cursor:"pointer"}} title="於信函系統管理費用／統計">{it.t} <span style={{fontSize:10,color:"var(--text4)"}}>→信函</span></div>
+                                                ) : it.standalone ? (
                                                     <div key={ii} style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
                                                         <span style={{fontSize:12,color:it.c,flex:1}}>{it.t}</span>
                                                         <button onClick={()=>{ if(window.confirm("刪除此撰狀遞狀？")) saveCalFilings((calFilings||[]).filter(x=>x.id!==it.filingId)); }} style={{background:"none",border:"none",color:"var(--text4)",cursor:"pointer",fontSize:12}} title="刪除">🗑</button>

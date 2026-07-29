@@ -323,6 +323,19 @@ function App(){
         return()=>clearInterval(wait);
     },[]);
 
+    // 深連結：從案件系統月曆點「撰狀」帶 ?open=<id> 進來，直接開啟該筆
+    const openedRef=useRef(false);
+    useEffect(()=>{
+        if(openedRef.current) return;
+        const id=new URLSearchParams(location.search).get("open");
+        if(!id){ openedRef.current=true; return; }
+        if(letters.some(l=>l.id===id)){
+            openedRef.current=true;
+            setSelectedId(id); setView("detail");
+            try{ history.replaceState(null,"",location.pathname); }catch(_){}
+        }
+    },[letters]);
+
     const selected=letters.find(l=>l.id===selectedId);
 
     // Filtered letters

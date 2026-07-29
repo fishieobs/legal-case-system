@@ -417,6 +417,26 @@ const emptyCase = {
     judgmentReceivedDate:"", appealDeadline:"",
     hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[], shareToken:""
 };
+// 上訴/抗告不變期間（日）— 自判決送達翌日起算；末日為週末/國定假日順延至次工作日
+// 民訴§440(民事20)、刑訴§349(刑事20)、行訴§241(行政20)；勞動/智財準用民訴20；家事訴訟上訴20；非訟抗告10
+const APPEAL_DAYS = {"民事":20,"刑事":20,"行政":20,"家事":20,"勞動":20,"智財":20,"非訟":10};
+function computeAppealDeadline(caseType, receiptDate){
+    if(!receiptDate) return "";
+    const p = String(receiptDate).split("-").map(Number);
+    if(p.length!==3 || p.some(isNaN)) return "";
+    const days = APPEAL_DAYS[caseType] ?? 20;
+    let d = new Date(Date.UTC(p[0], p[1]-1, p[2])); // 用 UTC 避免時區位移
+    d.setUTCDate(d.getUTCDate()+days);              // 始日不算入 → 末日 = 受判日 + 期間日數
+    const HOL = window.TW_HOLIDAYS || {};
+    const fmt = dt=>`${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,"0")}-${String(dt.getUTCDate()).padStart(2,"0")}`;
+    let guard=0;
+    while(guard++<40){
+        const dow=d.getUTCDay();
+        if(dow===0 || dow===6 || HOL[fmt(d)]){ d.setUTCDate(d.getUTCDate()+1); continue; } // 假日/週末順延
+        break;
+    }
+    return fmt(d);
+}
 // 書狀種類
 const FILING_TYPES = ["起訴狀","答辯狀","準備書狀","準備程序書狀","言詞辯論意旨狀","上訴狀","上訴理由狀","抗告狀","聲請狀","陳報狀","調查證據聲請狀","刑事辯護意旨狀","告訴狀","再議聲請狀","強制執行聲請狀","其他"];
 
@@ -1507,9 +1527,12 @@ function App({user}){
                             if(!filingMap[f.date]) filingMap[f.date]=[];
                             filingMap[f.date].push({...f,clientName:c.clientName,caseId:c.id});
                         });
-                        if(c.appealDeadline){
-                            if(!deadlineMap[c.appealDeadline]) deadlineMap[c.appealDeadline]=[];
-                            deadlineMap[c.appealDeadline].push({kind:"末日",clientName:c.clientName,caseId:c.id});
+                        // 上訴末日：有手動填則以手動為準，否則依收受判決日期＋案件類型自動推算
+                        const autoDL = (!c.appealDeadline && c.judgmentReceivedDate) ? computeAppealDeadline(c.caseType, c.judgmentReceivedDate) : "";
+                        const effDL = c.appealDeadline || autoDL;
+                        if(effDL){
+                            if(!deadlineMap[effDL]) deadlineMap[effDL]=[];
+                            deadlineMap[effDL].push({kind:"末日",auto:!c.appealDeadline,clientName:c.clientName,caseId:c.id});
                         }
                         if(c.judgmentReceivedDate){
                             if(!deadlineMap[c.judgmentReceivedDate]) deadlineMap[c.judgmentReceivedDate]=[];
@@ -1540,7 +1563,7 @@ function App({user}){
                         });
                         Object.keys(deadlineMap).filter(ds=>ds.startsWith(`${y}-${mm2}`)).sort().forEach(ds=>{
                             deadlineMap[ds].forEach(dl=>{
-                                lines.push("BEGIN:VEVENT",`UID:${uid()}@legal-case-system`,`DTSTART;VALUE=DATE:${ds.replace(/-/g,"")}`,`SUMMARY:${icsEsc(`${dl.kind==="末日"?"上訴/抗告末日":"收受判決"} ${dl.clientName}`)}`,"END:VEVENT");
+                                lines.push("BEGIN:VEVENT",`UID:${uid()}@legal-case-system`,`DTSTART;VALUE=DATE:${ds.replace(/-/g,"")}`,`SUMMARY:${icsEsc(`${dl.kind==="末日"?(dl.auto?"上訴末日(推定)":"上訴/抗告末日"):"收受判決"} ${dl.clientName}`)}`,"END:VEVENT");
                             });
                         });
                         lines.push("END:VCALENDAR");
@@ -1599,7 +1622,7 @@ function App({user}){
                                 const rows=[];
                                 for(let dd=1;dd<=daysInMonth;dd++){
                                     const ds=`${y}-${mm2}-${String(dd).padStart(2,"0")}`;
-                                    (deadlineMap[ds]||[]).forEach(dl=>rows.push({date:ds,time:"",icon:"⏰",label:`${dl.kind==="末日"?"上訴/抗告末日":"收受判決"} · ${dl.clientName}`,detail:"",caseId:dl.caseId,color:"var(--seal)",bold:true}));
+                                    (deadlineMap[ds]||[]).forEach(dl=>rows.push({date:ds,time:"",icon:"⏰",label:`${dl.kind==="末日"?(dl.auto?"上訴末日(推定)":"上訴/抗告末日"):"收受判決"} · ${dl.clientName}`,detail:dl.auto?"依收受判決日推算，未計在途期間":"",caseId:dl.caseId,color:"var(--seal)",bold:true}));
                                     (hearingMap[ds]||[]).forEach(h=>rows.push({date:ds,time:h.time,icon:h.isWidget?"⚡":"🏛",label:h.clientName,detail:h.note,caseId:h.caseId,color:h.isWidget?"#9E2A24":(TYPE_COLOR[h.caseType]||"#8A8377")}));
                                     (filingMap[ds]||[]).forEach(f=>rows.push({date:ds,time:"",icon:"📄",label:`${f.type} · ${f.clientName}`,detail:f.summary,caseId:f.caseId,color:"var(--navy)"}));
                                     calTodos.filter(t=>t.date===ds && !t.archived).forEach(t=>rows.push({date:ds,time:"",icon:t.done?"✓":"○",label:t.text,detail:t.done?"已完成":"待辦",caseId:null,color:t.done?"var(--positive)":"var(--warning)"}));
@@ -1654,9 +1677,9 @@ function App({user}){
                                             )}
                                             {cell.cur && (deadlineMap[dateStr]||[]).slice(0,2).map((dl,di)=>(
                                                 <div key={"dl"+di} className="cal-deadline-label"
-                                                    title={`${dl.kind==="末日"?"上訴/抗告末日":"收受判決"}：${dl.clientName}`}
+                                                    title={`${dl.kind==="末日"?(dl.auto?"上訴末日(推定)":"上訴/抗告末日"):"收受判決"}：${dl.clientName}`}
                                                     onClick={e=>{e.stopPropagation();if(dl.caseId)openDetail(dl.caseId);}}>
-                                                    ⏰{dl.kind} {dl.clientName}
+                                                    ⏰{dl.kind==="末日"&&dl.auto?"末日推":dl.kind} {dl.clientName}
                                                 </div>
                                             ))}
                                             {events.slice(0,2).map((ev,ei)=>(
@@ -1758,7 +1781,8 @@ function App({user}){
                                         {(()=>{ // 該日期限與遞狀
                                             const items=[];
                                             cases.forEach(c=>{
-                                                if(c.appealDeadline===ds) items.push({t:`⏰ 上訴/抗告末日：${c.clientName}`,c:"var(--seal)",b:true,id:c.id});
+                                                const effDL2 = c.appealDeadline || (c.judgmentReceivedDate?computeAppealDeadline(c.caseType,c.judgmentReceivedDate):"");
+                                                if(effDL2===ds) items.push({t:`⏰ ${c.appealDeadline?"上訴/抗告末日":"上訴末日(推定，未計在途期間)"}：${c.clientName}`,c:"var(--seal)",b:true,id:c.id});
                                                 if(c.judgmentReceivedDate===ds) items.push({t:`📩 收受判決：${c.clientName}`,c:"var(--seal)",b:false,id:c.id});
                                                 (c.filings||[]).forEach(f=>{ if(f.date===ds) items.push({t:`📄 ${f.type}：${c.clientName}${f.summary?`（${f.summary}）`:""}`,c:"var(--navy)",b:false,id:c.id}); });
                                             });
@@ -2252,6 +2276,20 @@ function App({user}){
                                     <div className="info-lbl">上訴/抗告末日</div>
                                     <div className="info-val" style={{color:d<0?"var(--text3)":d<=3?"var(--red)":d<=7?"var(--yellow)":"var(--text)",fontWeight:700}}>
                                         {selected.appealDeadline}{d>=0&&` （${d===0?"今天！":`${d}天後`}）`}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                        {!selected.appealDeadline && selected.judgmentReceivedDate && (()=>{
+                            const auto=computeAppealDeadline(selected.caseType, selected.judgmentReceivedDate);
+                            if(!auto) return null;
+                            const d=daysUntil(auto);
+                            return(
+                                <div className="info-row">
+                                    <div className="info-lbl">上訴末日（推定）</div>
+                                    <div className="info-val" style={{color:d<0?"var(--text3)":d<=3?"var(--red)":d<=7?"var(--yellow)":"var(--text)",fontWeight:700}}>
+                                        {auto}{d>=0&&` （${d===0?"今天！":`${d}天後`}）`}
+                                        <div style={{fontSize:10,color:"var(--text4)",fontWeight:400,marginTop:1}}>依收受判決日＋{APPEAL_DAYS[selected.caseType]??20}日推算（末日遇假日順延），未計在途期間，實際以送達證書為準</div>
                                     </div>
                                 </div>
                             );

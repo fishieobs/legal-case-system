@@ -631,6 +631,7 @@ function App({user}){
     const [statsMonth, setStatsMonth] = useState("全部");
     const [calDate, setCalDate] = useState(new Date());
     const [calTodos, setCalTodos] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(e){ return []; } });
+    const [calFilings, setCalFilings] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calFilings")||"[]"); }catch(e){ return []; } }); // 單純撰狀（未代理）的遞狀，不綁案件
     const [widgetHearings, setWidgetHearings] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("widgetHearings")||"[]"); }catch(e){ return []; } });
     const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
     const [restoreModal, setRestoreModal] = useState(null); // null | array of {items,at}
@@ -690,6 +691,14 @@ function App({user}){
                     try{ localStorage.setItem("calTodos",JSON.stringify(items)); }catch(_){}
                 }
             }, e=>console.warn("calTodos listen failed:",e));
+            // Load calFilings（單純撰狀）from Firebase (realtime)
+            onSnapshot(window.fbMethods.doc(window.db,"calFilings","shared"), snap=>{
+                if(snap.exists()){
+                    const items=snap.data().items||[];
+                    setCalFilings(items);
+                    try{ localStorage.setItem("calFilings",JSON.stringify(items)); }catch(_){}
+                }
+            }, e=>console.warn("calFilings listen failed:",e));
             // Load widgetHearings from Firebase (realtime)
             onSnapshot(window.fbMethods.doc(window.db,"widgetHearings","shared"), snap=>{
                 if(snap.exists()){
@@ -978,6 +987,17 @@ function App({user}){
             {items:updated, updatedAt:new Date().toISOString()}
         ).catch(e=>console.warn("calTodos save failed:",e));
     };
+    const saveCalFilings=(updated)=>{
+        const removed=(calFilings?.length||0)-updated.length;
+        if(removed>=2 && !window.confirm(`⚠️ 此操作會使單純撰狀遞狀從 ${calFilings.length} 筆減為 ${updated.length} 筆（移除 ${removed} 筆）。\n\n確定要繼續嗎？`)) return;
+        if(calFilings&&calFilings.length) pushBackup("calFilings",calFilings);
+        setCalFilings(updated);
+        try{ localStorage.setItem("calFilings",JSON.stringify(updated)); }catch(_){}
+        window.fbMethods.setDoc(
+            window.fbMethods.doc(window.db,"calFilings","shared"),
+            {items:updated, updatedAt:new Date().toISOString()}
+        ).catch(e=>console.warn("calFilings save failed:",e));
+    };
     const addCalTodo=(dateStr)=>{
         if(!calTodoInput.trim()) return;
         const updated=[...calTodos,{id:uid(),date:dateStr,text:calTodoInput.trim(),time:calTodoTime||"",done:false,createdAt:new Date().toISOString()}];
@@ -988,7 +1008,16 @@ function App({user}){
     // 月曆手動新增遞狀（寫回所選案件的 filings）
     const addCalFiling=async(dateStr)=>{
         const f=calFilingForm;
-        if(!f||!f.caseId){ toast("請先選擇案件"); return; }
+        if(!f) return;
+        // 單純撰狀（未代理）：存為不綁案件的月曆遞狀
+        if(f.caseId==="__standalone__"){
+            if(!(f.clientName||"").trim()){ toast("請填寫委託人／名稱"); return; }
+            saveCalFilings([...calFilings,{id:uid(),date:dateStr,type:f.type||"其他",summary:(f.summary||"").trim(),clientName:f.clientName.trim(),standalone:true}]);
+            toast("✅ 已新增撰狀遞狀");
+            setCalFilingForm(null);
+            return;
+        }
+        if(!f.caseId){ toast("請先選擇案件"); return; }
         const c=cases.find(x=>x.id===f.caseId);
         if(!c){ toast("找不到案件"); return; }
         const filings=[...(c.filings||[]),{id:uid(),date:dateStr,type:f.type||"其他",summary:(f.summary||"").trim()}];
@@ -1553,6 +1582,12 @@ function App({user}){
                             deadlineMap[c.judgmentReceivedDate].push({kind:"收判",clientName:c.clientName,caseId:c.id});
                         }
                     });
+                    // 單純撰狀（未代理）的遞狀，不綁案件
+                    (calFilings||[]).forEach(f=>{
+                        if(!f.date) return;
+                        if(!filingMap[f.date]) filingMap[f.date]=[];
+                        filingMap[f.date].push({...f,caseId:null,standalone:true});
+                    });
                     const cells=[];
                     // Previous month padding
                     const prevDays=new Date(y,m,0).getDate();
@@ -1800,9 +1835,17 @@ function App({user}){
                                                 if(c.judgmentReceivedDate===ds) items.push({t:`📩 收受判決：${c.clientName}`,c:"var(--seal)",b:false,id:c.id});
                                                 (c.filings||[]).forEach(f=>{ if(f.date===ds) items.push({t:`📄 ${f.type}：${c.clientName}${f.summary?`（${f.summary}）`:""}`,c:"var(--navy)",b:false,id:c.id}); });
                                             });
+                                            (calFilings||[]).forEach(f=>{ if(f.date===ds) items.push({t:`📄 ${f.type}（撰狀）：${f.clientName||"—"}${f.summary?`（${f.summary}）`:""}`,c:"var(--navy)",b:false,standalone:true,filingId:f.id}); });
                                             return items.map((it,ii)=>(
-                                                <div key={ii} onClick={()=>{openDetail(it.id);closeCalTodoModal();}}
-                                                    style={{fontSize:12,color:it.c,marginTop:2,fontWeight:it.b?700:400,cursor:"pointer"}}>{it.t}</div>
+                                                it.standalone ? (
+                                                    <div key={ii} style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
+                                                        <span style={{fontSize:12,color:it.c,flex:1}}>{it.t}</span>
+                                                        <button onClick={()=>{ if(window.confirm("刪除此撰狀遞狀？")) saveCalFilings((calFilings||[]).filter(x=>x.id!==it.filingId)); }} style={{background:"none",border:"none",color:"var(--text4)",cursor:"pointer",fontSize:12}} title="刪除">🗑</button>
+                                                    </div>
+                                                ) : (
+                                                    <div key={ii} onClick={()=>{openDetail(it.id);closeCalTodoModal();}}
+                                                        style={{fontSize:12,color:it.c,marginTop:2,fontWeight:it.b?700:400,cursor:"pointer"}}>{it.t}</div>
+                                                )
                                             ));
                                         })()}
                                     </div>
@@ -1818,15 +1861,17 @@ function App({user}){
                                             <div style={{fontSize:11,color:"var(--navy)",fontWeight:700}}>📄 新增遞狀</div>
                                             <select className="fi" value={calFilingForm.caseId} onChange={e=>setCalFilingForm(s=>({...s,caseId:e.target.value}))}>
                                                 <option value="">選擇案件…</option>
+                                                <option value="__standalone__">✍️ 單純撰狀（未代理，不綁案件）</option>
                                                 {[...cases].sort((a,b)=>(a.firmCaseNo||"").localeCompare(b.firmCaseNo||"")).map(c=><option key={c.id} value={c.id}>{c.firmCaseNo} · {c.clientName}</option>)}
                                             </select>
+                                            {calFilingForm.caseId==="__standalone__" && <input className="fi" placeholder="委託人／名稱" value={calFilingForm.clientName||""} onChange={e=>setCalFilingForm(s=>({...s,clientName:e.target.value}))}/>}
                                             <select className="fi" value={calFilingForm.type} onChange={e=>setCalFilingForm(s=>({...s,type:e.target.value}))}>
                                                 {FILING_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
                                             </select>
                                             <input className="fi" placeholder="摘要（選填）" value={calFilingForm.summary} onChange={e=>setCalFilingForm(s=>({...s,summary:e.target.value}))}/>
                                             <div style={{display:"flex",gap:6}}>
                                                 <button className="btn btn-sm" onClick={()=>setCalFilingForm(null)} style={{marginLeft:"auto"}}>取消</button>
-                                                <button className="btn btn-gold btn-sm" onClick={()=>addCalFiling(ds)} disabled={!calFilingForm.caseId}>儲存</button>
+                                                <button className="btn btn-gold btn-sm" onClick={()=>addCalFiling(ds)} disabled={!calFilingForm.caseId || (calFilingForm.caseId==="__standalone__" && !(calFilingForm.clientName||"").trim())}>儲存</button>
                                             </div>
                                         </div>
                                     )}

@@ -634,6 +634,7 @@ function App({user}){
     const [widgetHearings, setWidgetHearings] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("widgetHearings")||"[]"); }catch(e){ return []; } });
     const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
     const [restoreModal, setRestoreModal] = useState(null); // null | array of {items,at}
+    const [calFilingForm, setCalFilingForm] = useState(null); // null | {caseId,type,summary}（月曆手動新增遞狀）
     const [calView, setCalView] = useState("grid"); // grid | agenda（月曆/議程檢視）
     const [calPicker, setCalPicker] = useState(false); // 年月快速選擇面板
     const [calTodoInput, setCalTodoInput] = useState("");
@@ -984,6 +985,19 @@ function App({user}){
         setCalTodoInput("");
         setCalTodoTime("");
     };
+    // 月曆手動新增遞狀（寫回所選案件的 filings）
+    const addCalFiling=async(dateStr)=>{
+        const f=calFilingForm;
+        if(!f||!f.caseId){ toast("請先選擇案件"); return; }
+        const c=cases.find(x=>x.id===f.caseId);
+        if(!c){ toast("找不到案件"); return; }
+        const filings=[...(c.filings||[]),{id:uid(),date:dateStr,type:f.type||"其他",summary:(f.summary||"").trim()}];
+        try{
+            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{filings});
+            toast("✅ 已新增遞狀");
+            setCalFilingForm(null);
+        }catch(e){ console.error(e); toast("⚠️ 新增失敗，請檢查網路後重試"); }
+    };
     const toggleCalTodo=(id)=>{
         const updated=calTodos.map(t=>t.id===id?{...t,done:!t.done}:t);
         saveCalTodos(updated);
@@ -1019,7 +1033,7 @@ function App({user}){
         saveCalTodos(calTodos.map(t=>t.id===calEditTodoId?{...t,text:calEditTodoText.trim(),time:calEditTodoTime||""}:t));
         cancelEditCalTodo();
     };
-    const closeCalTodoModal=()=>{ setCalTodoModal(null); setCalEditHearing(null); cancelEditCalTodo(); };
+    const closeCalTodoModal=()=>{ setCalTodoModal(null); setCalEditHearing(null); cancelEditCalTodo(); setCalFilingForm(null); };
 
     // ── Calendar hearings (case hearings + 臨時庭期) ──
     const saveWidgetHearings=(updated)=>{
@@ -1793,6 +1807,29 @@ function App({user}){
                                         })()}
                                     </div>
                                     <button onClick={closeCalTodoModal} style={{background:"var(--bg4)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",color:"var(--text2)",fontSize:16}}>✕</button>
+                                </div>
+
+                                {/* 新增遞狀 */}
+                                <div style={{marginBottom:14}}>
+                                    {calFilingForm===null ? (
+                                        cases.length>0 && <button className="btn btn-outline btn-sm" onClick={()=>setCalFilingForm({caseId:"",type:"起訴狀",summary:""})}>📄 ＋ 新增遞狀</button>
+                                    ) : (
+                                        <div style={{border:"1px solid var(--navy)",borderRadius:8,padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
+                                            <div style={{fontSize:11,color:"var(--navy)",fontWeight:700}}>📄 新增遞狀</div>
+                                            <select className="fi" value={calFilingForm.caseId} onChange={e=>setCalFilingForm(s=>({...s,caseId:e.target.value}))}>
+                                                <option value="">選擇案件…</option>
+                                                {[...cases].sort((a,b)=>(a.firmCaseNo||"").localeCompare(b.firmCaseNo||"")).map(c=><option key={c.id} value={c.id}>{c.firmCaseNo} · {c.clientName}</option>)}
+                                            </select>
+                                            <select className="fi" value={calFilingForm.type} onChange={e=>setCalFilingForm(s=>({...s,type:e.target.value}))}>
+                                                {FILING_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                                            </select>
+                                            <input className="fi" placeholder="摘要（選填）" value={calFilingForm.summary} onChange={e=>setCalFilingForm(s=>({...s,summary:e.target.value}))}/>
+                                            <div style={{display:"flex",gap:6}}>
+                                                <button className="btn btn-sm" onClick={()=>setCalFilingForm(null)} style={{marginLeft:"auto"}}>取消</button>
+                                                <button className="btn btn-gold btn-sm" onClick={()=>addCalFiling(ds)} disabled={!calFilingForm.caseId}>儲存</button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Hearings on this day */}

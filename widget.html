@@ -426,7 +426,23 @@ function wakeSyncCalTodos(){
 const root = document.getElementById("root");
 function render(){ applyTheme(themeMode); root.innerHTML = buildHTML(); bindEvents(); }
 function setNotice(msg){ state.notice=msg; render(); }
+// 自動版本備份：覆寫前把「前一版」存入 backups/{name}，最多保留 15 版
+async function pushBackup(name, items){
+    if(!items||!items.length) return;
+    try{
+        const ref=doc(db,"backups",name);
+        const snap=await getDoc(ref);
+        let arr=(snap.exists()&&Array.isArray(snap.data().snapshots))?snap.data().snapshots:[];
+        arr.push({items, at:new Date().toISOString()});
+        if(arr.length>15) arr=arr.slice(arr.length-15);
+        await setDoc(ref,{snapshots:arr});
+    }catch(e){ console.warn("backup failed:",name,e); }
+}
 function saveWidgetHearings(items){
+    const prev=state.widgetHearings||[];
+    const removed=prev.length-(Array.isArray(items)?items.length:0);
+    if(removed>=2 && !confirm(`⚠️ 此操作會使臨時庭期從 ${prev.length} 筆減為 ${items.length} 筆（移除 ${removed} 筆）。\n\n確定要繼續嗎？`)) return;
+    if(state.user && prev.length) pushBackup("widgetHearings", prev);
     state.widgetHearings = items.sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.time||"").localeCompare(b.time||""));
     saveLocal("widgetHearings",state.widgetHearings);
     if(state.user){
@@ -444,6 +460,10 @@ function saveWidgetHearings(items){
     }
 }
 function saveCalTodos(items){
+    const prev=state.calTodos||[];
+    const removed=prev.length-(Array.isArray(items)?items.length:0);
+    if(removed>=2 && !confirm(`⚠️ 此操作會使待辦事項從 ${prev.length} 筆減為 ${items.length} 筆（移除 ${removed} 筆）。\n\n確定要繼續嗎？`)) return;
+    if(state.user && prev.length) pushBackup("calTodos", prev);
     state.calTodos = (Array.isArray(items)?items:[]).sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.createdAt||"").localeCompare(b.createdAt||""));
     saveLocal("calTodos",state.calTodos);
     try{ localStorage.setItem("calTodos_updatedAt", String(Date.now())); }catch(_){}

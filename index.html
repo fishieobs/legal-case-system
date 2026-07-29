@@ -357,7 +357,7 @@ a{color:var(--seal);}
 <!-- Firebase -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     const firebaseConfig = {
         apiKey: "AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",
@@ -372,7 +372,7 @@ a{color:var(--seal);}
     const auth = getAuth(app);
     window.db = db;
     window.auth = auth;
-    window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc };
+    window.fbMethods = { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc };
     window.fbAuth = { signInWithEmailAndPassword, signOut, onAuthStateChanged };
     window.firebaseReady = true;
 </script>
@@ -613,6 +613,7 @@ function App({user}){
     const [calTodos, setCalTodos] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("calTodos")||"[]"); }catch(e){ return []; } });
     const [widgetHearings, setWidgetHearings] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("widgetHearings")||"[]"); }catch(e){ return []; } });
     const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
+    const [restoreModal, setRestoreModal] = useState(null); // null | array of {items,at}
     const [calView, setCalView] = useState("grid"); // grid | agenda（月曆/議程檢視）
     const [calPicker, setCalPicker] = useState(false); // 年月快速選擇面板
     const [calTodoInput, setCalTodoInput] = useState("");
@@ -932,10 +933,25 @@ function App({user}){
     const openDetail=(id)=>{ setSelectedId(id); setDetailTab("info"); setView("detail"); };
 
     // ── Calendar Todos ──
+    // 自動版本備份：覆寫前把「前一版」存入 backups/{name}，最多保留 15 版
+    const pushBackup=async(name,items)=>{
+        if(!items||!items.length) return;
+        try{
+            const ref=window.fbMethods.doc(window.db,"backups",name);
+            const snap=await window.fbMethods.getDoc(ref);
+            let arr=(snap.exists()&&Array.isArray(snap.data().snapshots))?snap.data().snapshots:[];
+            arr.push({items, at:new Date().toISOString()});
+            if(arr.length>15) arr=arr.slice(arr.length-15);
+            await window.fbMethods.setDoc(ref,{snapshots:arr});
+        }catch(e){ console.warn("backup failed:",name,e); }
+    };
     const saveCalTodos=(updated)=>{
+        // 大量刪除防呆：單次移除 ≥2 筆時先確認（正常增刪/勾選/封存最多變動 1 筆）
+        const removed=(calTodos?.length||0)-updated.length;
+        if(removed>=2 && !window.confirm(`⚠️ 此操作會使待辦事項從 ${calTodos.length} 筆減為 ${updated.length} 筆（移除 ${removed} 筆）。\n\n確定要繼續嗎？`)) return;
+        if(calTodos&&calTodos.length) pushBackup("calTodos",calTodos); // 先備份前一版
         setCalTodos(updated);
         try{ localStorage.setItem("calTodos",JSON.stringify(updated)); }catch(_){}
-        // Also sync to Firebase as a single doc
         window.fbMethods.setDoc(
             window.fbMethods.doc(window.db,"calTodos","shared"),
             {items:updated, updatedAt:new Date().toISOString()}
@@ -954,6 +970,24 @@ function App({user}){
     };
     const archiveCalTodo=(id)=>{ saveCalTodos(calTodos.map(t=>t.id===id?{...t,archived:true,done:true}:t)); };
     const unarchiveCalTodo=(id)=>{ saveCalTodos(calTodos.map(t=>t.id===id?{...t,archived:false}:t)); };
+    // 從自動備份還原待辦
+    const openTodoRestore=async()=>{
+        try{
+            const snap=await window.fbMethods.getDoc(window.fbMethods.doc(window.db,"backups","calTodos"));
+            const arr=(snap.exists()&&Array.isArray(snap.data().snapshots))?snap.data().snapshots:[];
+            if(!arr.length){ toast("目前尚無待辦備份"); return; }
+            setRestoreModal(arr.slice().reverse()); // 最新在前
+        }catch(e){ console.error(e); toast("⚠️ 讀取備份失敗，請稍後再試"); }
+    };
+    const restoreTodoSnapshot=(items)=>{
+        if(!window.confirm(`確定要還原成此備份（${items.length} 筆）嗎？\n目前的待辦會先自動備份，可再還原回來。`)) return;
+        if(calTodos&&calTodos.length) pushBackup("calTodos",calTodos);
+        setCalTodos(items);
+        try{ localStorage.setItem("calTodos",JSON.stringify(items)); }catch(_){}
+        window.fbMethods.setDoc(window.fbMethods.doc(window.db,"calTodos","shared"),{items,updatedAt:new Date().toISOString()}).catch(e=>console.warn("restore save failed:",e));
+        setRestoreModal(null);
+        toast(`✅ 已還原 ${items.length} 筆待辦`);
+    };
     const deleteCalTodo=(id)=>{
         const updated=calTodos.filter(t=>t.id!==id);
         saveCalTodos(updated);
@@ -969,6 +1003,9 @@ function App({user}){
 
     // ── Calendar hearings (case hearings + 臨時庭期) ──
     const saveWidgetHearings=(updated)=>{
+        const removed=(widgetHearings?.length||0)-updated.length;
+        if(removed>=2 && !window.confirm(`⚠️ 此操作會使臨時庭期從 ${widgetHearings.length} 筆減為 ${updated.length} 筆（移除 ${removed} 筆）。\n\n確定要繼續嗎？`)) return;
+        if(widgetHearings&&widgetHearings.length) pushBackup("widgetHearings",widgetHearings);
         setWidgetHearings(updated);
         try{ localStorage.setItem("widgetHearings",JSON.stringify(updated)); }catch(_){}
         window.fbMethods.setDoc(
@@ -1667,6 +1704,34 @@ function App({user}){
                     );
                 })()}
 
+                {/* 待辦備份還原 Modal */}
+                {restoreModal && (
+                    <div className="cal-todo-modal" style={{zIndex:700}} onClick={()=>setRestoreModal(null)}>
+                        <div className="cal-todo-sheet" onClick={e=>e.stopPropagation()}>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                                <div style={{fontWeight:700,color:"var(--seal)",fontSize:15}}>🗄 還原待辦備份</div>
+                                <button onClick={()=>setRestoreModal(null)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"var(--text3)"}}>✕</button>
+                            </div>
+                            <div style={{fontSize:12,color:"var(--text3)",marginBottom:12}}>選擇一個備份時點還原（系統自動保留最近 15 版）。還原前會先自動備份目前的待辦，可再還原回來。</div>
+                            {restoreModal.length===0 && <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0"}}>尚無備份。</div>}
+                            {restoreModal.map((snap,i)=>{
+                                const cnt=(snap.items||[]).length;
+                                const active=(snap.items||[]).filter(t=>!t.archived).length;
+                                const at=(snap.at||"").replace("T"," ").slice(0,16);
+                                return(
+                                    <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+                                        <div>
+                                            <div style={{fontSize:13,color:"var(--text)",fontWeight:600}}>{at||"（無時間）"}{i===0&&<span style={{color:"var(--text4)",fontWeight:400,fontSize:11}}> · 最新</span>}</div>
+                                            <div style={{fontSize:11,color:"var(--text3)"}}>共 {cnt} 筆（未封存 {active} 筆）</div>
+                                        </div>
+                                        <button className="btn btn-gold btn-sm" onClick={()=>restoreTodoSnapshot(snap.items||[])}>還原</button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 {/* Calendar Todo Modal */}
                 {calTodoModal && (()=>{
                     const ds=calTodoModal;
@@ -1764,7 +1829,10 @@ function App({user}){
                                 </>}
 
                                 {/* Todos */}
-                                <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:8}}>✅ 待辦事項</div>
+                                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                                    <div style={{fontSize:10,color:"var(--text4)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase"}}>✅ 待辦事項</div>
+                                    <button onClick={openTodoRestore} title="從自動備份還原待辦" style={{background:"none",border:"none",color:"var(--text4)",cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>🗄 還原備份</button>
+                                </div>
                                 {todosForDay.length===0 && <div style={{color:"var(--text4)",fontSize:13,padding:"8px 0 14px"}}>尚無待辦，在下方新增</div>}
                                 {todosForDay.sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99")).map(t=>(
                                     calEditTodoId===t.id ? (

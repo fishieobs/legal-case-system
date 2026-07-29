@@ -176,6 +176,7 @@ const LETTER_TYPES=[
     {key:"attorney",label:"律師函",color:"#9E2A24",icon:"⚖"},
     {key:"demand",label:"催告函",color:"#99604F",icon:"⚡"},
     {key:"warning",label:"警告函",color:"#A6741C",icon:"⚠️"},
+    {key:"draft",label:"書狀代撰",color:"#3A6B4F",icon:"✍️"},
     {key:"other",label:"其他",color:"#8A8377",icon:"📄"},
 ];
 const SEND_METHODS=["掛號郵寄","限時掛號","存證信函(郵局)","專人送達","電子郵件","傳真","其他"];
@@ -399,7 +400,6 @@ function App(){
             <div className="header">
                 <div className="header-title">📮 信函管理系統</div>
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <a href="index.html" className="btn btn-outline btn-sm">⚖ 案件系統</a>
                     <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
                     <button className="btn btn-outline btn-sm" onClick={()=>{if(confirm("確認登出？"))window.fbAuth.signOut(window.auth);}}>🚪</button>
                 </div>
@@ -421,7 +421,7 @@ function App(){
                             ["應收費用",letters.reduce((s,l)=>s+Number(l.totalFee||0),0).toLocaleString()+" 元","var(--text2)"],
                             ["已收款",letters.reduce((s,l)=>s+getRecv(l),0).toLocaleString()+" 元","var(--green)"],
                             ["未收款",letters.reduce((s,l)=>s+getUnpaid(l),0).toLocaleString()+" 元","var(--red)"],
-                            ["未回覆",letters.filter(l=>l.replyStatus==="未回覆").length+"件","var(--yellow)"],
+                            ["未回覆",letters.filter(l=>l.replyStatus==="未回覆"&&l.type!=="draft").length+"件","var(--yellow)"],
                         ].map(([l,v,c])=>(
                             <div key={l} className="stat-card">
                                 <div className="stat-val" style={{color:c}}>{v}</div>
@@ -460,7 +460,7 @@ function App(){
                                     </div>
                                     <div className="lc-badges">
                                         <Badge label={t.label} color={t.color}/>
-                                        <Badge label={l.replyStatus} color={l.replyStatus==="未回覆"?"#A6741C":l.replyStatus==="已提訴訟"?"#9E2A24":"#3A6B4F"}/>
+                                        {l.type!=="draft" && <Badge label={l.replyStatus} color={l.replyStatus==="未回覆"?"#A6741C":l.replyStatus==="已提訴訟"?"#9E2A24":"#3A6B4F"}/>}
                                     </div>
                                 </div>
                                 <div className="lc-row">
@@ -516,7 +516,7 @@ function App(){
                 const byType={};LETTER_TYPES.forEach(t=>byType[t.key]=0);
                 letters.forEach(l=>byType[l.type]=(byType[l.type]||0)+1);
                 const byStatus={};REPLY_STATUS.forEach(s=>byStatus[s]=0);
-                letters.forEach(l=>byStatus[l.replyStatus]=(byStatus[l.replyStatus]||0)+1);
+                letters.filter(l=>l.type!=="draft").forEach(l=>byStatus[l.replyStatus]=(byStatus[l.replyStatus]||0)+1);
                 const totalFee=letters.reduce((s,l)=>s+Number(l.totalFee||0),0);
                 const recv=letters.reduce((s,l)=>s+getRecv(l),0);
                 const pct=totalFee>0?Math.min(100,(recv/totalFee*100)).toFixed(1):0;
@@ -607,14 +607,14 @@ function App(){
                 <div className="content">
                     <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
                         <Badge label={t.label} color={t.color}/>
-                        <Badge label={l.replyStatus} color={l.replyStatus==="未回覆"?"#A6741C":l.replyStatus==="已提訴訟"?"#9E2A24":"#3A6B4F"}/>
+                        {l.type!=="draft" && <Badge label={l.replyStatus} color={l.replyStatus==="未回覆"?"#A6741C":l.replyStatus==="已提訴訟"?"#9E2A24":"#3A6B4F"}/>}
                         {(l.tags||[]).map(tag=><Badge key={tag} label={tag} color="#8A8377"/>)}
                     </div>
                     <div className="detail-grid">
                         {/* 基本 */}
                         <div className="card">
                             <div className="card-title">📋 基本資料</div>
-                            {[["主旨",l.subject],["信函類型",t.label],["委託人",l.clientName],["委託人電話",l.clientPhone],["對造當事人",l.opposingParty],["對造地址",l.opposingAddress],["委託日期",l.retainerDate],["回覆狀態",l.replyStatus]].map(([k,v])=>(
+                            {[["主旨",l.subject],["信函類型",t.label],["委託人",l.clientName],["委託人電話",l.clientPhone],["對造當事人",l.opposingParty],["對造地址",l.opposingAddress],["委託日期",l.retainerDate],["回覆狀態",l.replyStatus]].filter(([k])=>l.type!=="draft"||!["對造地址","回覆狀態"].includes(k)).map(([k,v])=>(
                                 <div key={k} className="info-row"><div className="info-lbl">{k}</div><div className="info-val">{v||"—"}</div></div>
                             ))}
                         </div>
@@ -643,8 +643,8 @@ function App(){
                             )}
                             {l.disbursements>0&&<div className="info-row" style={{marginTop:8}}><div className="info-lbl">代墊款項</div><div className="info-val" style={{color:"var(--purple)",fontWeight:700}}>{fmt(l.disbursements)}</div></div>}
                         </div>
-                        {/* 寄送記錄 */}
-                        <div className="card">
+                        {/* 寄送記錄（書狀代撰不適用） */}
+                        {l.type!=="draft" && <div className="card">
                             <div className="card-title">📬 寄送記錄（{(l.shippings||[]).length}筆）</div>
                             {(l.shippings||[]).length===0&&<div style={{color:"var(--text4)",fontSize:13,padding:"10px 0"}}>尚無寄送記錄</div>}
                             {(l.shippings||[]).sort((a,b)=>b.date.localeCompare(a.date)).map((s,i)=>(
@@ -656,7 +656,7 @@ function App(){
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                        </div>}
                         {/* 文件 */}
                         <div className="card">
                             <div className="card-title">📄 信函文件（{(l.docLinks||[]).length}份）</div>
@@ -738,12 +738,12 @@ function App(){
                             {LETTER_TYPES.map(t=><option key={t.key} value={t.key}>{t.icon} {t.label}</option>)}
                         </select>
                     </div>
-                    <div className="fg">
+                    {F.type!=="draft" && <div className="fg">
                         <label className="fl">回覆狀態</label>
                         <select className="fi" value={F.replyStatus||"未回覆"} onChange={e=>sf("replyStatus",e.target.value)}>
                             {REPLY_STATUS.map(s=><option key={s}>{s}</option>)}
                         </select>
-                    </div>
+                    </div>}
                     <div className="fg">
                         <label className="fl">委託人姓名</label>
                         <input className="fi" value={F.clientName||""} onChange={e=>sf("clientName",e.target.value)} placeholder=""/>
@@ -760,10 +760,10 @@ function App(){
                         <label className="fl">委託日期</label>
                         <input className="fi" type="date" value={F.retainerDate||""} onChange={e=>sf("retainerDate",e.target.value)}/>
                     </div>
-                    <div className="fg" style={{gridColumn:"span 2"}}>
+                    {F.type!=="draft" && <div className="fg" style={{gridColumn:"span 2"}}>
                         <label className="fl">對造地址（寄送用）</label>
                         <input className="fi" value={F.opposingAddress||""} onChange={e=>sf("opposingAddress",e.target.value)} placeholder=""/>
-                    </div>
+                    </div>}
                 </div>
 
                 {/* 套用範本 */}
@@ -824,7 +824,8 @@ function App(){
                     <button className="btn btn-gold btn-sm" onClick={addPay}>＋</button>
                 </div>
 
-                {/* 寄送記錄 */}
+                {/* 寄送記錄（書狀代撰不適用） */}
+                {F.type!=="draft" && <>
                 <div className="section-hdr">📬 寄送記錄</div>
                 {(F.shippings||[]).map((s,i)=>(
                     <div key={i} className="item-row">
@@ -842,6 +843,7 @@ function App(){
                     <div className="fg" style={{flex:"1 1 100px"}}><label className="fl">備註</label><input className="fi" value={newShip.note} onChange={e=>setNewShip(s=>({...s,note:e.target.value}))}/></div>
                     <button className="btn btn-gold btn-sm" onClick={addShip}>＋</button>
                 </div>
+                </>}
 
                 {/* 文件連結 */}
                 <div className="section-hdr">📄 信函文件連結</div>

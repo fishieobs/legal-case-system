@@ -1859,11 +1859,34 @@ function App({user}){
                                     ) : (
                                         <div style={{border:"1px solid var(--navy)",borderRadius:8,padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
                                             <div style={{fontSize:11,color:"var(--navy)",fontWeight:700}}>📄 新增遞狀</div>
-                                            <select className="fi" value={calFilingForm.caseId} onChange={e=>setCalFilingForm(s=>({...s,caseId:e.target.value}))}>
-                                                <option value="">選擇案件…</option>
-                                                <option value="__standalone__">✍️ 單純撰狀（未代理，不綁案件）</option>
-                                                {[...cases].sort((a,b)=>(a.firmCaseNo||"").localeCompare(b.firmCaseNo||"")).map(c=><option key={c.id} value={c.id}>{c.firmCaseNo} · {c.clientName}</option>)}
-                                            </select>
+                                            {calFilingForm.caseId==="__standalone__" ? (
+                                                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                                    <span style={{flex:1,fontSize:13,color:"var(--navy)",fontWeight:700}}>✍️ 單純撰狀（未代理）</span>
+                                                    <button className="btn btn-sm" onClick={()=>setCalFilingForm(s=>({...s,caseId:"",clientName:"",caseQuery:""}))}>換一個</button>
+                                                </div>
+                                            ) : calFilingForm.caseId ? (()=>{
+                                                const c=cases.find(x=>x.id===calFilingForm.caseId);
+                                                return <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                                    <span style={{flex:1,fontSize:13,fontWeight:700}}>{c?`${c.firmCaseNo} · ${c.clientName}`:"（已選案件）"}</span>
+                                                    <button className="btn btn-sm" onClick={()=>setCalFilingForm(s=>({...s,caseId:""}))}>換一個</button>
+                                                </div>;
+                                            })() : (<>
+                                                <input className="fi" placeholder="輸入案號或當事人搜尋案件…" value={calFilingForm.caseQuery||""} onChange={e=>setCalFilingForm(s=>({...s,caseQuery:e.target.value}))}/>
+                                                <div style={{border:"1px solid var(--border)",borderRadius:6,maxHeight:180,overflowY:"auto"}}>
+                                                    <div onClick={()=>setCalFilingForm(s=>({...s,caseId:"__standalone__"}))} style={{padding:"8px 10px",cursor:"pointer",fontSize:13,color:"var(--navy)",fontWeight:700,borderBottom:"1px solid var(--border)"}}>✍️ 單純撰狀（未代理，不綁案件）</div>
+                                                    {(()=>{
+                                                        const q=(calFilingForm.caseQuery||"").trim().toLowerCase();
+                                                        let list=[...cases].sort((a,b)=>(b.firmCaseNo||"").localeCompare(a.firmCaseNo||""));
+                                                        if(q) list=list.filter(c=>[c.firmCaseNo,c.clientName,c.opposingParty].some(x=>(x||"").toLowerCase().includes(q)));
+                                                        const shown=list.slice(0,8);
+                                                        return <>
+                                                            {shown.map(c=><div key={c.id} onClick={()=>setCalFilingForm(s=>({...s,caseId:c.id}))} style={{padding:"8px 10px",cursor:"pointer",fontSize:13,borderBottom:"1px solid var(--border)"}}><span style={{color:"var(--gold)",fontFamily:"monospace",fontSize:11}}>{c.firmCaseNo}</span> · {c.clientName}</div>)}
+                                                            {list.length===0 && <div style={{padding:"8px 10px",fontSize:12,color:"var(--text4)"}}>查無符合的案件</div>}
+                                                            {list.length>8 && <div style={{padding:"6px 10px",fontSize:11,color:"var(--text4)"}}>還有 {list.length-8} 筆，請輸入更精確的關鍵字</div>}
+                                                        </>;
+                                                    })()}
+                                                </div>
+                                            </>)}
                                             {calFilingForm.caseId==="__standalone__" && <input className="fi" placeholder="委託人／名稱" value={calFilingForm.clientName||""} onChange={e=>setCalFilingForm(s=>({...s,clientName:e.target.value}))}/>}
                                             <select className="fi" value={calFilingForm.type} onChange={e=>setCalFilingForm(s=>({...s,type:e.target.value}))}>
                                                 {FILING_TYPES.map(t=><option key={t} value={t}>{t}</option>)}

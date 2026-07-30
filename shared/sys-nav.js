@@ -13,6 +13,7 @@
     { id: "court",     href: "court_nav.html",   label: "🗺 開庭助理" },
     { id: "deadline",  href: "deadline.html",    label: "⏱ 時效計算器" },
     { id: "checklist",      href: "checklist.html",      label: "📋 開庭清單" },
+    { id: "receipt",        href: "receipt.html",        label: "🧾 掛號回執" },
   ];
 
   // ── Global theme (dark / light), shared across all pages ──
@@ -93,16 +94,10 @@
       html += '<a class="sys-nav-item" href="' + p.href + '">' + p.label + "</a>";
     }
   }
-  html += '<button class="sys-nav-theme" id="sys-nav-theme" type="button" aria-label="切換深淺色模式">☀️</button>';
   nav.innerHTML = html;
 
   var body = document.body;
   if (body.firstChild) body.insertBefore(nav, body.firstChild);
   else body.appendChild(nav);
 
-  updateThemeBtn();
-  document.getElementById("sys-nav-theme").addEventListener("click", function () {
-    var isLight = document.documentElement.classList.contains("light");
-    setTheme(isLight ? "dark" : "light");
-  });
 })();

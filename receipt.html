@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>掛號回執列印定位工具｜禹河法律事務所</title>
+<style>
+/* ===== legal-tokens.css（內嵌） ===== */
+:root{
+  --paper:#FAF7F0; --paper-raised:#FFFFFF; --paper-sunken:#F1ECE1;
+  --ink:#211E1A; --ink-soft:#5B554D; --ink-faint:#8A8377;
+  --seal:#9E2A24; --seal-bright:#C0392B; --seal-wash:#F3E3DF;
+  --positive:#3A6B4F; --negative:#9E2A24; --warning:#A6741C;
+  --positive-wash:#E7EFE9; --warning-wash:#F3EBDA;
+  --rule:#DDD5C7; --rule-strong:#C4BAA6;
+  --font-kai:"BiauKai","DFKai-SB","標楷體","KaiTi","STKaiti","Kaiti TC",serif;
+  --font-song:"Noto Serif CJK TC","Source Han Serif TC","PMingLiU","新細明體","Songti TC","Songti SC",serif;
+  --font-body:var(--font-song); --font-display:var(--font-kai);
+  --text-xs:0.8125rem; --text-sm:0.875rem; --text-base:1rem; --text-lg:1.1875rem;
+  --text-xl:1.4375rem; --text-2xl:1.75rem; --text-3xl:2.125rem;
+  --leading-doc:1.9; --leading-normal:1.6; --leading-tight:1.3;
+  --tracking-title:0.08em; --tracking-seal:0.25em;
+  --space-1:0.25rem; --space-2:0.5rem; --space-3:0.75rem; --space-4:1rem;
+  --space-5:1.5rem; --space-6:2rem; --space-8:3rem; --space-10:4rem;
+  --radius-sm:2px; --radius:3px; --radius-lg:4px;
+  --border:1px solid var(--rule); --border-strong:1.5px solid var(--rule-strong);
+  --border-seal:2px solid var(--seal);
+  --focus-ring:0 0 0 3px var(--seal-wash);
+  --measure:68ch; --container:860px;
+}
+/* ===== legal-base.css（內嵌·節錄） ===== */
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);
+  font-size:var(--text-base);line-height:var(--leading-normal)}
+.container{max-width:var(--container);margin-inline:auto;padding:var(--space-6) var(--space-5)}
+h1,h2,h3{font-family:var(--font-display);line-height:var(--leading-tight);
+  letter-spacing:var(--tracking-title);font-weight:700;margin:0 0 var(--space-4)}
+.doc-title{text-align:center;font-size:var(--text-2xl);padding-bottom:var(--space-4);
+  border-bottom:var(--border-seal);margin-bottom:var(--space-5)}
+.section-head{font-family:var(--font-display);font-size:var(--text-xl);
+  letter-spacing:var(--tracking-title);padding-left:var(--space-3);
+  border-left:4px solid var(--seal);margin:var(--space-6) 0 var(--space-4)}
+p{margin:0 0 var(--space-4)}
+small,.caption{font-size:var(--text-sm);color:var(--ink-soft)}
+.panel{background:var(--paper-raised);border:var(--border);border-radius:var(--radius);
+  padding:var(--space-5)}
+.panel+.panel{margin-top:var(--space-4)}
+label{display:block;font-size:var(--text-sm);color:var(--ink-soft);margin-bottom:var(--space-1)}
+input,select,textarea{width:100%;font-family:var(--font-body);font-size:var(--text-base);
+  color:var(--ink);background:var(--paper-raised);border:var(--border);
+  border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--seal);box-shadow:var(--focus-ring)}
+input[inputmode="numeric"],input[type="number"]{font-variant-numeric:tabular-nums;text-align:right}
+.btn{font-family:var(--font-display);font-size:var(--text-base);letter-spacing:.05em;
+  padding:var(--space-2) var(--space-5);border-radius:var(--radius-sm);
+  border:var(--border-strong);background:var(--paper-raised);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--ink-soft)}
+.btn-primary{background:var(--seal);border-color:var(--seal);color:var(--paper-raised)}
+.btn-primary:hover{background:var(--seal-bright);border-color:var(--seal-bright)}
+.tag{display:inline-block;font-size:var(--text-xs);padding:2px var(--space-2);
+  border-radius:var(--radius-sm);border:1px solid currentColor}
+.tag-warn{color:var(--warning);background:var(--warning-wash);border-color:transparent}
+.footer-seal{margin-top:var(--space-8);padding-top:var(--space-4);border-top:var(--border);
+  text-align:center;font-family:var(--font-display);letter-spacing:var(--tracking-seal);
+  color:var(--ink-faint);font-size:var(--text-sm)}
+
+/* ===== 本工具 ===== */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-2)}
+.field{margin-bottom:var(--space-3)}
+.bar{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:center;margin:var(--space-4) 0}
+.inline{display:flex;gap:var(--space-2);align-items:center}
+.inline input[type=checkbox]{width:auto}
+.inline label{margin:0}
+details{border:var(--border);border-radius:var(--radius);background:var(--paper-raised);
+  padding:var(--space-3) var(--space-4);margin-top:var(--space-4)}
+summary{font-family:var(--font-display);letter-spacing:var(--tracking-title);cursor:pointer}
+.note{background:var(--paper-sunken);border-left:3px solid var(--seal);
+  padding:var(--space-3) var(--space-4);font-size:var(--text-sm);line-height:var(--leading-doc)}
+.note ol,.note ul{margin:0;padding-left:1.4em}
+.stagewrap{overflow:auto;border:var(--border);background:var(--paper-sunken);
+  padding:var(--space-3);border-radius:var(--radius)}
+#stage{transform-origin:top left}
+
+/* ---- 回執本體：180mm × 95mm ---- */
+.card{position:relative;width:180mm;height:95mm;background:var(--paper-raised);
+  overflow:hidden;font-variant-numeric:tabular-nums}
+.card+.card{margin-top:6mm}
+.g{position:absolute;left:calc(var(--x)*1mm);top:calc(var(--y)*1mm)}
+.g.bx{width:calc(var(--w)*1mm);height:calc(var(--h)*1mm);border:1px solid var(--rule-strong)}
+.g.bxr{width:calc(var(--w)*1mm);height:calc(var(--h)*1mm);border:1px solid var(--seal)}
+.g.hl{width:calc(var(--w)*1mm);border-top:1px solid var(--rule-strong)}
+.g.vl{height:calc(var(--h)*1mm);border-left:1px solid var(--rule-strong)}
+.g.cir{width:calc(var(--w)*1mm);height:calc(var(--w)*1mm);border:1px solid var(--rule-strong);
+  border-radius:50%}
+.g.tx{font-family:var(--font-display);color:var(--rule-strong);
+  font-size:calc(var(--s,3.4)*1mm);line-height:1.25;white-space:pre-line}
+.g.tx.red{color:var(--seal)}
+.g.tx.vert{writing-mode:vertical-rl}
+.g.zb{width:calc(var(--w)*1mm);height:calc(var(--h)*1mm);border:1px solid var(--seal-bright)}
+.guide{display:none}
+.card.showguide .guide{display:block}
+
+/* ---- 列印內容層 ---- */
+.ovl{position:absolute;inset:0;
+  transform:translate(calc(var(--ox)*1mm),calc(var(--oy)*1mm))}
+.fld{position:absolute;left:calc(var(--x)*1mm);top:calc(var(--y)*1mm);
+  width:calc(var(--w,60)*1mm);font-size:calc(var(--s)*1mm);line-height:1.18;
+  color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.zd{position:absolute;left:calc(var(--x)*1mm);top:calc(var(--y)*1mm);
+  transform:translateX(-50%);font-size:calc(var(--s)*1mm);line-height:1;color:var(--ink)}
+.f-kai .fld,.f-kai .zd{font-family:var(--font-kai)}
+.f-song .fld,.f-song .zd{font-family:var(--font-song)}
+
+@media (max-width:640px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .grid4{grid-template-columns:repeat(2,1fr)}
+  .btn{padding:var(--space-3) var(--space-5)}
+}
+
+/* ---- 系統導覽列間距 ---- */
+body{padding-top:44px}
+
+/* ---- 列印 ---- */
+@media print{
+  @page{size:180mm 95mm;margin:0}
+  html,body{background:#fff;padding-top:0}
+  .sys-nav{display:none!important}
+  .app{display:none!important}
+  .stagewrap{overflow:visible;border:0;padding:0;background:#fff}
+  #stage{transform:none!important}
+  #printarea{display:block}
+  .card{margin:0;break-after:page;page-break-after:always;box-shadow:none}
+  .card:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+</head>
+<body>
+<script src="shared/sys-nav.js" data-active="receipt"></script>
+
+<div class="app container">
+  <h1 class="doc-title">掛號郵件收件回執<br>列印定位工具</h1>
+
+  <p class="caption">回執規格 180 × 95 mm（180g/m² 道林紙）。先以普通紙裁成同尺寸試印校正，再印真回執。</p>
+
+  <h2 class="section-head">一、上半｜掛號郵件收件人</h2>
+  <div class="panel">
+    <div class="field">
+      <label for="toZip">郵遞區號（6 碼）</label>
+      <input id="toZip" inputmode="numeric" maxlength="8" placeholder="320061">
+    </div>
+    <div class="field">
+      <label for="toName">姓名／公司</label>
+      <input id="toName" placeholder="王大明">
+    </div>
+    <div class="field">
+      <label for="toAddr">地址</label>
+      <input id="toAddr" placeholder="桃園市中壢區○○路○○號○樓">
+    </div>
+  </div>
+
+  <h2 class="section-head">二、下半｜回執收件人（寄件人·紅框）</h2>
+  <div class="panel">
+    <div class="field">
+      <label for="frZip">郵遞區號</label>
+      <input id="frZip" inputmode="numeric" maxlength="8" value="320061">
+    </div>
+    <div class="field">
+      <label for="frName">姓名／事務所</label>
+      <input id="frName" value="禹河法律事務所 張世東">
+    </div>
+    <div class="field">
+      <label for="frAddr">地址</label>
+      <input id="frAddr" value="桃園市中壢區延平路500號十樓之一E室">
+    </div>
+    <small>此欄固定不變，建議另刻回墨印蓋章；本工具亦可直接列印。</small>
+  </div>
+
+  <h2 class="section-head">三、列印設定</h2>
+  <div class="panel">
+    <div class="grid3">
+      <div class="field">
+        <label for="ox">X 偏移（mm·右正左負）</label>
+        <input id="ox" type="number" step="0.5" value="0">
+      </div>
+      <div class="field">
+        <label for="oy">Y 偏移（mm·下正上負）</label>
+        <input id="oy" type="number" step="0.5" value="0">
+      </div>
+      <div class="field">
+        <label for="font">列印字型</label>
+        <select id="font">
+          <option value="f-kai">標楷體</option>
+          <option value="f-song">宋（明）體</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid3">
+      <div class="field">
+        <label for="copies">份數</label>
+        <input id="copies" type="number" min="1" max="20" value="1">
+      </div>
+      <div class="field">
+        <label for="zoom">畫面顯示比例</label>
+        <input id="zoom" type="range" min="30" max="150" value="100">
+      </div>
+      <div class="field">
+        <label>校正框線</label>
+        <div class="inline" style="padding-top:.4rem">
+          <input type="checkbox" id="guide" checked>
+          <label for="guide">畫面顯示格線</label>
+        </div>
+        <div class="inline">
+          <input type="checkbox" id="guidePrint">
+          <label for="guidePrint">連框線一起印（校正用）</label>
+        </div>
+      </div>
+    </div>
+    <div class="bar">
+      <button class="btn btn-primary" id="btnPrint">列　印</button>
+      <button class="btn" id="btnReset">回復預設座標</button>
+      <span id="status" class="caption"></span>
+    </div>
+  </div>
+
+  <details>
+    <summary>進階｜各欄位座標微調（mm，以回執左上角為原點）</summary>
+    <p class="caption" style="margin-top:var(--space-3)">
+      X 向右為正、Y 向下為正。字級以 mm 字高計（3.5mm ≈ 10pt、4.2mm ≈ 12pt）。
+      單一欄位偏掉時改這裡；全部一起偏掉時改上面的 X／Y 偏移。
+    </p>
+    <div id="tune"></div>
+  </details>
+
+  <details>
+    <summary>批次｜一次印多張（貼上收件人清單）</summary>
+    <p class="caption" style="margin-top:var(--space-3)">
+      每行一位收件人，格式：<code>郵遞區號 | 姓名 | 地址</code>（分隔符可用 <code>|</code>、Tab 或逗號）。
+      有內容時以此清單取代上半欄位，下半（事務所）固定不變。
+    </p>
+    <textarea id="batch" rows="5" placeholder="320061|王大明|桃園市中壢區延平路500號10樓
+100002|李小華|臺北市中正區重慶南路一段122號"></textarea>
+  </details>
+
+  <h2 class="section-head">四、校正與列印程序</h2>
+  <div class="note">
+    <ol>
+      <li>普通紙裁成 180×95mm，勾選「連框線一起印」，走<strong>手動進紙／後方直進紙道</strong>試印。</li>
+      <li>把試印紙疊在真回執上對光比對：框線若整體往右偏 2mm，X 偏移就填 <code>-2</code>；往下偏 1.5mm，Y 偏移填 <code>-1.5</code>。</li>
+      <li>重覆一次確認框線與真回執重合，取消「連框線一起印」，即可送入真回執列印。</li>
+      <li>列印對話框務必選「實際大小／100%」，不可勾「符合頁面」，否則比例跑掉。</li>
+      <li>180g/m² 較厚，沿騎縫線撕下單張後單張進紙；雷射印表機高溫無虞，噴墨請等墨乾。</li>
+      <li>「小姐／先生／公司」為預印字樣，仍以筆圈選；郵戳欄由郵局蓋印，勿覆蓋。</li>
+    </ol>
+    <p style="margin:var(--space-3) 0 0"><span class="tag tag-warn">提醒</span>
+      座標預設值係按 180×95mm 版面推估，首次使用務必依上開程序校正後再存檔。</p>
+  </div>
+
+  <footer class="footer-seal">禹河法律事務所</footer>
+</div>
+
+<div class="stagewrap app">
+  <div id="stage"><div id="printarea"></div></div>
+</div>
+
+<script>
+const DEFAULTS = {
+  zipT :{x:37.1, y:22.0, step:5.70, gap:3.40, s:4.2},
+  addrT:{x:43.0, y:26.6, w:84, s:3.6},
+  nameT:{x:43.0, y:34.6, w:50, s:3.8},
+  zipB :{x:63.1, y:47.4, step:5.70, gap:3.40, s:4.2},
+  addrB:{x:73.0, y:59.3, w:49, s:3.4},
+  nameB:{x:73.0, y:75.3, w:48, s:3.6}
+};
+const TUNE_DEF = [
+  ['zipT','上·郵遞區號',['x','y','step','s'],{step:'字距',s:'字級'}],
+  ['addrT','上·地址',['x','y','w','s'],{w:'寬度',s:'字級'}],
+  ['nameT','上·姓名',['x','y','w','s'],{w:'寬度',s:'字級'}],
+  ['zipB','下·郵遞區號',['x','y','step','s'],{step:'字距',s:'字級'}],
+  ['addrB','下·地址',['x','y','w','s'],{w:'寬度',s:'字級'}],
+  ['nameB','下·姓名',['x','y','w','s'],{w:'寬度',s:'字級'}]
+];
+const KEY = 'yuhe_receipt_layout_v1';
+let L = JSON.parse(JSON.stringify(DEFAULTS));
+
+function store(op, val){
+  try{
+    if(op==='get') return JSON.parse(localStorage.getItem(KEY)||'null');
+    if(op==='set') localStorage.setItem(KEY, JSON.stringify(val));
+  }catch(e){ return null; }
+}
+
+/* ---- 回執底圖（校正參考線） ---- */
+function guideHTML(){
+  const el = [];
+  const px = (cls,o)=>{
+    const st = Object.entries(o).map(([k,v])=>`--${k}:${v}`).join(';');
+    el.push(`<div class="g ${cls}" style="${st}"></div>`);
+  };
+  const tx = (t,x,y,s,cls='')=>el.push(
+    `<div class="g tx ${cls}" style="--x:${x};--y:${y};--s:${s}">${t}</div>`);
+
+  px('bx',{x:4,y:4,w:172,h:87});
+  px('hl',{x:4,y:14,w:172});
+  px('hl',{x:4,y:20,w:126});
+  px('hl',{x:4,y:45,w:126});
+  px('vl',{x:130,y:14,h:31});
+  px('vl',{x:29,y:20,h:25});
+  px('bxr',{x:29,y:45,w:147,h:46});
+  px('vl',{x:59,y:45,h:46});
+  px('cir',{x:142,y:19,w:22});
+
+  tx('98-00-00-36',6,4.6,3);
+  tx('中華郵政掛號郵件收件回執',62,9,4.6);
+  tx('※以下資料請寄件人自行詳細填寫',33,15,4.2);
+  tx('掛號郵件\n收件人',7,26,3.6);
+  tx('地址：',30,26.4,3.6);
+  tx('姓名：',30,34.4,3.6);
+  tx('小姐\n先生\n公司',95,30.5,3.4);
+  tx('收寄局郵戳',144,35,3.6);
+  tx('本回執請退',7.5,50,3.8,'vert red');
+  tx('回執收件人\n（掛號郵件\n寄件人）',31,57,3.6,'red');
+  tx('地址：',61,58.8,3.6);
+  tx('姓名：',61,74.8,3.6);
+  tx('小姐\n先生\n公司',124,72.5,3.4);
+  tx('收',145,77.5,3.8);
+
+  // 郵遞區號格位
+  const zbox = (c)=>{
+    for(let i=0;i<6;i++){
+      const x = c.x + i*c.step + (i>=3?c.gap:0) - 2.6;
+      px('zb',{x:+x.toFixed(2),y:+(c.y-0.8).toFixed(2),w:5.2,h:6});
+    }
+  };
+  zbox(L.zipT); zbox(L.zipB);
+  return el.join('');
+}
+
+/* ---- 一張回執 ---- */
+function cardHTML(to, fr, opt){
+  const zip = (c, val)=>{
+    const s = (val||'').replace(/\D/g,'').slice(0,6);
+    let out='';
+    for(let i=0;i<s.length;i++){
+      const x = c.x + i*c.step + (i>=3?c.gap:0);
+      out += `<span class="zd" style="--x:${x.toFixed(2)};--y:${c.y};--s:${c.s}">${s[i]}</span>`;
+    }
+    return out;
+  };
+  const txt = (c, val)=> val
+    ? `<span class="fld" style="--x:${c.x};--y:${c.y};--w:${c.w};--s:${c.s}">${esc(val)}</span>`
+    : '';
+  const cls = ['card', opt.font];
+  if(opt.guide) cls.push('showguide');
+  return `<div class="${cls.join(' ')}">
+    <div class="guide">${guideHTML()}</div>
+    <div class="ovl" style="--ox:${opt.ox};--oy:${opt.oy}">
+      ${zip(L.zipT,to.zip)}${txt(L.addrT,to.addr)}${txt(L.nameT,to.name)}
+      ${zip(L.zipB,fr.zip)}${txt(L.addrB,fr.addr)}${txt(L.nameB,fr.name)}
+    </div>
+  </div>`;
+}
+
+function esc(s){return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));}
+const $ = id => document.getElementById(id);
+
+function parseBatch(t){
+  return t.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).map(line=>{
+    let p = line.split(/[\t|｜]/);
+    if(p.length < 3) p = line.split(/[,，]/);
+    return {zip:(p[0]||'').trim(), name:(p[1]||'').trim(),
+            addr:p.slice(2).join('，').trim()};
+  });
+}
+
+function render(){
+  const fr = {zip:$('frZip').value, name:$('frName').value, addr:$('frAddr').value};
+  const opt = {
+    ox:+$('ox').value || 0, oy:+$('oy').value || 0,
+    font:$('font').value,
+    guide:$('guide').checked
+  };
+  const list = parseBatch($('batch').value);
+  const rows = list.length ? list
+    : [{zip:$('toZip').value, name:$('toName').value, addr:$('toAddr').value}];
+  const n = Math.max(1, Math.min(20, +$('copies').value || 1));
+  let html = '';
+  rows.forEach(r=>{ for(let i=0;i<n;i++) html += cardHTML(r, fr, opt); });
+  $('printarea').innerHTML = html;
+  const total = rows.length * n;
+  $('status').textContent = `共 ${total} 張（每張一頁）`;
+  save();
+}
+
+function buildTune(){
+  const box = $('tune');
+  box.innerHTML = TUNE_DEF.map(([key,label,fields,names])=>{
+    const inputs = fields.map(f=>`
+      <div class="field">
+        <label for="t_${key}_${f}">${names[f]||f.toUpperCase()}</label>
+        <input id="t_${key}_${f}" type="number" step="0.1" value="${L[key][f]}">
+      </div>`).join('');
+    return `<div style="margin-top:var(--space-4)">
+      <strong style="font-family:var(--font-display)">${label}</strong>
+      <div class="grid4">${inputs}</div></div>`;
+  }).join('');
+  TUNE_DEF.forEach(([key,,fields])=>fields.forEach(f=>{
+    $(`t_${key}_${f}`).addEventListener('input', e=>{
+      L[key][f] = +e.target.value || 0; render();
+    });
+  }));
+}
+
+function save(){
+  store('set', {L, ui:{
+    ox:$('ox').value, oy:$('oy').value, font:$('font').value,
+    frZip:$('frZip').value, frName:$('frName').value, frAddr:$('frAddr').value,
+    guidePrint:$('guidePrint').checked
+  }});
+}
+function load(){
+  const d = store('get');
+  if(!d) return;
+  if(d.L) L = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), d.L);
+  const u = d.ui || {};
+  ['ox','oy','font','frZip','frName','frAddr'].forEach(k=>{ if(u[k]!==undefined) $(k).value = u[k]; });
+  if(u.guidePrint) $('guidePrint').checked = true;
+}
+
+function setZoom(){
+  const z = (+$('zoom').value || 100) / 100;
+  $('stage').style.transform = `scale(${z})`;
+  const w = 180 * 3.7795 * z;
+  $('stage').style.height = 'auto';
+  $('stage').parentElement.style.minHeight = (95 * 3.7795 * z + 40) + 'px';
+  $('stage').style.width = w + 'px';
+}
+
+['toZip','toName','toAddr','frZip','frName','frAddr','ox','oy','font','copies','guide','batch']
+  .forEach(id=>$(id).addEventListener('input', render));
+$('zoom').addEventListener('input', setZoom);
+$('guidePrint').addEventListener('change', ()=>{ save(); });
+$('btnReset').addEventListener('click', ()=>{
+  L = JSON.parse(JSON.stringify(DEFAULTS));
+  $('ox').value = 0; $('oy').value = 0;
+  buildTune(); render();
+});
+$('btnPrint').addEventListener('click', ()=>{
+  const on = $('guidePrint').checked;
+  document.querySelectorAll('.card').forEach(c=>c.classList.toggle('showguide', on || false));
+  window.print();
+  setTimeout(render, 300);
+});
+
+load();
+buildTune();
+render();
+// 手機自動縮到可見寬度
+(function fit(){
+  const avail = document.querySelector('.stagewrap').clientWidth - 24;
+  const need = 180 * 3.7795;
+  if(avail < need) $('zoom').value = Math.max(30, Math.floor(avail/need*100));
+  setZoom();
+})();
+</script>
+</body>
+</html>

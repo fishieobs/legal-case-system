@@ -197,7 +197,7 @@ function applyTheme(m){const eff=m==="auto"?(new Date().getHours()>=6&&new Date(
 
 let S={
   user:null,authChecked:false,
-  incomes:[],expenses:[],cases:[],loading:true,
+  incomes:[],expenses:[],cases:[],letters:[],loading:true,
   tab:"dashboard",
   year:new Date().getFullYear(),
   month:new Date().getMonth()+1,
@@ -234,6 +234,13 @@ onAuthStateChanged(auth,u=>{
     });
     // 讀取案件管理系統的收款（收入），與本系統手動收入合併
     try{const c=localStorage.getItem("tax_cases_cache");if(c)S.cases=JSON.parse(c);}catch(_){}
+    // 讀取信函管理系統的收款（含律師函、書狀代撰）
+    try{const c=localStorage.getItem("tax_letters_cache");if(c)S.letters=JSON.parse(c);}catch(_){}
+    onSnapshot(collection(db,"letters"),snap=>{
+      S.letters=snap.docs.map(d=>({...d.data(),id:d.id}));
+      try{localStorage.setItem("tax_letters_cache",JSON.stringify(S.letters));}catch(_){}
+      render();
+    },err=>{console.warn("letters 同步失敗：",err.code||err.message);});
     onSnapshot(collection(db,"cases"),snap=>{
       S.cases=snap.docs.map(d=>({...d.data(),id:d.id}));
       try{localStorage.setItem("tax_cases_cache",JSON.stringify(S.cases));}catch(_){}
@@ -290,8 +297,24 @@ function caseIncomes(){
   });
   return out;
 }
-// 全部收入 = 案件收款 + 手動收入
-function allIncomes(){ return [...caseIncomes(), ...S.incomes]; }
+// 信函系統收款 → 收入記錄（唯讀，於信函系統管理）
+function letterIncomes(){
+  const out=[];
+  (S.letters||[]).forEach(l=>{
+    (l.payments||[]).forEach((p,idx)=>{
+      if(!p.date||!(Number(p.amount)>0))return;
+      out.push({
+        id:`letter:${l.id}:${idx}`, date:p.date, amount:Number(p.amount||0),
+        type:"律師費", client:l.clientName||"", subject:l.subject||"",
+        note:[p.method,p.note].filter(Boolean).join(" · "),
+        source:"letter", suppPremium:0,
+      });
+    });
+  });
+  return out;
+}
+// 全部收入 = 案件收款 + 信函收款 + 手動收入
+function allIncomes(){ return [...caseIncomes(), ...letterIncomes(), ...S.incomes]; }
 
 function getYearIncomes(y){return allIncomes().filter(i=>i.date?.startsWith(y));}
 function getYearExpenses(y){return S.expenses.filter(e=>e.date?.startsWith(y));}
@@ -504,6 +527,7 @@ function renderIncome(){
   const y=String(S.year);
   const list=allIncomes().filter(i=>i.date?.startsWith(y)).sort((a,b)=>b.date.localeCompare(a.date));
   const caseCount=list.filter(i=>i.source==="case").length;
+  const letterCount=list.filter(i=>i.source==="letter").length;
   const total=list.reduce((s,i)=>s+Number(i.amount||0),0);
   const totalSupp=list.reduce((s,i)=>s+Number(i.suppPremium||0),0);
   return`
@@ -514,7 +538,7 @@ function renderIncome(){
     </div>
     <div style="font-size:12px;color:var(--blue)">二代健保補充保費已扣：${fmt(totalSupp)}</div>
   </div>
-  ${caseCount>0?`<div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:8px 12px;background:var(--paper-sunken);border:1px solid var(--rule);border-radius:3px">📁 其中 ${caseCount} 筆為案件管理系統的收款（唯讀，請於案件系統修改）</div>`:""}
+  ${(caseCount>0||letterCount>0)?`<div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:8px 12px;background:var(--paper-sunken);border:1px solid var(--rule);border-radius:3px">其中${caseCount>0?` 📁 ${caseCount} 筆來自案件管理系統`:""}${letterCount>0?`${caseCount>0?"、":" "}📮 ${letterCount} 筆來自信函管理系統`:""}的收款（唯讀，請於各原系統修改）</div>`:""}
   ${list.length===0?`<div class="empty"><div class="empty-ico">💵</div><div>尚無${S.year}年收入記錄</div></div>`:""}
   ${list.map(i=>`
   <div class="rec-card">
@@ -523,11 +547,12 @@ function renderIncome(){
         <span style="font-size:15px;font-weight:800;color:var(--green)">${fmt(Number(i.amount))}</span>
         <span class="badge" style="background:rgba(34,197,94,.15);color:var(--green);border-color:rgba(34,197,94,.3)">${i.type}</span>
         ${i.source==="case"?`<span class="badge" style="background:var(--seal-wash);color:var(--seal);border-color:transparent">📁 案件${i.firmCaseNo?" "+esc(i.firmCaseNo):""}</span>`:""}
+        ${i.source==="letter"?`<span class="badge" style="background:var(--seal-wash);color:var(--seal);border-color:transparent">📮 信函${i.subject?" "+esc(i.subject):""}</span>`:""}
         ${i.suppPremium>0?`<span class="badge" style="background:rgba(56,189,248,.15);color:var(--blue);border-color:rgba(56,189,248,.3)">健保 ${fmt(Number(i.suppPremium))}</span>`:""}
       </div>
       <div style="font-size:11px;color:var(--text3)">${i.date}${i.client?" · "+esc(i.client):""}${i.note?" · "+esc(i.note):""}</div>
     </div>
-    ${i.source==="case"?`<div style="font-size:10px;color:var(--text4);align-self:center">案件系統</div>`:`
+    ${i.source==="case"?`<div style="font-size:10px;color:var(--text4);align-self:center">案件系統</div>`:i.source==="letter"?`<div style="font-size:10px;color:var(--text4);align-self:center">信函系統</div>`:`
     <div style="display:flex;gap:5px">
       <button class="btn btn-outline btn-xs" data-edit-income="${i.id}">✏️</button>
       <button class="btn btn-danger btn-xs" data-del="taxIncomes|${i.id}">🗑</button>

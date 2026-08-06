@@ -437,6 +437,37 @@ function computeAppealDeadline(caseType, receiptDate){
     }
     return fmt(d);
 }
+// 法院傳票報到 QR（JSON）解析：{crmyy 年度, crmid 字別, crmno 案號序, sys 類別, clnm 律師}
+const QR_SYS_TYPE = {V:"民事", M:"刑事", A:"行政"};
+function parseCourtQR(raw){
+  try{
+    let txt=String(raw||"").trim();
+    if(/%7[bB]|%22/.test(txt)){ try{ txt=decodeURIComponent(txt); }catch(_){} }
+    const d=JSON.parse(txt);
+    if(!d || !d.crmyy || !d.crmno) return null;
+    const num=parseInt(d.crmno,10);
+    const caseNo=`${d.crmyy}年度${d.crmid||""}字第${isNaN(num)?d.crmno:num}號`;
+    return { caseNo, caseType:QR_SYS_TYPE[d.sys]||"", crmyy:String(d.crmyy), crmid:d.crmid||"", crmno:String(num||d.crmno), clnm:d.clnm||"", sys:d.sys||"" };
+  }catch(e){ return null; }
+}
+// 以年度＋字別＋號數比對案件既有的法院案號（容忍空白與臺/台差異、前置零）
+function caseNoMatches(stored, p){
+  const norm=s=>String(s||"").replace(/\s/g,"").replace(/臺/g,"台");
+  const n=norm(stored);
+  if(!n) return false;
+  if(n===norm(p.caseNo)) return true;
+  return n.includes(norm(p.crmyy)) && (!p.crmid || n.includes(norm(p.crmid))) && n.includes(norm(p.crmno));
+}
+// 掃碼用：優先用瀏覽器內建 BarcodeDetector；否則載入 jsQR（純 JS 解碼，跨 iOS/Android）
+function loadJsQR(){
+  return new Promise(res=>{
+    if(("BarcodeDetector" in window) || window.jsQR) return res();
+    const s=document.createElement("script");
+    s.src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js";
+    s.onload=()=>res(); s.onerror=()=>res();
+    document.head.appendChild(s);
+  });
+}
 // 書狀種類
 const FILING_TYPES = ["起訴狀","答辯狀","準備書狀","準備程序書狀","言詞辯論意旨狀","上訴狀","上訴理由狀","抗告狀","聲請狀","陳報狀","調查證據聲請狀","刑事辯護意旨狀","告訴狀","再議聲請狀","強制執行聲請狀","其他"];
 
@@ -637,6 +668,10 @@ function App({user}){
     const [calTodoModal, setCalTodoModal] = useState(null); // null | dateStr
     const [restoreModal, setRestoreModal] = useState(null); // null | array of {items,at}
     const [calFilingForm, setCalFilingForm] = useState(null); // null | {caseId,type,summary}（月曆手動新增遞狀）
+    const [scanState, setScanState] = useState(null); // null | {mode:'scanning'|'form'|'error', ...}（掃傳票排庭）
+    const scanVideoRef = React.useRef(null);
+    const scanStreamRef = React.useRef(null);
+    const scanRafRef = React.useRef(null);
     const [calView, setCalView] = useState("grid"); // grid | agenda（月曆/議程檢視）
     const [calPicker, setCalPicker] = useState(false); // 年月快速選擇面板
     const [calTodoInput, setCalTodoInput] = useState("");
@@ -1048,6 +1083,65 @@ function App({user}){
             setCalFilingForm(null);
         }catch(e){ console.error(e); toast("⚠️ 新增失敗，請檢查網路後重試"); }
     };
+    // ── 掃傳票 QR 排庭 ──
+    const handleScan=(raw)=>{
+        const p=parseCourtQR(raw);
+        if(!p){ setScanState({mode:"error",msg:"無法辨識此 QR，可能不是法院傳票的報到條碼。",raw:String(raw||"").slice(0,120)}); return; }
+        const matched=cases.find(c=>(c.courtCaseNos||[]).some(n=>caseNoMatches(n,p)));
+        setScanState({mode:"form", ...p, caseId:matched?matched.id:"", matched:!!matched, caseQuery:"",
+            h:{date:"",time:"",agency:matched?(matched.court||matched.currentAgency||""):"",courtroom:"",note:""}});
+    };
+    const saveScanHearing=async()=>{
+        const s=scanState; if(!s) return;
+        if(!s.caseId){ toast("請選擇對應案件"); return; }
+        if(!s.h.date){ toast("請填開庭日期"); return; }
+        const c=cases.find(x=>x.id===s.caseId); if(!c){ toast("找不到案件"); return; }
+        const hearings=[...(c.hearings||[]),{id:uid(),date:s.h.date,time:s.h.time||"",agency:s.h.agency||"",courtroom:s.h.courtroom||"",note:s.h.note||""}];
+        try{
+            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{hearings});
+            toast("✅ 已新增庭期");
+            setScanState(null);
+        }catch(e){ console.error(e); toast("⚠️ 新增失敗，請檢查網路後重試"); }
+    };
+    // 相機掃描：開啟鏡頭、逐格解 QR
+    useEffect(()=>{
+        if(!scanState || scanState.mode!=="scanning") return;
+        let cancelled=false;
+        (async()=>{
+            await loadJsQR();
+            let stream;
+            try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}); }
+            catch(e){ if(!cancelled) setScanState({mode:"error",msg:"無法開啟相機，請確認瀏覽器已允許相機權限（需以 https 開啟）。"}); return; }
+            if(cancelled){ stream.getTracks().forEach(t=>t.stop()); return; }
+            scanStreamRef.current=stream;
+            const video=scanVideoRef.current;
+            if(!video){ stream.getTracks().forEach(t=>t.stop()); return; }
+            video.srcObject=stream; video.setAttribute("playsinline","true");
+            try{ await video.play(); }catch(_){}
+            const canvas=document.createElement("canvas");
+            const ctx=canvas.getContext("2d",{willReadFrequently:true});
+            let bd=null;
+            if("BarcodeDetector" in window){ try{ bd=new window.BarcodeDetector({formats:["qr_code"]}); }catch(_){} }
+            const tick=async()=>{
+                if(cancelled) return;
+                if(video.readyState>=2 && video.videoWidth){
+                    canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+                    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+                    let raw=null;
+                    if(bd){ try{ const codes=await bd.detect(canvas); if(codes&&codes.length) raw=codes[0].rawValue; }catch(_){} }
+                    if(!raw && window.jsQR){ try{ const img=ctx.getImageData(0,0,canvas.width,canvas.height); const r=window.jsQR(img.data,img.width,img.height); if(r) raw=r.data; }catch(_){} }
+                    if(raw){ handleScan(raw); return; }
+                }
+                scanRafRef.current=requestAnimationFrame(tick);
+            };
+            scanRafRef.current=requestAnimationFrame(tick);
+        })();
+        return ()=>{
+            cancelled=true;
+            if(scanRafRef.current) cancelAnimationFrame(scanRafRef.current);
+            if(scanStreamRef.current){ scanStreamRef.current.getTracks().forEach(t=>t.stop()); scanStreamRef.current=null; }
+        };
+    },[scanState]);
     const toggleCalTodo=(id)=>{
         const updated=calTodos.map(t=>t.id===id?{...t,done:!t.done}:t);
         saveCalTodos(updated);
@@ -1408,6 +1502,7 @@ function App({user}){
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
                     <button className="btn btn-outline btn-sm" onClick={()=>setView("tools")}>🔧 工具箱</button>
                     <button className="btn btn-outline btn-sm" onClick={()=>setView("stats")}>📊 統計</button>
+                    <button className="btn btn-outline btn-sm" onClick={()=>setScanState({mode:"scanning"})}>📷 掃傳票排庭</button>
                     <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
                     <button className="btn btn-outline btn-sm" title="登出"
                         onClick={()=>{ if(confirm("確認登出？")) window.fbAuth.signOut(window.auth); }}>
@@ -1801,6 +1896,86 @@ function App({user}){
                         </div>
                     );
                 })()}
+
+                {/* 掃傳票排庭：掃描中 */}
+                {scanState && scanState.mode==="scanning" && (
+                    <div className="cal-todo-modal" style={{zIndex:800,alignItems:"center"}} onClick={()=>setScanState(null)}>
+                        <div className="cal-todo-sheet" style={{maxWidth:460}} onClick={e=>e.stopPropagation()}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                                <div style={{fontWeight:700,color:"var(--seal)",fontSize:15}}>📷 掃描傳票 QR</div>
+                                <button onClick={()=>setScanState(null)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"var(--text3)"}}>✕</button>
+                            </div>
+                            <div style={{fontSize:12,color:"var(--text3)",marginBottom:10}}>將傳票右上方的 QR 對準框內，辨識成功會自動帶入案件。</div>
+                            <div style={{position:"relative",background:"#000",borderRadius:6,overflow:"hidden",aspectRatio:"3/4"}}>
+                                <video ref={scanVideoRef} style={{width:"100%",height:"100%",objectFit:"cover"}} muted playsInline/>
+                                <div style={{position:"absolute",inset:"18%",border:"2px solid rgba(255,255,255,.85)",borderRadius:8}}/>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* 掃傳票排庭：錯誤 */}
+                {scanState && scanState.mode==="error" && (
+                    <div className="cal-todo-modal" style={{zIndex:800,alignItems:"center"}} onClick={()=>setScanState(null)}>
+                        <div className="cal-todo-sheet" style={{maxWidth:420}} onClick={e=>e.stopPropagation()}>
+                            <div style={{fontWeight:700,color:"var(--seal)",fontSize:15,marginBottom:8}}>⚠️ 掃描失敗</div>
+                            <div style={{fontSize:13,color:"var(--text2)",marginBottom:8}}>{scanState.msg}</div>
+                            {scanState.raw && <div style={{fontSize:11,color:"var(--text4)",wordBreak:"break-all",background:"var(--bg4)",borderRadius:4,padding:"6px 8px",marginBottom:10}}>內容：{scanState.raw}</div>}
+                            <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+                                <button className="btn btn-sm" onClick={()=>setScanState(null)}>關閉</button>
+                                <button className="btn btn-gold btn-sm" onClick={()=>setScanState({mode:"scanning"})}>重新掃描</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* 掃傳票排庭：填庭期 */}
+                {scanState && scanState.mode==="form" && (
+                    <div className="cal-todo-modal" style={{zIndex:800,alignItems:"center"}} onClick={()=>setScanState(null)}>
+                        <div className="cal-todo-sheet" style={{maxWidth:460}} onClick={e=>e.stopPropagation()}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                                <div style={{fontWeight:700,color:"var(--seal)",fontSize:15}}>📷 掃碼排庭</div>
+                                <button onClick={()=>setScanState(null)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"var(--text3)"}}>✕</button>
+                            </div>
+                            <div style={{background:"var(--bg4)",borderRadius:6,padding:"8px 10px",marginBottom:10,fontSize:12}}>
+                                <div><b>案號</b>：{scanState.caseNo}</div>
+                                {scanState.caseType&&<div><b>類型</b>：{scanState.caseType}</div>}
+                                {scanState.clnm&&<div><b>律師</b>：{scanState.clnm}</div>}
+                            </div>
+                            <label className="fl">對應案件</label>
+                            {scanState.caseId ? (()=>{
+                                const c=cases.find(x=>x.id===scanState.caseId);
+                                return <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+                                    <span style={{flex:1,fontSize:13,fontWeight:700}}>{c?`${c.firmCaseNo} · ${c.clientName}`:"（已選案件）"}{scanState.matched&&<span style={{fontSize:10,color:"var(--green)",fontWeight:400}}> · 自動對應</span>}</span>
+                                    <button className="btn btn-sm" onClick={()=>setScanState(s=>({...s,caseId:""}))}>換一個</button>
+                                </div>;
+                            })() : (<>
+                                <div style={{fontSize:11,color:"var(--yellow)",margin:"2px 0 4px"}}>找不到符合此案號的案件，請手動選擇</div>
+                                <input className="fi" placeholder="輸入案號或當事人搜尋…" value={scanState.caseQuery||""} onChange={e=>setScanState(s=>({...s,caseQuery:e.target.value}))} style={{marginBottom:6}}/>
+                                <div style={{border:"1px solid var(--border)",borderRadius:6,maxHeight:150,overflowY:"auto",marginBottom:8}}>
+                                    {(()=>{
+                                        const q=(scanState.caseQuery||"").trim().toLowerCase();
+                                        let list=[...cases].sort((a,b)=>(b.firmCaseNo||"").localeCompare(a.firmCaseNo||""));
+                                        if(q) list=list.filter(c=>[c.firmCaseNo,c.clientName,c.opposingParty].some(x=>(x||"").toLowerCase().includes(q)));
+                                        return list.slice(0,8).map(c=><div key={c.id} onClick={()=>setScanState(s=>({...s,caseId:c.id,h:{...s.h,agency:s.h.agency||c.court||c.currentAgency||""}}))} style={{padding:"8px 10px",cursor:"pointer",fontSize:13,borderBottom:"1px solid var(--border)"}}><span style={{color:"var(--gold)",fontFamily:"monospace",fontSize:11}}>{c.firmCaseNo}</span> · {c.clientName}</div>);
+                                    })()}
+                                </div>
+                            </>)}
+                            <div style={{fontSize:11,color:"var(--text4)",margin:"4px 0 8px"}}>開庭日期時間、法庭（QR 無此資料，請依傳票填寫）：</div>
+                            <div style={{display:"flex",gap:6,marginBottom:6}}>
+                                <input className="fi" type="date" value={scanState.h.date} onChange={e=>setScanState(s=>({...s,h:{...s.h,date:e.target.value}}))} style={{flex:1}}/>
+                                <input className="fi" type="time" value={scanState.h.time} onChange={e=>setScanState(s=>({...s,h:{...s.h,time:e.target.value}}))} style={{width:120}}/>
+                            </div>
+                            <div style={{display:"flex",gap:6,marginBottom:6}}>
+                                <input className="fi" placeholder="法院/機關" value={scanState.h.agency} onChange={e=>setScanState(s=>({...s,h:{...s.h,agency:e.target.value}}))} style={{flex:1}}/>
+                                <input className="fi" placeholder="法庭" value={scanState.h.courtroom} onChange={e=>setScanState(s=>({...s,h:{...s.h,courtroom:e.target.value}}))} style={{width:120}}/>
+                            </div>
+                            <input className="fi" placeholder="性質（例：言詞辯論、股別 忠股）" value={scanState.h.note} onChange={e=>setScanState(s=>({...s,h:{...s.h,note:e.target.value}}))} style={{marginBottom:10,width:"100%"}}/>
+                            <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+                                <button className="btn btn-sm" onClick={()=>setScanState(null)}>取消</button>
+                                <button className="btn btn-gold btn-sm" onClick={saveScanHearing} disabled={!scanState.caseId||!scanState.h.date}>新增庭期</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 待辦備份還原 Modal */}
                 {restoreModal && (

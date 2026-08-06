@@ -1485,6 +1485,23 @@ function App({user}){
         const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&location=${location}&details=${detail}`;
         window.open(url,"_blank");
     };
+    // 待辦 → Google 日曆
+    const addTodoToGoogle=(t)=>{
+        const dateStr=(t.date||"").replace(/-/g,"");
+        if(!dateStr){ toast("此待辦沒有日期"); return; }
+        let start, end;
+        if(t.time){
+            start=`${dateStr}T${t.time.replace(":","")}00`;
+            const [hh,mm]=t.time.split(":").map(Number);
+            end=`${dateStr}T${String((hh+1)%24).padStart(2,"0")}${String(mm).padStart(2,"0")}00`;
+        }else{
+            const nd=new Date(t.date+"T00:00:00"); nd.setDate(nd.getDate()+1);
+            start=dateStr; end=nd.toISOString().split("T")[0].replace(/-/g,"");
+        }
+        const title=encodeURIComponent(`【待辦】${t.text||""}`);
+        const detail=encodeURIComponent("由案件管理系統待辦匯出");
+        window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${detail}`,"_blank");
+    };
 
     // ── LOADING ──
     if(loading) return(
@@ -2193,6 +2210,7 @@ function App({user}){
                                             {t.time && <div style={{fontSize:11,color:"var(--warning)",fontWeight:700,marginBottom:2}}>⏰ {t.time}</div>}
                                             <div style={{color:t.done?"var(--text4)":"var(--text)",textDecoration:t.done?"line-through":"none",fontSize:14}}>{t.text}</div>
                                         </div>
+                                        <button className="cal-todo-del" onClick={e=>{e.stopPropagation();addTodoToGoogle(t);}} title="加入 Google 日曆">📅</button>
                                         {t.done && <button className="cal-todo-del" onClick={e=>{e.stopPropagation();archiveCalTodo(t.id);}} title="封存" style={{color:"var(--warning)"}}>📥</button>}
                                         <button className="cal-todo-del" onClick={e=>{e.stopPropagation();startEditCalTodo(t);}} title="編輯">✏️</button>
                                         <button className="cal-todo-del" onClick={e=>{e.stopPropagation();deleteCalTodo(t.id);}} title="刪除">🗑</button>

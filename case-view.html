@@ -72,7 +72,7 @@ html,body{min-height:100%;background:var(--paper);color:var(--ink);font-family:v
 
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import{getFirestore,doc,getDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import{getFirestore,doc,onSnapshot}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import{getAuth,signInAnonymously,onAuthStateChanged,setPersistence,inMemoryPersistence}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const cfg={apiKey:"AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",authDomain:"legalcasemanageer.firebaseapp.com",projectId:"legalcasemanageer",storageBucket:"legalcasemanageer.firebasestorage.app",messagingSenderId:"559838504556",appId:"1:559838504556:web:ba10c071a12650bbd85a49"};
@@ -171,16 +171,16 @@ async function start(){
     await signInAnonymously(auth);
   }
   catch(e){ stateView("⚠️","暫時無法連線","系統暫時無法連線，請稍後再試。若持續發生，請與律師聯繫。"); return; }
-  try{
-    const snap=await getDoc(doc(db,"caseShares",token));
+  // 即時監聽：律師端一更新，此頁自動跟著刷新
+  onSnapshot(doc(db,"caseShares",token), snap=>{
     if(!snap.exists()){ stateView("❌","連結無效或已停用","找不到對應的案件進度，可能連結已由律師停用，請向承辦律師確認。"); return; }
     const d=snap.data();
     if(d.revoked){ stateView("🚫","連結已停用","此連結已停用，如需查看請向承辦律師索取新的連結。"); return; }
     render(d);
-  }catch(e){
+  }, e=>{
     console.warn("load failed:",e.code||e.message);
     stateView("⚠️","無法讀取","請確認連結是否正確，或稍後再試。");
-  }
+  });
 }
 
 onAuthStateChanged(auth,()=>{});

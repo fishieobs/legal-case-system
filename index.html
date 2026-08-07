@@ -904,6 +904,8 @@ function App({user}){
     const writeShareSnap=async(c,token)=>{
         await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"caseShares",token), buildShareSnapshot(c,token));
     };
+    // 若此案件已開啟當事人連結，任何庭期/遞狀/宣判變動後自動刷新快照（當事人頁即時反映）
+    const maybeRefreshShare=(caseObj)=>{ if(caseObj && caseObj.shareToken){ writeShareSnap(caseObj, caseObj.shareToken).catch(e=>console.warn("share refresh failed:",e)); } };
     const genCaseShare=async(c)=>{
         try{
             const token=c.shareToken||genShareToken();
@@ -1081,6 +1083,7 @@ function App({user}){
         const filings=[...(c.filings||[]),{id:uid(),date:dateStr,type:f.type||"其他",summary:(f.summary||"").trim()}];
         try{
             await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{filings});
+            maybeRefreshShare({...c,filings});
             toast("✅ 已新增遞狀");
             setCalFilingForm(null);
         }catch(e){ console.error(e); toast("⚠️ 新增失敗，請檢查網路後重試"); }
@@ -1101,6 +1104,7 @@ function App({user}){
         const hearings=[...(c.hearings||[]),{id:uid(),date:s.h.date,time:s.h.time||"",agency:s.h.agency||"",courtroom:s.h.courtroom||"",note:s.h.note||""}];
         try{
             await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{hearings});
+            maybeRefreshShare({...c,hearings});
             toast("✅ 已新增庭期");
             setScanState(null);
         }catch(e){ console.error(e); toast("⚠️ 新增失敗，請檢查網路後重試"); }
@@ -1208,6 +1212,7 @@ function App({user}){
         const hearings=(c.hearings||[]).map(x=>x.id===h.id?{...x,date:h.date,time:h.time,agency:h.agency,courtroom:h.courtroom,note:h.note}:x);
         try{
             await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{hearings});
+            maybeRefreshShare({...c,hearings});
             toast("✅ 庭期已更新");
         }catch(e){ toast("❌ 更新失敗："+e.message); }
         setCalEditHearing(null);
@@ -1221,7 +1226,9 @@ function App({user}){
         const c=cases.find(c=>c.id===h.caseId);
         if(!c) return;
         try{
-            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{hearings:(c.hearings||[]).filter(x=>x.id!==h.id)});
+            const hearings=(c.hearings||[]).filter(x=>x.id!==h.id);
+            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{hearings});
+            maybeRefreshShare({...c,hearings});
             toast("🗑 庭期已刪除");
         }catch(e){ toast("❌ 刪除失敗"); }
     };

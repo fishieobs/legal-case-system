@@ -887,6 +887,7 @@ function App({user}){
     const shareUrl=token=>new URL("case-view.html?t="+token,location.href).href;
     const buildShareSnapshot=(c,token)=>{
         const tl=[];
+        if(c.retainerDate) tl.push({date:c.retainerDate,time:"",kind:"委任",title:"案件委任",detail:c.attorney?`委任律師 ${c.attorney}`:""});
         (c.hearings||[]).forEach(h=>{ if(h.date) tl.push({date:h.date,time:h.time||"",kind:"開庭",title:(h.agency||"開庭")+(h.courtroom?(" "+h.courtroom):""),detail:h.note||""}); });
         (c.filings||[]).forEach(f=>{ if(f.date) tl.push({date:f.date,time:"",kind:"遞狀",title:f.type||"書狀",detail:f.summary||""}); });
         if(c.verdictDate) tl.push({date:c.verdictDate,time:c.verdictTime||"",kind:"宣判",title:"宣判",detail:""});

@@ -97,8 +97,10 @@ function loadingView(msg){
 }
 
 const KIND_META={
+  "委任":{ico:"⚖",cls:"",label:"案件委任"},
   "開庭":{ico:"🏛",cls:"hearing",label:"開庭"},
   "遞狀":{ico:"📄",cls:"filing",label:"遞狀"},
+  "宣判":{ico:"📢",cls:"",label:"宣判"},
   "收判":{ico:"⚖",cls:"",label:"收受判決"},
   "末日":{ico:"⏰",cls:"upcoming",label:"上訴／抗告期限"},
 };
@@ -143,7 +145,7 @@ function render(d){
     return `<div class="tl-item">
       <div class="tl-dot ${dotCls}"></div>
       <div class="tl-date">${esc(e.date)}${e.time?` ${esc(e.time)}`:""}</div>
-      <div class="tl-tag" style="color:${e.kind==="收判"||e.kind==="末日"?"var(--seal)":"var(--navy)"}">${m.ico} ${esc(m.label)}</div>
+      <div class="tl-tag" style="color:${e.kind==="收判"||e.kind==="末日"||e.kind==="宣判"?"var(--seal)":e.kind==="委任"?"var(--ink-soft)":"var(--navy)"}">${m.ico} ${esc(m.label)}</div>
       <div class="tl-title">${esc(e.title||"")}</div>
       ${e.detail?`<div class="tl-detail">${esc(e.detail)}</div>`:""}
       ${when&&n>=0?`<div class="tl-when">📅 ${when}</div>`:""}

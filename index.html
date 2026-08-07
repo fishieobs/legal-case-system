@@ -2613,7 +2613,12 @@ function App({user}){
                         {selected.verdictDate && (
                             <div className="info-row">
                                 <div className="info-lbl">宣判日期</div>
-                                <div className="info-val">{selected.verdictDate}{selected.verdictTime?` ${selected.verdictTime}`:""}</div>
+                                <div className="info-val">
+                                    {selected.verdictDate}{selected.verdictTime?` ${selected.verdictTime}`:""}
+                                    <a href="https://csdi3.judicial.gov.tw/judbp/wkw/WHD1A01.htm" target="_blank" rel="noreferrer"
+                                        style={{display:"inline-block",marginLeft:8,color:"var(--seal)",fontSize:12,fontWeight:700,whiteSpace:"nowrap"}}
+                                        title="開啟司法院判決主文查詢系統，輸入案號查詢主文">🔗 查詢判決主文</a>
+                                </div>
                             </div>
                         )}
                         {selected.judgmentReceivedDate && (

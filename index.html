@@ -2421,6 +2421,9 @@ function App({user}){
                     // Build timeline events
                     const events = [];
                     if(selected.retainerDate) events.push({date:selected.retainerDate,type:"milestone",icon:"⚖",label:"案件委任",detail:`委任律師 ${selected.attorney||FIRM_ATTORNEY}`,color:"var(--gold)"});
+                    if(selected.verdictDate) events.push({date:selected.verdictDate,time:selected.verdictTime||"",type:"milestone",tag:"宣判",icon:"📢",label:"宣判",detail:selected.verdictTime?`${selected.verdictTime}`:"",color:"var(--seal)"});
+                    if(selected.judgmentReceivedDate) events.push({date:selected.judgmentReceivedDate,type:"milestone",tag:"收判",icon:"📩",label:"收受判決",detail:"",color:"var(--seal)"});
+                    {const effDL=selected.appealDeadline||(selected.judgmentReceivedDate?computeAppealDeadline(selected.caseType,selected.judgmentReceivedDate):""); if(effDL) events.push({date:effDL,type:"milestone",tag:"末日",icon:"⏰",label:selected.appealDeadline?"上訴/抗告末日":"上訴末日(推定)",detail:selected.appealDeadline?"":"未計在途期間",color:"var(--seal)"});}
                     (selected.hearings||[]).forEach(h=>{
                         const d=daysUntil(h.date);
                         events.push({date:h.date,time:h.time,type:d<0?"past":d===0?"today":"future",icon:"🏛",label:`${h.agency||"開庭"} ${h.note?`· ${h.note}`:""}`,detail:`${h.courtroom||""} ${h.time||""}`.trim(),color:d<0?"var(--text4)":d===0?"var(--red)":d<=7?"var(--yellow)":"var(--gold)"});

@@ -840,6 +840,38 @@ function App({user}){
     const hasFutureHearing = cases.some(c=>(c.hearings||[]).some(h=>daysUntil(h.date)>=0));
     const pickUpcomingDays = v=>{ setUpcomingDays(v); try{localStorage.setItem("caseUpcomingDays",String(v));}catch(_){} };
 
+    // ── 緊急期限提醒：彙整 3 日內（含逾期未處理）的關鍵期日 ──
+    const ALERT_WINDOW = 3;
+    const alerts = (()=>{
+        const out=[];
+        cases.forEach(c=>{
+            // 上訴/抗告末日（手動優先，否則依收受判決日推算）
+            const dl = c.appealDeadline || (c.judgmentReceivedDate?computeAppealDeadline(c.caseType,c.judgmentReceivedDate):"");
+            if(dl){
+                const d=daysUntil(dl);
+                if(d!==null && d<=ALERT_WINDOW && d>=-3)
+                    out.push({d,kind:"末日",icon:"⏰",label:`${c.appealDeadline?"上訴/抗告末日":"上訴末日(推定)"}`,who:c.clientName,caseId:c.id,date:dl,critical:true});
+            }
+            if(c.verdictDate){
+                const d=daysUntil(c.verdictDate);
+                if(d!==null && d>=0 && d<=ALERT_WINDOW)
+                    out.push({d,kind:"宣判",icon:"📢",label:"宣判",who:c.clientName,caseId:c.id,date:c.verdictDate,time:c.verdictTime||""});
+            }
+            (c.hearings||[]).forEach(h=>{
+                const d=daysUntil(h.date);
+                if(d!==null && d>=0 && d<=ALERT_WINDOW)
+                    out.push({d,kind:"開庭",icon:"🏛",label:`開庭 ${h.agency||""}${h.courtroom?" "+h.courtroom:""}`.trim(),who:c.clientName,caseId:c.id,date:h.date,time:h.time||""});
+            });
+            (c.todos||[]).forEach(t=>{
+                if(t.done||!t.due) return;
+                const d=daysUntil(t.due);
+                if(d!==null && d<=ALERT_WINDOW && d>=-30)
+                    out.push({d,kind:"待辦",icon:"✅",label:t.text,who:c.clientName,caseId:c.id,date:t.due});
+            });
+        });
+        return out.sort((a,b)=>a.d-b.d);
+    })();
+
     // ── Save to Firebase ──
     const saveCase = async()=>{
         const parties=(formData.clientParties||[]).map(p=>({name:(p.name||"").trim(),phone:(p.phone||"").trim()})).filter(p=>p.name||p.phone);
@@ -1577,6 +1609,31 @@ function App({user}){
             </div>
 
             {/* Upcoming hearings */}
+            {alerts.length>0 && (
+                <div style={{margin:"0 16px 14px",background:"var(--seal-wash)",border:"1px solid var(--seal)",borderLeft:"4px solid var(--seal)",borderRadius:3,padding:"12px 14px"}}>
+                    <div style={{fontWeight:800,color:"var(--seal)",fontSize:13,marginBottom:8,letterSpacing:".04em"}}>
+                        ⚠️ 近期關鍵期限（{alerts.length}）
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                        {alerts.map((a,i)=>{
+                            const when = a.d<0 ? `已逾期 ${Math.abs(a.d)} 天` : a.d===0 ? "今天！" : a.d===1 ? "明天" : `${a.d} 天後`;
+                            const urgent = a.d<=1 || a.critical;
+                            return(
+                                <div key={i} onClick={()=>openDetail(a.caseId)}
+                                    style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,flexWrap:"wrap"}}>
+                                    <span style={{flexShrink:0}}>{a.icon}</span>
+                                    <span style={{fontWeight:700,color:"var(--text)"}}>{a.who||"（未填當事人）"}</span>
+                                    <span style={{color:"var(--text2)"}}>{a.label}</span>
+                                    <span style={{color:"var(--text3)",fontSize:11}}>{a.date}{a.time?` ${a.time}`:""}</span>
+                                    <span style={{marginLeft:"auto",fontWeight:800,fontSize:12,padding:"1px 9px",borderRadius:2,
+                                        background:urgent?"var(--seal)":"var(--warning-wash)",color:urgent?"#fff":"var(--warning)"}}>{when}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             {hasFutureHearing && (
                 <div className="upcoming">
                     <div className="sec-title" style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
@@ -1750,6 +1807,14 @@ function App({user}){
                             deadlineMap[c.verdictDate].push({kind:"宣判",clientName:c.clientName,caseId:c.id});
                         }
                     });
+                    // 案件內待辦（有到期日者）也顯示於月曆
+                    const caseTodoMap={};
+                    cases.forEach(c=>{
+                        (c.todos||[]).forEach(t=>{
+                            if(!t.due) return;
+                            (caseTodoMap[t.due]=caseTodoMap[t.due]||[]).push({...t,clientName:c.clientName,caseId:c.id});
+                        });
+                    });
                     // 單純撰狀（未代理）的遞狀：舊版 calFilings + 新版信函系統書狀代撰
                     (calFilings||[]).forEach(f=>{
                         if(!f.date) return;
@@ -1848,6 +1913,7 @@ function App({user}){
                                     (hearingMap[ds]||[]).forEach(h=>rows.push({date:ds,time:h.time,icon:h.isWidget?"⚡":"🏛",label:h.clientName,detail:h.note,caseId:h.caseId,color:h.isWidget?"#9E2A24":(TYPE_COLOR[h.caseType]||"#8A8377")}));
                                     (filingMap[ds]||[]).forEach(f=>rows.push({date:ds,time:"",icon:"📄",label:`${f.type} · ${f.clientName}`,detail:f.summary,caseId:f.caseId,color:"var(--navy)"}));
                                     calTodos.filter(t=>t.date===ds && !t.archived).forEach(t=>rows.push({date:ds,time:"",icon:t.done?"✓":"○",label:t.text,detail:t.done?"已完成":"待辦",caseId:null,color:t.done?"var(--positive)":"var(--warning)"}));
+                                    (caseTodoMap[ds]||[]).forEach(t=>rows.push({date:ds,time:"",icon:t.done?"✓":"○",label:`${t.text} · ${t.clientName}`,detail:t.done?"已完成":"案件待辦",caseId:t.caseId,color:t.done?"var(--positive)":"var(--warning)"}));
                                 }
                                 rows.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"99:99").localeCompare(b.time||"99:99"));
                                 if(!rows.length) return <div className="empty" style={{padding:"36px 20px"}}><div className="ico">🗓</div>本月無庭期、期限、遞狀或待辦</div>;
@@ -1919,12 +1985,20 @@ function App({user}){
                                                     {t.done?"✓":"○"}{t.time&&` ${t.time}`} {t.text}
                                                 </div>
                                             ))}
-                                            {(events.length>2||dateTodos.length>2||(dateStr&&(filingMap[dateStr]||[]).length>0)) && (
+                                            {cell.cur && (caseTodoMap[dateStr]||[]).filter(t=>!t.done).slice(0,2).map((t,ci)=>(
+                                                <div key={"ct"+ci} className="cal-todo-dot"
+                                                    onClick={e=>{e.stopPropagation();openDetail(t.caseId);}}
+                                                    title={`案件待辦（${t.clientName}）：${t.text}`}>
+                                                    ○ {t.clientName}·{t.text}
+                                                </div>
+                                            ))}
+                                            {(events.length>2||dateTodos.length>2||(dateStr&&(filingMap[dateStr]||[]).length>0)||(dateStr&&(caseTodoMap[dateStr]||[]).filter(t=>!t.done).length>2)) && (
                                                 <div style={{fontSize:8,color:"var(--text4)",paddingLeft:2,lineHeight:1.3}}>
                                                     {[
                                                         events.length>2?`+${events.length-2}庭`:null,
                                                         (dateStr&&(filingMap[dateStr]||[]).length>0)?`📄${filingMap[dateStr].length}狀`:null,
                                                         dateTodos.length>2?`+${dateTodos.length-2}待辦`:null,
+                                                        (dateStr&&(caseTodoMap[dateStr]||[]).filter(t=>!t.done).length>2)?`+${(caseTodoMap[dateStr]||[]).filter(t=>!t.done).length-2}案件待辦`:null,
                                                     ].filter(Boolean).join(" ")}
                                                 </div>
                                             )}
@@ -2118,6 +2192,7 @@ function App({user}){
                                                 if(c.verdictDate===ds) items.push({t:`📢 宣判${c.verdictTime?` ${c.verdictTime}`:""}：${c.clientName}`,c:"var(--seal)",b:false,id:c.id});
                                                 if(c.judgmentReceivedDate===ds) items.push({t:`📩 收受判決：${c.clientName}`,c:"var(--seal)",b:false,id:c.id});
                                                 (c.filings||[]).forEach(f=>{ if(f.date===ds) items.push({t:`📄 ${f.type}：${c.clientName}${f.summary?`（${f.summary}）`:""}`,c:"var(--navy)",b:false,id:c.id}); });
+                                                (c.todos||[]).forEach(t=>{ if(t.due===ds) items.push({t:`${t.done?"✓":"○"} 案件待辦：${c.clientName}·${t.text}`,c:t.done?"var(--positive)":"var(--warning)",b:false,id:c.id}); });
                                             });
                                             (calFilings||[]).forEach(f=>{ if(f.date===ds) items.push({t:`📄 ${f.type}（撰狀）：${f.clientName||"—"}${f.summary?`（${f.summary}）`:""}`,c:"var(--navy)",b:false,standalone:true,filingId:f.id}); });
                                             (letterDrafts||[]).forEach(l=>{ const d=l.filingDate||l.retainerDate; if(d===ds) items.push({t:`📄 ${l.filingType||l.subject||"書狀"}（撰狀）：${l.clientName||"—"}${l.notes?`（${l.notes}）`:""}`,c:"var(--navy)",b:false,fromLetters:true,letterId:l.id}); });

@@ -226,6 +226,8 @@ input:checked+.tog-slider:before{transform:translateX(16px);background:var(--pap
             <option value="ip">智財</option>
             <option value="mediate">調解／仲裁代理</option>
             <option value="consult">法律諮詢</option>
+            <option value="letter">律師函／存證信函</option>
+            <option value="draft">代撰書狀</option>
           </select>
         </div>
         <div class="fg">
@@ -528,16 +530,25 @@ const FP = {
   ip:       {first:[50000,80000,150000],second:[40000,70000,120000],third:[30000,60000,100000]},
   mediate:  {first:[15000,25000,40000],other:[15000,25000,40000]},
   consult:  {first:[5000,8000,15000],  other:[5000,8000,15000]},
+  letter:   {attorney_letter:[5000,8000,12000], certified_letter:[3000,5000,8000]},
+  draft:    {draft:[8000,12000,20000]},
 };
 const FL = {
   civil:"民事訴訟委任酬金",criminal:"刑事辯護委任酬金",admin:"行政訴訟委任酬金",
   family:"家事事件委任酬金",labor:"勞動事件委任酬金",ip:"智財案件委任酬金",
   mediate:"調解／仲裁代理酬金",consult:"法律諮詢費",
+  letter:"律師函／存證信函費",draft:"代撰書狀費",
 };
 const IL = {first:"一審",second:"二審",third:"三審",other:"",
   execution:"強制執行",provisional_seizure:"假扣押",provisional_execution:"假執行",
   investigation:"偵查",reconsideration:"再議",private_prosecution:"聲請准予自訴",
-  protection_order:"保護令"};
+  protection_order:"保護令",
+  attorney_letter:"律師函",certified_letter:"存證信函",draft:""};
+// 不適用審級的案件類型：直接以文件種類為服務別
+const CUSTOM_INST = {
+  letter: [["attorney_letter","律師函"],["certified_letter","存證信函"]],
+  draft:  [["draft","代撰書狀"]],
+};
 // 各案件類型的額外服務別（附加於標準審級之後）
 const EXTRA_INST = {
   civil:    [["execution","強制執行"],["provisional_seizure","假扣押"],["provisional_execution","假執行"]],
@@ -548,9 +559,9 @@ function rebuildInstOptions(){
   const ct = document.getElementById("fix-ct").value;
   const sel = document.getElementById("fix-inst");
   const prev = sel.value;
-  const opts = [["first","第一審"],["second","第二審"],["third","第三審"], ...(EXTRA_INST[ct]||[]), ["other","其他"]];
+  const opts = CUSTOM_INST[ct] || [["first","第一審"],["second","第二審"],["third","第三審"], ...(EXTRA_INST[ct]||[]), ["other","其他"]];
   sel.innerHTML = opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
-  sel.value = opts.some(o=>o[0]===prev) ? prev : "first";
+  sel.value = opts.some(o=>o[0]===prev) ? prev : opts[0][0];
 }
 function onCaseTypeChange(){ rebuildInstOptions(); updateFixedPreset(); }
 

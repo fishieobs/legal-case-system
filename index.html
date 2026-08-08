@@ -407,6 +407,28 @@ const STATUS_COLOR={"進行中":"#3A6B4F","已結案":"#8A8377","上訴中":"#A6
 
 const SCHOOL_EVENTS = window.SCHOOL_EVENTS || {};
 
+// 案件進度階段：由既有資料自動推導「目前卡在哪」，免手動維護
+function caseStage(c, daysUntilFn){
+    const du = daysUntilFn;
+    if(c.status==="已結案") return {label:"已結案", color:"#8A8377"};
+    if(c.status==="準備委任") return {label:"待委任", color:"#2A3D4F"};
+    if(c.status==="停止中") return {label:"停止中", color:"#9E2A24"};
+    // 上訴期間內（含推定）→ 最優先，因為有失權風險
+    const dl = c.appealDeadline || (c.judgmentReceivedDate?computeAppealDeadline(c.caseType,c.judgmentReceivedDate):"");
+    if(dl){ const d=du(dl); if(d!==null && d>=0) return {label:`待上訴（剩${d}天）`, color:"#9E2A24"}; }
+    // 已宣判但尚未收判 → 等判決書
+    if(c.verdictDate && du(c.verdictDate)<=0 && !c.judgmentReceivedDate) return {label:"待收判決", color:"#A6741C"};
+    // 宣判在即
+    if(c.verdictDate){ const d=du(c.verdictDate); if(d!==null && d>=0) return {label:`待宣判（${d}天）`, color:"#A6741C"}; }
+    // 下次開庭
+    const nh=(c.hearings||[]).filter(h=>h.date&&du(h.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
+    if(nh){ const d=du(nh.date); return {label:`待開庭（${d===0?"今天":d+"天"}）`, color:"#3A6B4F"}; }
+    // 有未完成待辦
+    const pend=(c.todos||[]).filter(t=>!t.done).length;
+    if(pend) return {label:`待處理 ${pend} 項`, color:"#3E6B6B"};
+    return {label:"待排期", color:"#8A8377"};
+}
+
 const FIRM_ATTORNEY = "張世東律師"; // 事務所固定承辦律師（未填時一律以此為準）
 const emptyCase = {
     id:"", firmCaseNo:"", courtCaseNos:[""], division:"",
@@ -2416,6 +2438,7 @@ function App({user}){
                                     <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
                                         <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#8A8377"}/>
                                         <Badge label={c.status} color={STATUS_COLOR[c.status]||"#8A8377"}/>
+                                        {(()=>{const st=caseStage(c,daysUntil);return <Badge label={st.label} color={st.color}/>;})()}
                                     </div>
                                 </div>
                                 <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:6,fontSize:12}}>
@@ -2438,12 +2461,12 @@ function App({user}){
                 {listTab==="list" && <div className="tbl-wrap">
                     <table>
                         <thead><tr>
-                            <th>案件編號</th><th>當事人</th><th>對造</th><th>繫屬機關</th><th>類型</th><th>狀態</th>
+                            <th>案件編號</th><th>當事人</th><th>對造</th><th>繫屬機關</th><th>類型</th><th>狀態</th><th>目前階段</th>
                             <th style={{textAlign:"right"}}>已收(元)</th><th style={{textAlign:"right"}}>未收(元)</th><th style={{textAlign:"right"}}>代墊(元)</th>
                             <th>最近開庭</th><th>宣判</th><th>待辦</th><th></th>
                         </tr></thead>
                         <tbody>
-                            {sortedFiltered.length===0 && <tr><td colSpan={13} style={{textAlign:"center",padding:40,color:"var(--text3)"}}>查無案件</td></tr>}
+                            {sortedFiltered.length===0 && <tr><td colSpan={14} style={{textAlign:"center",padding:40,color:"var(--text3)"}}>查無案件</td></tr>}
                             {sortedFiltered.map(c=>{
                                 const nh=(c.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
                                 const pt=(c.todos||[]).filter(t=>!t.done).length;
@@ -2455,6 +2478,7 @@ function App({user}){
                                         <td style={{color:"var(--text3)",fontSize:11}}>{c.currentAgency||"—"}</td>
                                         <td><Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#8A8377"}/></td>
                                         <td><Badge label={c.status} color={STATUS_COLOR[c.status]||"#8A8377"}/></td>
+                                        <td>{(()=>{const st=caseStage(c,daysUntil);return <Badge label={st.label} color={st.color}/>;})()}</td>
                                         <td style={{textAlign:"right",color:"var(--green)"}}>{getReceived(c)?getReceived(c).toLocaleString():"—"}</td>
                                         <td style={{textAlign:"right",color:getUnpaid(c)>0?"var(--red)":"var(--text3)"}}>{getUnpaid(c)?getUnpaid(c).toLocaleString():"—"}</td>
                                         <td style={{textAlign:"right",color:"var(--purple)"}}>{c.disbursements?Number(c.disbursements).toLocaleString():"—"}</td>
@@ -2529,6 +2553,7 @@ function App({user}){
                 <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
                     <Badge label={selected.caseType} color={TYPE_COLOR[selected.caseType]||"#8A8377"}/>
                     <Badge label={selected.status} color={STATUS_COLOR[selected.status]||"#8A8377"}/>
+                    {(()=>{const st=caseStage(selected,daysUntil);return <Badge label={st.label} color={st.color}/>;})()}
                     <Badge label={selected.instance} color="#8A8377"/>
                     {(selected.tags||[]).map(tag=>{
                         const t=allTags.find(x=>x.name===tag);

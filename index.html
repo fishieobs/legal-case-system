@@ -652,6 +652,8 @@ function App({user}){
     const [filterStatus, setFilterStatus] = useState("全部");
     const [filterType, setFilterType] = useState("全部");
     const [deleteConfirm, setDeleteConfirm] = useState(false);
+    const [trashedCases, setTrashedCases] = useState([]); // 已刪除案件（可還原）
+    const [trashModal, setTrashModal] = useState(false);
     const [detailTab, setDetailTab] = useState("info"); // info | timeline | notes
     const [noteInput, setNoteInput] = useState("");
     const [noteTag, setNoteTag] = useState("一般");
@@ -752,8 +754,11 @@ function App({user}){
             onSnapshot(
                 collection(window.db,"cases"),
                 snap=>{
-                    const data = snap.docs.map(d=>({...d.data(),id:d.id}));
+                    const all = snap.docs.map(d=>({...d.data(),id:d.id}));
+                    // 軟刪除：已刪除案件不進入主流程（列表/月曆/統計自動排除），另存回收桶
+                    const data = all.filter(c=>!c.deleted);
                     setCases(data);
+                    setTrashedCases(all.filter(c=>c.deleted));
                     setLoading(false);
                     try{ localStorage.setItem("cases_cache", JSON.stringify(data)); }catch(e){}
                 },
@@ -871,15 +876,31 @@ function App({user}){
         }
     };
 
+    // 軟刪除：標記 deleted，資料保留可還原（不再直接抹除）
     const deleteCase = async()=>{
         try{
-            // 一併清除已發出的當事人連結，避免刪案後連結仍可讀
             const cur=cases.find(c=>c.id===selectedId);
+            // 一併停用已發出的當事人連結，避免刪案後連結仍可讀（還原時可重新產生）
             if(cur&&cur.shareToken){ try{ await window.fbMethods.deleteDoc(window.fbMethods.doc(window.db,"caseShares",cur.shareToken)); }catch(_){} }
-            await window.fbMethods.deleteDoc(window.fbMethods.doc(window.db,"cases",selectedId));
-            toast("🗑 案件已刪除");
+            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",selectedId),
+                {deleted:true, deletedAt:new Date().toISOString(), shareToken:""});
+            toast("🗑 已移至回收桶，可於「已刪除」還原");
             setDeleteConfirm(false); setView("list");
-        }catch(e){ toast("❌ 刪除失敗"); }
+        }catch(e){ console.error(e); toast("❌ 刪除失敗"); }
+    };
+    const restoreCase = async(id)=>{
+        try{
+            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",id),{deleted:false, deletedAt:""});
+            toast("✅ 已還原案件");
+        }catch(e){ console.error(e); toast("⚠️ 還原失敗，請檢查網路後重試"); }
+    };
+    const purgeCase = async(c)=>{
+        if(!window.confirm(`確定要永久刪除「${c.firmCaseNo||""} ${c.clientName||""}」嗎？\n\n此動作無法復原，該案件的庭期、書狀、收款、筆記將一併永久消失。`)) return;
+        try{
+            await pushBackup("casesPurged",[c]); // 永久刪除前留存一份備份
+            await window.fbMethods.deleteDoc(window.fbMethods.doc(window.db,"cases",c.id));
+            toast("已永久刪除");
+        }catch(e){ console.error(e); toast("⚠️ 刪除失敗，請檢查網路後重試"); }
     };
 
     // ── 當事人時間軸分享連結 ──
@@ -1529,6 +1550,7 @@ function App({user}){
                     <button className="btn btn-outline btn-sm" onClick={()=>setView("tools")}>🔧 工具箱</button>
                     <button className="btn btn-outline btn-sm" onClick={()=>setView("stats")}>📊 統計</button>
                     <button className="btn btn-outline btn-sm" onClick={()=>setScanState({mode:"scanning"})}>📷 掃傳票排庭</button>
+                    {trashedCases.length>0 && <button className="btn btn-outline btn-sm" onClick={()=>setTrashModal(true)} title="檢視已刪除案件，可還原">🗑 已刪除 {trashedCases.length}</button>}
                     <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
                     <button className="btn btn-outline btn-sm" title="登出"
                         onClick={()=>{ if(confirm("確認登出？")) window.fbAuth.signOut(window.auth); }}>
@@ -2007,6 +2029,36 @@ function App({user}){
                     </div>
                 )}
 
+                {/* 已刪除案件（回收桶） */}
+                {trashModal && (
+                    <div className="cal-todo-modal" style={{zIndex:800,alignItems:"center"}} onClick={()=>setTrashModal(false)}>
+                        <div className="cal-todo-sheet" style={{maxWidth:540}} onClick={e=>e.stopPropagation()}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                                <div style={{fontWeight:700,color:"var(--seal)",fontSize:15}}>🗑 已刪除案件</div>
+                                <button onClick={()=>setTrashModal(false)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"var(--text3)"}}>✕</button>
+                            </div>
+                            <div style={{fontSize:12,color:"var(--text3)",marginBottom:12}}>已刪除的案件仍完整保留（庭期、書狀、收款、筆記），可隨時還原；確定不再需要才永久刪除。</div>
+                            {trashedCases.length===0 && <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0"}}>回收桶是空的。</div>}
+                            {[...trashedCases].sort((a,b)=>(b.deletedAt||"").localeCompare(a.deletedAt||"")).map(c=>(
+                                <div key={c.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+                                    <div style={{minWidth:0}}>
+                                        <div style={{fontSize:13,fontWeight:700,color:"var(--text)"}}>
+                                            <span style={{color:"var(--gold)",fontFamily:"monospace",fontSize:11}}>{c.firmCaseNo}</span> · {c.clientName||"（未填當事人）"}
+                                        </div>
+                                        <div style={{fontSize:11,color:"var(--text3)"}}>
+                                            {c.caseType||""}{c.court?` · ${c.court}`:""}{c.deletedAt?` · 刪除於 ${c.deletedAt.slice(0,10)}`:""}
+                                        </div>
+                                    </div>
+                                    <div style={{display:"flex",gap:6,flexShrink:0}}>
+                                        <button className="btn btn-gold btn-sm" onClick={()=>restoreCase(c.id)}>還原</button>
+                                        <button className="btn btn-sm" style={{background:"var(--red)",color:"#fff"}} onClick={()=>purgeCase(c)}>永久刪除</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* 待辦備份還原 Modal */}
                 {restoreModal && (
                     <div className="cal-todo-modal" style={{zIndex:700}} onClick={()=>setRestoreModal(null)}>
@@ -2385,10 +2437,10 @@ function App({user}){
                 <div className="overlay">
                     <div className="dialog">
                         <div style={{fontWeight:700,fontSize:16,marginBottom:10}}>確認刪除案件？</div>
-                        <div style={{color:"var(--text2)",marginBottom:20}}>「{selected.clientName}」將被永久刪除，無法復原。</div>
+                        <div style={{color:"var(--text2)",marginBottom:20}}>「{selected.clientName}」將移至<b>回收桶</b>，之後可從列表上方的「🗑 已刪除」還原。<br/><span style={{fontSize:12,color:"var(--text3)"}}>※ 此案已發出的當事人連結會一併停用。</span></div>
                         <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
                             <button className="btn btn-outline btn-sm" onClick={()=>setDeleteConfirm(false)}>取消</button>
-                            <button className="btn btn-sm" style={{background:"var(--red)",color:"#fff"}} onClick={deleteCase}>確認刪除</button>
+                            <button className="btn btn-sm" style={{background:"var(--red)",color:"#fff"}} onClick={deleteCase}>移至回收桶</button>
                         </div>
                     </div>
                 </div>

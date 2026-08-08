@@ -285,6 +285,8 @@ function Login(){
 // ══════════════════════════════
 function App(){
     const[letters,setLetters]=useState([]);
+    const[trashed,setTrashed]=useState([]);
+    const[trashModal,setTrashModal]=useState(false);
     const[templates,setTemplates]=useState([]);
     const[loading,setLoading]=useState(true);
     const[tab,setTab]=useState("list"); // list|templates|stats
@@ -312,8 +314,10 @@ function App(){
             // Load from cache immediately
             try{const c=localStorage.getItem("letters_cache");if(c){setLetters(JSON.parse(c));setLoading(false);}}catch(_){}
             onSnapshot(collection(window.db,"letters"),snap=>{
-                const data=snap.docs.map(d=>({...d.data(),id:d.id}));
-                setLetters(data);setLoading(false);
+                const all=snap.docs.map(d=>({...d.data(),id:d.id}));
+                // 軟刪除：已刪除者不進主流程，另存回收桶
+                const data=all.filter(l=>!l.deleted);
+                setLetters(data);setTrashed(all.filter(l=>l.deleted));setLoading(false);
                 try{localStorage.setItem("letters_cache",JSON.stringify(data));}catch(_){}
             },()=>setLoading(false));
             onSnapshot(collection(window.db,"letterTemplates"),snap=>{
@@ -363,11 +367,22 @@ function App(){
             setSelectedId(id);setView("detail");
         }catch(e){toast("❌ 儲存失敗："+e.message);}
     };
+    // 軟刪除：保留資料，可於「已刪除」還原
     const deleteLetter=async()=>{
         try{
-            await window.fb.deleteDoc(window.fb.doc(window.db,"letters",selectedId));
-            toast("🗑 已刪除");setDelConfirm(null);setView("list");
+            const cur=letters.find(l=>l.id===selectedId)||{};
+            await window.fb.setDoc(window.fb.doc(window.db,"letters",selectedId),{...cur,deleted:true,deletedAt:new Date().toISOString()});
+            toast("🗑 已移至回收桶，可還原");setDelConfirm(null);setView("list");
         }catch(e){toast("❌ 刪除失敗");}
+    };
+    const restoreLetter=async(l)=>{
+        try{ await window.fb.setDoc(window.fb.doc(window.db,"letters",l.id),{...l,deleted:false,deletedAt:""}); toast("✅ 已還原"); }
+        catch(e){ console.error(e); toast("⚠️ 還原失敗，請稍後再試"); }
+    };
+    const purgeLetter=async(l)=>{
+        if(!confirm(`確定要永久刪除「${l.subject||l.clientName||""}」嗎？\n\n此動作無法復原。`))return;
+        try{ await window.fb.deleteDoc(window.fb.doc(window.db,"letters",l.id)); toast("已永久刪除"); }
+        catch(e){ console.error(e); toast("⚠️ 刪除失敗，請稍後再試"); }
     };
     const saveTemplate=async()=>{
         if(!tmplForm.name.trim()){toast("⚠️ 請填範本名稱");return;}
@@ -413,6 +428,7 @@ function App(){
             <div className="header">
                 <div className="header-title">📮 信函管理系統</div>
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    {trashed.length>0 && <button className="btn btn-outline btn-sm" onClick={()=>setTrashModal(true)} title="檢視已刪除記錄，可還原">🗑 已刪除 {trashed.length}</button>}
                     <button className="btn btn-gold" onClick={openAdd}>＋ 新增</button>
                     <button className="btn btn-outline btn-sm" onClick={()=>{if(confirm("確認登出？"))window.fbAuth.signOut(window.auth);}}>🚪</button>
                 </div>
@@ -608,9 +624,30 @@ function App(){
                     </div>
                 </div>
 
+                {trashModal&&<div className="overlay" onClick={()=>setTrashModal(false)}><div className="dialog" style={{maxWidth:520}} onClick={e=>e.stopPropagation()}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                        <div style={{fontWeight:700,fontSize:16}}>🗑 已刪除記錄</div>
+                        <button className="btn btn-outline btn-sm" onClick={()=>setTrashModal(false)}>✕</button>
+                    </div>
+                    <div style={{color:"var(--text3)",fontSize:12,marginBottom:12}}>已刪除的記錄仍完整保留（含費用與收款），可隨時還原。</div>
+                    {trashed.length===0&&<div style={{color:"var(--text4)",fontSize:13,padding:"12px 0"}}>回收桶是空的。</div>}
+                    {[...trashed].sort((a,b)=>(b.deletedAt||"").localeCompare(a.deletedAt||"")).map(l=>(
+                        <div key={l.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+                            <div style={{minWidth:0}}>
+                                <div style={{fontSize:13,fontWeight:700,color:"var(--text)"}}>{l.subject||"（未填主旨）"}</div>
+                                <div style={{fontSize:11,color:"var(--text3)"}}>{(TYPE_MAP[l.type]||{}).label||""}{l.clientName?` · ${l.clientName}`:""}{l.deletedAt?` · 刪除於 ${l.deletedAt.slice(0,10)}`:""}</div>
+                            </div>
+                            <div style={{display:"flex",gap:6,flexShrink:0}}>
+                                <button className="btn btn-gold btn-sm" onClick={()=>restoreLetter(l)}>還原</button>
+                                <button className="btn btn-sm" style={{background:"var(--red)",color:"#fff"}} onClick={()=>purgeLetter(l)}>永久刪除</button>
+                            </div>
+                        </div>
+                    ))}
+                </div></div>}
+
                 {delConfirm&&<div className="overlay"><div className="dialog">
                     <div style={{fontWeight:700,fontSize:16,marginBottom:10}}>確認刪除此信函記錄？</div>
-                    <div style={{color:"var(--text2)",marginBottom:20}}>此操作無法復原。</div>
+                    <div style={{color:"var(--text2)",marginBottom:20}}>將移至回收桶，可從右上「🗑 已刪除」還原。</div>
                     <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
                         <button className="btn btn-outline btn-sm" onClick={()=>setDelConfirm(null)}>取消</button>
                         <button className="btn btn-sm" style={{background:"var(--red)",color:"#fff"}} onClick={deleteLetter}>確認刪除</button>

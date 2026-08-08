@@ -287,7 +287,7 @@ const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>
 
 let S={
   user:null, authChecked:false,
-  judgments:[], loading:true,
+  judgments:[], trashed:[], showTrash:false, loading:true,
   view:"list",   // list|detail|form
   tab:"list",    // list|stats|search
   selectedId:null,
@@ -352,7 +352,10 @@ onAuthStateChanged(auth,u=>{
   if(u){
     try{const c=localStorage.getItem("judgments_cache");if(c){S.judgments=JSON.parse(c);S.loading=false;render();}}catch(_){}
     onSnapshot(collection(db,"judgments"),snap=>{
-      S.judgments=snap.docs.map(d=>({...d.data(),id:d.id}));
+      const all=snap.docs.map(d=>({...d.data(),id:d.id}));
+      // 軟刪除：已刪除者不進主流程，另存回收桶
+      S.judgments=all.filter(j=>!j.deleted);
+      S.trashed=all.filter(j=>j.deleted);
       S.loading=false;
       try{localStorage.setItem("judgments_cache",JSON.stringify(S.judgments));}catch(_){}
       render();
@@ -376,11 +379,24 @@ async function saveJudgment(){
 }
 
 async function deleteJudgment(){
+  // 軟刪除：保留資料，可於「已刪除」還原
   try{
-    await deleteDoc(doc(db,"judgments",S.delConfirm));
-    toast("🗑 已刪除");
+    const j=S.judgments.find(x=>x.id===S.delConfirm)||{};
+    await setDoc(doc(db,"judgments",S.delConfirm),{...j,deleted:true,deletedAt:new Date().toISOString()});
+    toast("🗑 已移至回收桶，可還原");
     S.delConfirm=null; S.view="list"; S.selectedId=null; render();
   }catch(e){toast("❌ 刪除失敗");}
+}
+async function restoreJudgment(id){
+  const j=(S.trashed||[]).find(x=>x.id===id); if(!j)return;
+  try{ await setDoc(doc(db,"judgments",id),{...j,deleted:false,deletedAt:""}); toast("✅ 已還原"); render(); }
+  catch(e){ console.error(e); toast("⚠️ 還原失敗，請稍後再試"); }
+}
+async function purgeJudgment(id){
+  const j=(S.trashed||[]).find(x=>x.id===id); if(!j)return;
+  if(!confirm(`確定要永久刪除「${j.title||j.caseNo||""}」嗎？\n\n此動作無法復原。`))return;
+  try{ await deleteDoc(doc(db,"judgments",id)); toast("已永久刪除"); render(); }
+  catch(e){ console.error(e); toast("⚠️ 刪除失敗，請稍後再試"); }
 }
 
 // ══════════════════════════════════════════
@@ -613,6 +629,7 @@ function renderList(){
       <div><div class="hdr-title">判決書管理系統</div><div class="hdr-sub">Judgment Database</div></div>
     </div>
     <div class="hdr-actions">
+      ${(S.trashed||[]).length>0?`<button class="btn btn-outline btn-sm" id="btn-trash" title="檢視已刪除判決書，可還原">🗑 已刪除 ${S.trashed.length}</button>`:""}
       <button class="btn btn-gold" id="btn-new">＋ 新增判決</button>
       <button class="btn btn-outline btn-sm" id="btn-logout">🚪</button>
     </div>
@@ -696,7 +713,29 @@ function renderList(){
     <button class="bnav-btn${S.tab==="search"?" active":""}" data-bnav="search"><span class="bnav-icon">🔍</span>搜尋</button>
   </div>
   ${S.delConfirm?renderDelDialog():""}
+  ${S.showTrash?renderTrashDialog():""}
 </div>`;}
+
+function renderTrashDialog(){
+  const list=[...(S.trashed||[])].sort((a,b)=>(b.deletedAt||"").localeCompare(a.deletedAt||""));
+  return`<div class="overlay"><div class="dialog" style="max-width:520px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <div style="font-weight:700;font-size:16px">🗑 已刪除判決書</div>
+    <button class="btn btn-outline btn-xs" id="trash-close">✕</button>
+  </div>
+  <div style="color:var(--text3);font-size:12px;margin-bottom:12px">已刪除的記錄仍完整保留，可隨時還原。</div>
+  ${list.length===0?`<div style="color:var(--text4);font-size:13px;padding:12px 0">回收桶是空的。</div>`:""}
+  ${list.map(j=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+    <div style="min-width:0">
+      <div style="font-size:13px;font-weight:700;color:var(--text)">${esc(j.title||"（未命名）")}</div>
+      <div style="font-size:11px;color:var(--text3)">${esc(j.caseNo||"")}${j.court?" · "+esc(j.court):""}${j.deletedAt?" · 刪除於 "+esc(j.deletedAt.slice(0,10)):""}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button class="btn btn-gold btn-sm" data-restore-j="${esc(j.id)}">還原</button>
+      <button class="btn btn-sm" style="background:var(--red);color:#fff" data-purge-j="${esc(j.id)}">永久刪除</button>
+    </div>
+  </div>`).join("")}
+</div></div>`;}
 
 function renderStats(){
   const all=S.judgments;
@@ -805,7 +844,7 @@ function renderDelDialog(){return`
 <div class="overlay">
   <div class="dialog">
     <div style="font-weight:700;font-size:16px;margin-bottom:8px">確認刪除此判決書記錄？</div>
-    <div style="color:var(--text3);margin-bottom:20px;font-size:13px">此操作無法復原。</div>
+    <div style="color:var(--text3);margin-bottom:20px;font-size:13px">將移至回收桶，可從右上「🗑 已刪除」還原。</div>
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn btn-outline btn-sm" id="del-cancel">取消</button>
       <button class="btn btn-sm" style="background:var(--red);color:#fff" id="del-confirm">確認刪除</button>
@@ -836,6 +875,11 @@ function bindList(){
   });
   document.getElementById("del-cancel")?.addEventListener("click",()=>{S.delConfirm=null;render();});
   document.getElementById("del-confirm")?.addEventListener("click",deleteJudgment);
+  // 回收桶
+  document.getElementById("btn-trash")?.addEventListener("click",()=>{S.showTrash=true;render();});
+  document.getElementById("trash-close")?.addEventListener("click",()=>{S.showTrash=false;render();});
+  document.querySelectorAll("[data-restore-j]").forEach(b=>b.addEventListener("click",()=>restoreJudgment(b.dataset.restoreJ)));
+  document.querySelectorAll("[data-purge-j]").forEach(b=>b.addEventListener("click",()=>purgeJudgment(b.dataset.purgeJ)));
 }
 
 // ══════════════════════════════════════════

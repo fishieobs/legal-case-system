@@ -87,6 +87,10 @@ summary{font-family:var(--font-display);letter-spacing:var(--tracking-title);cur
 .card{position:relative;width:180mm;height:95mm;background:var(--paper-raised);
   overflow:hidden;font-variant-numeric:tabular-nums}
 .card+.card{margin-top:6mm}
+/* A4 台紙模式：把回執版面固定置於 A4 左上 */
+.a4page{position:relative;width:210mm;height:297mm;background:var(--paper-raised);overflow:hidden}
+.a4page+.a4page{margin-top:6mm}
+.a4page>.card{position:absolute;left:12mm;top:12mm;margin:0}
 .g{position:absolute;left:calc(var(--x)*1mm);top:calc(var(--y)*1mm)}
 .g.bx{width:calc(var(--w)*1mm);height:calc(var(--h)*1mm);border:1px solid var(--rule-strong)}
 .g.bxr{width:calc(var(--w)*1mm);height:calc(var(--h)*1mm);border:1px solid var(--seal)}
@@ -124,15 +128,14 @@ body{padding-top:44px}
 
 /* ---- 列印 ---- */
 @media print{
-  @page{size:180mm 95mm;margin:0}
   html,body{background:#fff;padding-top:0}
   .sys-nav{display:none!important}
   .app{display:none!important}
   .stagewrap{overflow:visible;border:0;padding:0;background:#fff}
   #stage{transform:none!important}
   #printarea{display:block}
-  .card{margin:0;break-after:page;page-break-after:always;box-shadow:none}
-  .card:last-child{break-after:auto;page-break-after:auto}
+  #printarea>*{margin:0;break-after:page;page-break-after:always;box-shadow:none}
+  #printarea>*:last-child{break-after:auto;page-break-after:auto}
 }
 </style>
 </head>
@@ -179,6 +182,14 @@ body{padding-top:44px}
 
   <h2 class="section-head">三、列印設定</h2>
   <div class="panel">
+    <div class="field">
+      <label for="pmode">列印方式</label>
+      <select id="pmode">
+        <option value="receipt">直接印回執（180×95mm 小紙／需能送小厚紙的印表機）</option>
+        <option value="a4">A4 台紙（回執貼在 A4 上印／任何事務機皆可）</option>
+      </select>
+      <small id="a4hint" style="display:none">A4 模式：先勾「連框線一起印」印一張空白 A4 當定位樣板，把回執疊上對齊貼好，再取消框線、把貼好回執的 A4 送回列印文字。</small>
+    </div>
     <div class="grid3">
       <div class="field">
         <label for="ox">X 偏移（mm·右正左負）</label>
@@ -375,6 +386,7 @@ function parseBatch(t){
 }
 
 function render(){
+  const mode = $('pmode').value;
   const fr = {zip:$('frZip').value, name:$('frName').value, addr:$('frAddr').value};
   const opt = {
     ox:+$('ox').value || 0, oy:+$('oy').value || 0,
@@ -386,11 +398,17 @@ function render(){
     : [{zip:$('toZip').value, name:$('toName').value, addr:$('toAddr').value}];
   const n = Math.max(1, Math.min(20, +$('copies').value || 1));
   let html = '';
-  rows.forEach(r=>{ for(let i=0;i<n;i++) html += cardHTML(r, fr, opt); });
+  rows.forEach(r=>{ for(let i=0;i<n;i++){ const card=cardHTML(r, fr, opt); html += mode==='a4' ? `<div class="a4page">${card}</div>` : card; } });
   $('printarea').innerHTML = html;
   const total = rows.length * n;
-  $('status').textContent = `共 ${total} 張（每張一頁）`;
+  $('status').textContent = `共 ${total} 張（每張一頁${mode==='a4'?'· A4 台紙':''}）`;
   save();
+}
+function applyPageStyle(){
+  let st=$('page-style'); if(!st){ st=document.createElement('style'); st.id='page-style'; document.head.appendChild(st); }
+  st.textContent = $('pmode').value==='a4'
+    ? '@media print{@page{size:A4;margin:0}}'
+    : '@media print{@page{size:180mm 95mm;margin:0}}';
 }
 
 function buildTune(){
@@ -416,7 +434,7 @@ function save(){
   store('set', {L, ui:{
     ox:$('ox').value, oy:$('oy').value, font:$('font').value,
     frZip:$('frZip').value, frName:$('frName').value, frAddr:$('frAddr').value,
-    guidePrint:$('guidePrint').checked
+    guidePrint:$('guidePrint').checked, pmode:$('pmode').value
   }});
 }
 function load(){
@@ -426,21 +444,30 @@ function load(){
   const u = d.ui || {};
   ['ox','oy','font','frZip','frName','frAddr'].forEach(k=>{ if(u[k]!==undefined) $(k).value = u[k]; });
   if(u.guidePrint) $('guidePrint').checked = true;
+  if(u.pmode) $('pmode').value = u.pmode;
+  $('a4hint').style.display = $('pmode').value==='a4' ? 'block' : 'none';
+  applyPageStyle();
 }
 
 function setZoom(){
   const z = (+$('zoom').value || 100) / 100;
+  const a4 = $('pmode').value==='a4';
+  const wmm = a4?210:180, hmm = a4?297:95;
   $('stage').style.transform = `scale(${z})`;
-  const w = 180 * 3.7795 * z;
   $('stage').style.height = 'auto';
-  $('stage').parentElement.style.minHeight = (95 * 3.7795 * z + 40) + 'px';
-  $('stage').style.width = w + 'px';
+  $('stage').parentElement.style.minHeight = (hmm * 3.7795 * z + 40) + 'px';
+  $('stage').style.width = (wmm * 3.7795 * z) + 'px';
 }
 
 ['toZip','toName','toAddr','frZip','frName','frAddr','ox','oy','font','copies','guide','batch']
   .forEach(id=>$(id).addEventListener('input', render));
 $('zoom').addEventListener('input', setZoom);
 $('guidePrint').addEventListener('change', ()=>{ save(); });
+$('pmode').addEventListener('change', ()=>{
+  applyPageStyle();
+  $('a4hint').style.display = $('pmode').value==='a4' ? 'block' : 'none';
+  render(); setZoom();
+});
 $('btnReset').addEventListener('click', ()=>{
   L = JSON.parse(JSON.stringify(DEFAULTS));
   $('ox').value = 0; $('oy').value = 0;
@@ -459,7 +486,7 @@ render();
 // 手機自動縮到可見寬度
 (function fit(){
   const avail = document.querySelector('.stagewrap').clientWidth - 24;
-  const need = 180 * 3.7795;
+  const need = ($('pmode').value==='a4'?210:180) * 3.7795;
   if(avail < need) $('zoom').value = Math.max(30, Math.floor(avail/need*100));
   setZoom();
 })();

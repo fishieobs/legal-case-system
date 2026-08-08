@@ -142,6 +142,16 @@ select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='
   <div class="card" id="form-card">
     <div class="card-title">✏️ 建立新清單</div>
 
+    <!-- 從案件系統帶入（讀取本機快取，免登入） -->
+    <div class="fg" id="import-wrap" style="display:none">
+      <label class="fl">從案件帶入（近期庭期）</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select class="fi" id="f-import" style="flex:1;min-width:200px"></select>
+        <button class="btn btn-outline btn-sm" id="btn-import" type="button">帶入</button>
+      </div>
+      <div style="font-size:11px;color:var(--ink-faint);margin-top:4px">選擇後自動填入案號、法院/庭別、日期時間與當事人</div>
+    </div>
+
     <div class="grid2">
       <div class="fg">
         <label class="fl">案號</label>
@@ -514,6 +524,44 @@ function init(){
   document.getElementById("f-date").value = today;
   renderTypeTags();
   renderSaved();
+  buildImportOptions();
+}
+
+// ── 從案件系統帶入（讀取同網域本機快取 cases_cache，免登入、可離線） ──
+let importable = [];
+function buildImportOptions(){
+  let cases = [];
+  try{ cases = JSON.parse(localStorage.getItem("cases_cache")||"[]"); }catch(_){ cases = []; }
+  if(!Array.isArray(cases) || !cases.length) return;
+  const today = new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+  importable = [];
+  cases.filter(c=>!c.deleted).forEach(c=>{
+    (c.hearings||[]).forEach(h=>{
+      if(!h.date || h.date < today) return; // 只列今天以後的庭期
+      importable.push({
+        date:h.date, time:h.time||"",
+        caseNo:(c.courtCaseNos||[]).filter(Boolean)[0]||"",
+        court:[h.agency||c.court||c.currentAgency||"", h.courtroom||""].filter(Boolean).join(" "),
+        party:[c.clientName||"", c.opposingParty?`訴 ${c.opposingParty}`:""].filter(Boolean).join(" "),
+      });
+    });
+  });
+  if(!importable.length) return;
+  importable.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const sel = document.getElementById("f-import");
+  sel.innerHTML = `<option value="">選擇庭期…</option>` +
+    importable.map((x,i)=>`<option value="${i}">${x.date}${x.time?" "+x.time:""}｜${escHtml(x.party||x.caseNo||"（未填）")}</option>`).join("");
+  document.getElementById("import-wrap").style.display = "";
+}
+function applyImport(){
+  const i = document.getElementById("f-import").value;
+  if(i==="") return;
+  const x = importable[+i]; if(!x) return;
+  if(x.caseNo) document.getElementById("f-caseno").value = x.caseNo;
+  if(x.court)  document.getElementById("f-court").value  = x.court;
+  if(x.date)   document.getElementById("f-date").value   = x.date;
+  if(x.time)   document.getElementById("f-time").value   = x.time;
+  if(x.party)  document.getElementById("f-party").value  = x.party;
 }
 
 function renderTypeTags(){
@@ -840,6 +888,8 @@ function showNotice(msg){
   setTimeout(()=>n.remove(), 2000);
 }
 
+document.getElementById("btn-import")?.addEventListener("click", applyImport);
+document.getElementById("f-import")?.addEventListener("change", applyImport);
 init();
 </script>
 </body>

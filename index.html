@@ -2615,9 +2615,13 @@ function App({user}){
                                 <div className="info-lbl">宣判日期</div>
                                 <div className="info-val">
                                     {selected.verdictDate}{selected.verdictTime?` ${selected.verdictTime}`:""}
-                                    <a href="https://csdi3.judicial.gov.tw/judbp/wkw/WHD1A01.htm" target="_blank" rel="noreferrer"
-                                        style={{display:"inline-block",marginLeft:8,color:"var(--seal)",fontSize:12,fontWeight:700,whiteSpace:"nowrap"}}
-                                        title="開啟司法院判決主文查詢系統，輸入案號查詢主文">🔗 查詢判決主文</a>
+                                    <button onClick={()=>{
+                                        const no=(selected.courtCaseNos||[]).filter(Boolean)[0]||"";
+                                        if(no){ try{ navigator.clipboard.writeText(no); toast(`✅ 已複製案號「${no}」，到查詢頁可直接貼上`); }catch(_){ toast("請手動輸入案號："+no); } }
+                                        window.open("https://csdi3.judicial.gov.tw/judbp/wkw/WHD1A01.htm","_blank","noopener");
+                                    }}
+                                        style={{marginLeft:8,color:"var(--seal)",fontSize:12,fontWeight:700,whiteSpace:"nowrap",background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}
+                                        title="開啟司法院判決主文查詢系統，並自動複製本案案號供貼上">🔗 查詢判決主文（複製案號）</button>
                                 </div>
                             </div>
                         )}

@@ -597,7 +597,7 @@ function renderDetail(){
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
           <div style="min-width:0">
             <div style="font-size:13px;font-weight:700;color:var(--text)">${esc(cs.caseType||cs.caseName||"案件")}${cs.opposingParty?` <span style="color:var(--text3);font-weight:400">v. ${esc(cs.opposingParty)}</span>`:""}</div>
-            <div style="font-size:11px;color:var(--text3)">${esc(cs.firmCaseNo||"")}${cs.currentAgency?` · ${esc(cs.currentAgency)}`:""}${cs.caseReason?` · ${esc(cs.caseReason)}`:""}</div>
+            <div style="font-size:11px;color:var(--text3)">${esc(cs.firmCaseNo||"")}${cs.court?` · ${esc(cs.court)}`:""}${cs.caseReason?` · ${esc(cs.caseReason)}`:""}</div>
           </div>
           ${cs.status?`<span class="badge" style="background:var(--bg5);color:var(--text2);flex-shrink:0">${esc(cs.status)}</span>`:""}
         </div>

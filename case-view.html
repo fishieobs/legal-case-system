@@ -117,7 +117,7 @@ function render(d){
     ["對造",d.opposingParty],
     ["案件類型",ct?`<span class="badge" style="background:${col}22;color:${col};border-color:${col}55">${esc(ct)}</span>`:"",true],
     ["目前狀態",d.status],
-    ["法院／機關",d.court||d.currentAgency],
+    ["法院／機關",d.court],
     ["案號",nos.length?nos.map(esc).join("<br>"):""],
     ["承辦律師",d.attorney],
   ].filter(r=>r[1]);

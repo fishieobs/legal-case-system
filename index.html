@@ -434,7 +434,7 @@ const emptyCase = {
     id:"", firmCaseNo:"", courtCaseNos:[""], division:"",
     clientName:"", phone:"", clientParties:[{name:"",phone:""}], opposingParties:[""],
     totalFee:0, payments:[], disbursements:0,
-    caseType:"民事", status:"進行中", instance:"地院", currentAgency:"", court:"台北地院",
+    caseType:"民事", status:"進行中", instance:"地院", court:"台北地院",
     attorney:FIRM_ATTORNEY, retainerDate:"", opposingParty:"", opposingCounsel:[], caseReason:"", judgementLink:"", notes:"",
     verdictDate:"", verdictTime:"", judgmentReceivedDate:"", appealDeadline:"",
     hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[], shareToken:""
@@ -818,7 +818,7 @@ function App({user}){
             c.clientName, c.firmCaseNo, c.opposingParty, c.attorney,
             ...(c.clientParties||[]).flatMap(p=>[p.name,p.phone]),
             ...(c.opposingCounsel||[]).flatMap(L=>[L.name,L.mobile,L.tel,L.office]),
-            c.currentAgency, c.court, c.division, c.notes, c.judgementLink, ...(c.judgementLinks||[]), c.caseReason||"",
+            c.court, c.division, c.notes, c.judgementLink, ...(c.judgementLinks||[]), c.caseReason||"",
             ...(c.courtCaseNos||[]),
             ...(c.hearings||[]).map(h=>[h.agency,h.note,h.courtroom].filter(Boolean).join(" ")),
             ...(c.todos||[]).map(t=>t.text),
@@ -971,7 +971,7 @@ function App({user}){
         tl.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
         return {
             caseId:c.id, firmCaseNo:c.firmCaseNo||"", clientName:c.clientName||"",
-            caseType:c.caseType||"", status:c.status||"", court:c.court||"", currentAgency:c.currentAgency||"",
+            caseType:c.caseType||"", status:c.status||"", court:c.court||"",
             opposingParty:c.opposingParty||"", courtCaseNos:(c.courtCaseNos||[]).filter(Boolean),
             attorney:c.attorney||FIRM_ATTORNEY, timeline:tl, revoked:false, updatedAt:new Date().toISOString(), token,
         };
@@ -1169,7 +1169,7 @@ function App({user}){
         if(!p){ setScanState({mode:"error",msg:"無法辨識此 QR，可能不是法院傳票的報到條碼。",raw:String(raw||"").slice(0,120)}); return; }
         const matched=cases.find(c=>(c.courtCaseNos||[]).some(n=>caseNoMatches(n,p)));
         setScanState({mode:"form", ...p, caseId:matched?matched.id:"", matched:!!matched, caseQuery:"",
-            h:{date:"",time:"",agency:matched?(matched.court||matched.currentAgency||""):"",courtroom:"",note:""}});
+            h:{date:"",time:"",agency:matched?(matched.court||""):"",courtroom:"",note:""}});
     };
     const saveScanHearing=async()=>{
         const s=scanState; if(!s) return;
@@ -2103,7 +2103,7 @@ function App({user}){
                                         const q=(scanState.caseQuery||"").trim().toLowerCase();
                                         let list=[...cases].sort((a,b)=>(b.firmCaseNo||"").localeCompare(a.firmCaseNo||""));
                                         if(q) list=list.filter(c=>[c.firmCaseNo,c.clientName,c.opposingParty].some(x=>(x||"").toLowerCase().includes(q)));
-                                        return list.slice(0,8).map(c=><div key={c.id} onClick={()=>setScanState(s=>({...s,caseId:c.id,h:{...s.h,agency:s.h.agency||c.court||c.currentAgency||""}}))} style={{padding:"8px 10px",cursor:"pointer",fontSize:13,borderBottom:"1px solid var(--border)"}}><span style={{color:"var(--gold)",fontFamily:"monospace",fontSize:11}}>{c.firmCaseNo}</span> · {c.clientName}</div>);
+                                        return list.slice(0,8).map(c=><div key={c.id} onClick={()=>setScanState(s=>({...s,caseId:c.id,h:{...s.h,agency:s.h.agency||c.court||""}}))} style={{padding:"8px 10px",cursor:"pointer",fontSize:13,borderBottom:"1px solid var(--border)"}}><span style={{color:"var(--gold)",fontFamily:"monospace",fontSize:11}}>{c.firmCaseNo}</span> · {c.clientName}</div>);
                                     })()}
                                 </div>
                             </>)}
@@ -2433,7 +2433,7 @@ function App({user}){
                                     <div>
                                         <div style={{color:"var(--gold)",fontWeight:700,fontFamily:"monospace",fontSize:12}}>{c.firmCaseNo}</div>
                                         <div style={{fontWeight:700,fontSize:16,color:"var(--text)",marginTop:2}}>{c.clientName}</div>
-                                        <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{c.currentAgency||c.court||""}{c.caseReason&&<span style={{color:"var(--text4)",marginLeft:4}}>· {c.caseReason}</span>}</div>
+                                        <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{c.court||""}{c.caseReason&&<span style={{color:"var(--text4)",marginLeft:4}}>· {c.caseReason}</span>}</div>
                                     </div>
                                     <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
                                         <Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#8A8377"}/>
@@ -2461,7 +2461,7 @@ function App({user}){
                 {listTab==="list" && <div className="tbl-wrap">
                     <table>
                         <thead><tr>
-                            <th>案件編號</th><th>當事人</th><th>對造</th><th>繫屬機關</th><th>類型</th><th>狀態</th><th>目前階段</th>
+                            <th>案件編號</th><th>當事人</th><th>對造</th><th>法院/檢察署</th><th>類型</th><th>狀態</th><th>目前階段</th>
                             <th style={{textAlign:"right"}}>已收(元)</th><th style={{textAlign:"right"}}>未收(元)</th><th style={{textAlign:"right"}}>代墊(元)</th>
                             <th>最近開庭</th><th>宣判</th><th>待辦</th><th></th>
                         </tr></thead>
@@ -2475,7 +2475,7 @@ function App({user}){
                                         <td><span style={{color:"var(--gold)",fontWeight:700,fontFamily:"monospace",fontSize:11}}>{c.firmCaseNo}</span></td>
                                         <td><span style={{fontWeight:700,color:"var(--text)"}}>{c.clientName}</span></td>
                                         <td style={{color:"var(--text3)",fontSize:11}}>{c.opposingParty||"—"}</td>
-                                        <td style={{color:"var(--text3)",fontSize:11}}>{c.currentAgency||"—"}</td>
+                                        <td style={{color:"var(--text3)",fontSize:11}}>{c.court||"—"}</td>
                                         <td><Badge label={c.caseType} color={TYPE_COLOR[c.caseType]||"#8A8377"}/></td>
                                         <td><Badge label={c.status} color={STATUS_COLOR[c.status]||"#8A8377"}/></td>
                                         <td>{(()=>{const st=caseStage(c,daysUntil);return <Badge label={st.label} color={st.color}/>;})()}</td>
@@ -2748,7 +2748,6 @@ function App({user}){
                             ["事務所案件編號", selected.firmCaseNo],
                             ["法院／地檢案號", (selected.courtCaseNos||[]).filter(Boolean).join("、")],
                             ["股別", selected.division],
-                            ["現在繫屬機關", selected.currentAgency],
                             ["法院/檢察署", selected.court],
                             ["審級", selected.instance],
                             ["案件類型", selected.caseType],
@@ -3691,12 +3690,6 @@ function App({user}){
                         </div>
                     ))}
                     {(F.opposingCounsel||[]).length===0 && <div style={{fontSize:11,color:"var(--text4)",padding:"2px 2px 0"}}>可記錄對造律師姓名、行動電話、市話與事務所地址</div>}
-                </div>
-                <div className="form-grid">
-                    <div className="fg">
-                        <label className="fl">現在繫屬機關</label>
-                        <input className="fi" type="text" value={F.currentAgency||""} onChange={e=>sf("currentAgency",e.target.value)}/>
-                    </div>
                 </div>
 
                 {/* 費用 */}

@@ -541,7 +541,7 @@ function buildImportOptions(){
       importable.push({
         date:h.date, time:h.time||"",
         caseNo:(c.courtCaseNos||[]).filter(Boolean)[0]||"",
-        court:[h.agency||c.court||c.currentAgency||"", h.courtroom||""].filter(Boolean).join(" "),
+        court:[h.agency||c.court||"", h.courtroom||""].filter(Boolean).join(" "),
         party:[c.clientName||"", c.opposingParty?`訴 ${c.opposingParty}`:""].filter(Boolean).join(" "),
       });
     });

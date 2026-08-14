@@ -116,39 +116,6 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
 .add-row{
   display:flex;gap:var(--space-2);margin-top:var(--space-2)}
 
-/* Heirs list */
-.heir-check-row{
-  display:flex;align-items:center;gap:var(--space-2);
-  padding:var(--space-2) var(--space-3);
-  border-bottom:var(--border);
-  background:var(--paper-raised)}
-.heir-check-row:last-child{border-bottom:none}
-.heir-check-row input[type=checkbox]{
-  accent-color:var(--seal);width:16px;height:16px;flex-shrink:0;cursor:pointer}
-.heir-check-row label{
-  flex:1;font-size:var(--text-sm);cursor:pointer;
-  font-family:var(--font-kai)}
-.heir-check-row label.unchecked{color:var(--ink-faint);text-decoration:line-through}
-.heir-check-row .heir-del{
-  background:none;border:none;cursor:pointer;
-  color:var(--ink-faint);font-size:var(--text-xs);
-  padding:2px 4px;border-radius:var(--radius)}
-.heir-check-row .heir-del:hover{color:var(--seal);background:var(--seal-wash)}
-.heir-print-hint{
-  font-size:var(--text-xs);color:var(--seal);
-  margin-top:var(--space-1);display:flex;align-items:center;gap:4px}
-.heirs-area{
-  border:var(--border);border-radius:var(--radius);
-  background:var(--paper-raised);margin-bottom:var(--space-2);
-  overflow:hidden;min-height:40px}
-.heir-add-row{display:flex;gap:var(--space-2)}
-.heir-add-row input{
-  flex:1;padding:var(--space-2) var(--space-3);
-  border:var(--border);border-radius:var(--radius);
-  background:var(--paper);font-size:var(--text-sm)}
-.heir-note{
-  font-size:var(--text-xs);color:var(--ink-faint);margin-top:var(--space-1)}
-
 /* ── Preview Panel ── */
 .preview-panel{
   overflow-y:auto;padding:var(--space-6);
@@ -208,9 +175,6 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
 .p-disclaimer{
   line-height:1.9;text-align:justify;
   margin-bottom:12pt}
-.p-sigs{margin-bottom:10pt}
-.p-sig-row{margin-bottom:6pt}
-.p-date{text-align:center;letter-spacing:4pt}
 
 /* ── Print Media ── */
 @media print{
@@ -389,27 +353,6 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
   <div id="members-container"></div>
   <button class="btn btn-sm" onclick="addMember()">＋ 新增成員</button>
 
-  <hr class="divider">
-
-  <!-- 繼承人簽名 -->
-  <div class="section-head">繼承人（簽名欄）</div>
-  <div class="hint">勾選者才會列印於文件簽名欄</div>
-  <div class="heirs-area" id="heirs-area"></div>
-  <div class="heir-print-hint" id="heir-count-hint"></div>
-  <div class="heir-add-row">
-    <input type="text" id="heir-input" placeholder="手動新增繼承人姓名" onkeydown="if(event.key==='Enter')addHeir()">
-    <button class="btn btn-sm" onclick="addHeir()">新增</button>
-    <button class="btn btn-sm" onclick="autoHeirs()">自動帶入</button>
-  </div>
-
-  <hr class="divider">
-
-  <!-- 申請日 -->
-  <div class="section-head">申請日</div>
-  <div class="field-row">
-    <label>申請日期</label>
-    <div class="date-wrap"><input type="text" id="apply-date" placeholder="例：115年8月14日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,true)">📅</button></div>
-  </div>
 
 </div><!-- /form-panel -->
 
@@ -574,7 +517,6 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') rocCalClose(); });
    State
    ═══════════════════════════════════════════════ */
 let members = [];   // {id, name, rel, dob, dod, status, proxies:[{name,rel,dob,dod,status}]}
-let heirs   = [];   // [{name}]
 let memberIdx = 0;
 
 /* ═══════════════════════════════════════════════
@@ -715,66 +657,6 @@ function renderForm(){
   }).join('');
 }
 
-/* ═══════════════════════════════════════════════
-   Heirs
-   ═══════════════════════════════════════════════ */
-function renderHeirsArea(){
-  const area = document.getElementById('heirs-area');
-  if(!heirs.length){
-    area.innerHTML='<div style="padding:var(--space-2) var(--space-3);color:var(--ink-faint);font-size:var(--text-xs)">尚無繼承人，請手動新增或點「自動帶入」</div>';
-    document.getElementById('heir-count-hint').innerHTML='';
-    return;
-  }
-  area.innerHTML = heirs.map((h,i)=>`
-    <div class="heir-check-row">
-      <input type="checkbox" id="heir-chk-${i}" ${h.selected?'checked':''}
-        onchange="toggleHeir(${i},this.checked)">
-      <label for="heir-chk-${i}" class="${h.selected?'':'unchecked'}">${esc(h.name)}</label>
-      <button class="heir-del" onclick="removeHeir(${i})" title="移除">✕</button>
-    </div>`).join('');
-  const onCount = heirs.filter(h=>h.selected).length;
-  const hint = document.getElementById('heir-count-hint');
-  hint.innerHTML = onCount > 0
-    ? `☑ 已勾選 ${onCount} 人，列印時顯示於簽名欄`
-    : `<span style="color:var(--ink-faint)">未勾選任何人，簽名欄將留空</span>`;
-}
-
-function toggleHeir(i, val){
-  heirs[i].selected = val;
-  renderHeirsArea(); render();
-}
-
-function addHeir(){
-  const inp = document.getElementById('heir-input');
-  const name = inp.value.trim();
-  if(!name) return;
-  heirs.push({name, selected:true});
-  inp.value='';
-  renderHeirsArea(); render();
-}
-
-function removeHeir(i){
-  heirs.splice(i,1);
-  renderHeirsArea(); render();
-}
-
-function autoHeirs(){
-  const auto = [];
-  const spName = document.getElementById('sp-name').value.trim();
-  const spStatus = document.getElementById('sp-status').value;
-  if(spName && spStatus==='繼承') auto.push({name:spName, selected:true});
-
-  members.forEach(m=>{
-    if(m.status==='繼承') auto.push({name:m.name, selected:true});
-    if(m.status==='代位繼承'){
-      m.proxies.forEach(p=>{
-        if(p.status==='繼承') auto.push({name:p.name, selected:true});
-      });
-    }
-  });
-  heirs = auto.filter(h=>h.name);
-  renderHeirsArea(); render();
-}
 
 /* ═══════════════════════════════════════════════
    Spouse toggle
@@ -816,7 +698,6 @@ function render(){
   const spDiv    = document.getElementById('sp-divorce').value.trim();
   const spStatus = document.getElementById('sp-status').value;
   const grpLabel = document.getElementById('grp-label').value.trim() || '子女';
-  const applyDate= document.getElementById('apply-date').value.trim();
 
   /* 被繼承人 box */
   const decedentBox = boxHTML([
@@ -871,18 +752,7 @@ function render(){
     </div>`;
   }).join('');
 
-  /* Signatures — 只列印有勾選的繼承人 */
-  const selectedHeirs = heirs.filter(h=>h.selected);
-  const sigLines = selectedHeirs.length>0
-    ? selectedHeirs.map(h=>`<p class="p-sig-row">繼承人：${esc(h.name)}　　　蓋章：</p>`).join('')
-    : `<p class="p-sig-row">繼承人：　　　　　　　　　　蓋章：</p>`;
-
-  /* Date */
-  const dateStr = applyDate
-    ? `中　　華　　民　　國　　${applyDate}`
-    : '中　　華　　民　　國　　　　　年　　　月　　　日';
-
-  /* Compose page */
+  /* Compose page（不含繼承人簽名欄與申請日） */
   document.getElementById('previewPage').innerHTML = `
     <div class="p-title">繼　承　系　統　表</div>
 
@@ -898,8 +768,6 @@ function render(){
 
     <div class="p-footer">
       <p class="p-disclaimer">上繼承系統表係參酌民法第一一三八條至一一四○條之規定訂立，如有遺漏或錯誤致他人受損害者，申請人願負法律責任。</p>
-      <div class="p-sigs">${sigLines}</div>
-      <p class="p-date">${esc(dateStr)}</p>
     </div>
   `;
 }
@@ -916,21 +784,17 @@ function clearAll(){
       else el.value='';
     });
   document.getElementById('grp-label').value='子女';
-  members=[]; heirs=[]; memberIdx=0;
+  members=[]; memberIdx=0;
   document.getElementById('sp-fields').style.display='none';
-  renderForm(); renderHeirsArea(); render();
+  renderForm(); addMember(); render();
 }
 
 /* ═══════════════════════════════════════════════
    Init
    ═══════════════════════════════════════════════ */
 (function init(){
-  // 以空白表單啟動（不預載任何當事人資料）；申請日預設為今日（民國年）
-  const now = new Date(Date.now()+8*3600000);
-  document.getElementById('apply-date').value =
-    `${now.getUTCFullYear()-1911}年${now.getUTCMonth()+1}月${now.getUTCDate()}日`;
+  // 以空白表單啟動（不預載任何當事人資料）
   addMember(); // 先給一列成員方便直接輸入
-  renderHeirsArea();
   render();
 })();
 </script>

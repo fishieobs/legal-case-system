@@ -226,6 +226,25 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
     padding:15mm 18mm}
 }
 
+/* ── 民國日期輸入（文字欄 ＋ 月曆選擇鈕）── */
+.date-wrap{display:flex;gap:4px;align-items:center}
+.date-wrap input[type=text]{flex:1;min-width:0}
+.date-pick{
+  flex-shrink:0;width:32px;padding:var(--space-2) 0;
+  border:var(--border);border-radius:var(--radius);
+  background:var(--paper-raised);color:var(--ink-soft);
+  cursor:pointer;font-size:var(--text-sm);line-height:1}
+.date-pick:hover{background:var(--seal-wash);color:var(--seal);border-color:var(--seal)}
+#__datepick{position:fixed;left:-9999px;width:1px;height:1px;opacity:0}
+
+/* ── 登入畫面（與其他系統相同帳號） ── */
+.login-wrap{min-height:calc(100vh - 41px);display:flex;align-items:center;justify-content:center;padding:24px;background:var(--paper)}
+.login-box{background:var(--paper-raised);border:1px solid var(--rule-strong);border-top:3px solid var(--seal);border-radius:4px;padding:40px 36px;width:100%;max-width:380px}
+.login-err{background:var(--seal-wash);border:1px solid transparent;color:var(--seal);border-radius:2px;padding:10px 14px;font-size:13px;margin-bottom:14px}
+.login-box label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;font-family:var(--font-kai)}
+.login-box input{width:100%;padding:10px 13px;border:var(--border);border-radius:var(--radius);background:var(--paper);font-size:16px;color:var(--ink);font-family:var(--font-song)}
+.login-box input:focus{outline:none;border-color:var(--seal);box-shadow:0 0 0 3px var(--seal-wash)}
+
 /* ── Utilities ── */
 .hint{font-size:var(--text-xs);color:var(--ink-faint);margin-top:2px}
 .divider{border:none;border-top:var(--border);margin:var(--space-4) 0}
@@ -234,11 +253,30 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
 <body>
 <script src="shared/sys-nav.js" data-active="heirship"></script>
 
+<!-- 登入閘：驗證前先擋住工具內容 -->
+<div id="gate" class="login-wrap">
+  <div class="login-box">
+    <div style="font-size:44px;text-align:center;margin-bottom:8px">🌳</div>
+    <div style="font-family:var(--font-kai);font-size:1.15rem;color:var(--seal);text-align:center;margin-bottom:3px">繼承系統表產生工具</div>
+    <div style="font-size:10px;color:var(--ink-faint);text-align:center;letter-spacing:.1em;margin-bottom:24px;text-transform:uppercase">Heirship Chart</div>
+    <div id="lerr" style="display:none" class="login-err"></div>
+    <div style="margin-bottom:12px"><label>帳號</label><input id="lem" type="email" autocomplete="email" placeholder="office@yourfirm.com"></div>
+    <div style="margin-bottom:22px"><label>密碼</label>
+      <div style="position:relative"><input id="lpw" type="password" placeholder="••••••••" style="padding-right:40px">
+      <button id="spw" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:15px">👁</button></div>
+    </div>
+    <button id="lbtn" class="btn btn-primary" style="width:100%;justify-content:center;font-size:14px;padding:12px">🔐 登入</button>
+    <div style="font-size:11px;color:var(--ink-faint);text-align:center;margin-top:14px">與其他系統使用相同帳號</div>
+  </div>
+</div>
+
+<div id="appwrap" style="display:none">
 <header class="app-header">
   <h1>繼承系統表<span>產生工具</span></h1>
   <div class="header-btns">
     <button class="btn btn-sm" onclick="clearAll()">清除</button>
     <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 列印／另存 PDF</button>
+    <button class="btn btn-sm" id="btn-logout" title="登出">🚪</button>
   </div>
 </header>
 
@@ -259,11 +297,11 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
   </div>
   <div class="field-row">
     <label>出生日</label>
-    <input type="text" id="d-dob" placeholder="民國18年12月28日" oninput="render()">
+    <div class="date-wrap"><input type="text" id="d-dob" placeholder="民國18年12月28日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onclick="pickDateFor(this.previousElementSibling,false)">📅</button></div>
   </div>
   <div class="field-row">
     <label>死亡日</label>
-    <input type="text" id="d-dod" placeholder="民國115年4月2日" oninput="render()">
+    <div class="date-wrap"><input type="text" id="d-dod" placeholder="民國115年4月2日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onclick="pickDateFor(this.previousElementSibling,false)">📅</button></div>
   </div>
 
   <!-- 配偶 -->
@@ -278,15 +316,15 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
     </div>
     <div class="field-row">
       <label>出生日</label>
-      <input type="text" id="sp-dob" placeholder="民國30年4月24日" oninput="render()">
+      <div class="date-wrap"><input type="text" id="sp-dob" placeholder="民國30年4月24日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onclick="pickDateFor(this.previousElementSibling,false)">📅</button></div>
     </div>
     <div class="field-row">
       <label>死亡日</label>
-      <input type="text" id="sp-dod" placeholder="民國--年--月--日" oninput="render()">
+      <div class="date-wrap"><input type="text" id="sp-dod" placeholder="民國--年--月--日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onclick="pickDateFor(this.previousElementSibling,false)">📅</button></div>
     </div>
     <div class="field-row">
       <label>離婚日</label>
-      <input type="text" id="sp-divorce" placeholder="（無則留空）" oninput="render()">
+      <div class="date-wrap"><input type="text" id="sp-divorce" placeholder="（無則留空）" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onclick="pickDateFor(this.previousElementSibling,false)">📅</button></div>
     </div>
     <div class="field-row">
       <label>繼承情形</label>
@@ -326,7 +364,7 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
   <div class="section-head">申請日</div>
   <div class="field-row">
     <label>申請日期</label>
-    <input type="text" id="apply-date" placeholder="例：115年8月14日" oninput="render()">
+    <div class="date-wrap"><input type="text" id="apply-date" placeholder="例：115年8月14日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onclick="pickDateFor(this.previousElementSibling,true)">📅</button></div>
   </div>
 
 </div><!-- /form-panel -->
@@ -339,8 +377,72 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
 </div>
 
 </div><!-- /workspace -->
+</div><!-- /appwrap -->
+
+<input type="date" id="__datepick" tabindex="-1" aria-hidden="true">
+
+<!-- 登入（與其他系統共用同一組 Firebase 帳號） -->
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+const cfg={apiKey:"AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",authDomain:"legalcasemanageer.firebaseapp.com",projectId:"legalcasemanageer",storageBucket:"legalcasemanageer.firebasestorage.app",messagingSenderId:"559838504556",appId:"1:559838504556:web:ba10c071a12650bbd85a49"};
+const auth=getAuth(initializeApp(cfg));
+const $=id=>document.getElementById(id);
+
+onAuthStateChanged(auth,u=>{
+  // 忽略匿名登入（僅帳號密碼登入者視為管理員），與其他系統一致
+  const ok = u && !u.isAnonymous;
+  $("gate").style.display   = ok ? "none"  : "flex";
+  $("appwrap").style.display= ok ? "block" : "none";
+});
+
+async function go(){
+  const em=$("lem").value.trim(), pw=$("lpw").value, err=$("lerr");
+  if(!em||!pw){ err.style.display="block"; err.textContent="請輸入帳號密碼"; return; }
+  err.style.display="none"; $("lbtn").textContent="登入中…";
+  try{ await signInWithEmailAndPassword(auth,em,pw); }
+  catch(e){
+    err.style.display="block";
+    err.textContent={"auth/invalid-credential":"帳號或密碼錯誤","auth/too-many-requests":"嘗試次數過多，請稍後再試","auth/user-disabled":"此帳號已停用","auth/unauthorized-domain":"此網域未獲 Firebase 授權","auth/network-request-failed":"網路連線問題，請確認網路後再試"}[e.code]||("登入失敗（"+e.code+"）");
+  }
+  $("lbtn").textContent="🔐 登入";
+}
+$("lbtn").addEventListener("click",go);
+$("lpw").addEventListener("keydown",e=>{ if(e.key==="Enter") go(); });
+$("spw").addEventListener("click",()=>{ const i=$("lpw"); i.type=i.type==="password"?"text":"password"; });
+$("btn-logout").addEventListener("click",async()=>{ if(confirm("確認登出？")) await signOut(auth); });
+</script>
 
 <script>
+/* ═══════════════════════════════════════════════
+   民國日期選擇（選西元日期 → 自動轉民國年填入）
+   ═══════════════════════════════════════════════ */
+function rocFromISO(iso){
+  const p = String(iso||'').split('-');
+  if(p.length!==3) return '';
+  const y = parseInt(p[0],10)-1911;
+  if(isNaN(y)) return '';
+  return `民國${y}年${parseInt(p[1],10)}月${parseInt(p[2],10)}日`;
+}
+// 申請日欄位不冠「民國」（版面已有「中華民國」字樣）
+function rocShort(iso){
+  const p = String(iso||'').split('-');
+  if(p.length!==3) return '';
+  return `${parseInt(p[0],10)-1911}年${parseInt(p[1],10)}月${parseInt(p[2],10)}日`;
+}
+function pickDateFor(el, short){
+  const dp = document.getElementById('__datepick');
+  dp.value = '';
+  dp.onchange = function(){
+    if(!dp.value) return;
+    el.value = short ? rocShort(dp.value) : rocFromISO(dp.value);
+    el.dispatchEvent(new Event('input',{bubbles:true})); // 觸發既有的 oninput 更新
+    dp.onchange = null;
+  };
+  if(typeof dp.showPicker === 'function'){ try{ dp.showPicker(); return; }catch(e){} }
+  dp.click(); // 後備：不支援 showPicker 時
+}
+
 /* ═══════════════════════════════════════════════
    State
    ═══════════════════════════════════════════════ */
@@ -428,13 +530,13 @@ function renderForm(){
             </div>
             <div class="field-row">
               <label>出生日</label>
-              <input type="text" value="${p.dob}" placeholder="民國--年--月--日"
-                oninput="updateProxy(${m.id},${pi},'dob',this.value)">
+              <div class="date-wrap"><input type="text" value="${p.dob}" placeholder="民國--年--月--日"
+                oninput="updateProxy(${m.id},${pi},'dob',this.value)"><button type="button" class="date-pick" title="選擇日期" onclick="pickDateFor(this.previousElementSibling,false)">📅</button></div>
             </div>
             <div class="field-row">
               <label>死亡日</label>
-              <input type="text" value="${p.dod}" placeholder="民國--年--月--日"
-                oninput="updateProxy(${m.id},${pi},'dod',this.value)">
+              <div class="date-wrap"><input type="text" value="${p.dod}" placeholder="民國--年--月--日"
+                oninput="updateProxy(${m.id},${pi},'dod',this.value)"><button type="button" class="date-pick" title="選擇日期" onclick="pickDateFor(this.previousElementSibling,false)">📅</button></div>
             </div>
             <div class="field-row">
               <label>繼承情形</label>
@@ -467,13 +569,13 @@ function renderForm(){
       </div>
       <div class="field-row">
         <label>出生日</label>
-        <input type="text" value="${m.dob}" placeholder="民國--年--月--日"
-          oninput="updateMember(${m.id},'dob',this.value)">
+        <div class="date-wrap"><input type="text" value="${m.dob}" placeholder="民國--年--月--日"
+          oninput="updateMember(${m.id},'dob',this.value)"><button type="button" class="date-pick" title="選擇日期" onclick="pickDateFor(this.previousElementSibling,false)">📅</button></div>
       </div>
       <div class="field-row">
         <label>死亡日</label>
-        <input type="text" value="${m.dod}" placeholder="民國--年--月--日"
-          oninput="updateMember(${m.id},'dod',this.value)">
+        <div class="date-wrap"><input type="text" value="${m.dod}" placeholder="民國--年--月--日"
+          oninput="updateMember(${m.id},'dod',this.value)"><button type="button" class="date-pick" title="選擇日期" onclick="pickDateFor(this.previousElementSibling,false)">📅</button></div>
       </div>
       <div class="field-row">
         <label>繼承情形</label>

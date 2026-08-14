@@ -229,19 +229,57 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
 /* ── 民國日期輸入（文字欄 ＋ 月曆選擇鈕）── */
 .date-wrap{display:flex;gap:4px;align-items:center}
 .date-wrap input[type=text]{flex:1;min-width:0}
-/* 📅 鈕：上方透明疊一個真正的 date 欄位，點擊即開啟各平台原生月曆 */
+/* 📅 鈕（開啟自製民國月曆） */
 .date-pick{
-  position:relative;flex-shrink:0;width:34px;height:34px;
+  flex-shrink:0;width:34px;height:34px;
   display:inline-flex;align-items:center;justify-content:center;
   border:var(--border);border-radius:var(--radius);
   background:var(--paper-raised);color:var(--ink-soft);
-  cursor:pointer;font-size:var(--text-sm);line-height:1;overflow:hidden}
+  cursor:pointer;font-size:var(--text-sm);line-height:1;padding:0}
 .date-pick:hover{background:var(--seal-wash);color:var(--seal);border-color:var(--seal)}
-.date-pick input[type=date]{
-  position:absolute;inset:0;width:100%;height:100%;
-  opacity:0;cursor:pointer;padding:0;margin:0;border:0;background:transparent}
-.date-pick input[type=date]::-webkit-calendar-picker-indicator{
-  position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+
+/* ── 民國月曆 ── */
+.roc-cal{
+  position:absolute;z-index:9998;width:268px;
+  background:var(--paper-raised);border:1px solid var(--rule-strong);
+  border-radius:var(--radius-lg);box-shadow:0 6px 24px rgba(33,30,26,.18);
+  padding:10px;font-family:var(--font-song);display:none}
+.roc-cal.on{display:block}
+.roc-cal-head{display:flex;align-items:center;gap:4px;margin-bottom:8px}
+.roc-cal-head button{
+  width:26px;height:26px;flex-shrink:0;border:var(--border);
+  border-radius:var(--radius);background:var(--paper-raised);
+  color:var(--ink-soft);cursor:pointer;font-size:13px;line-height:1;padding:0}
+.roc-cal-head button:hover{border-color:var(--seal);color:var(--seal)}
+.roc-cal-head .lbl{font-size:12px;color:var(--ink-soft);font-family:var(--font-kai)}
+.roc-cal-head input.ry{
+  width:52px;padding:3px 5px;text-align:center;
+  border:var(--border);border-radius:var(--radius);
+  background:var(--paper);color:var(--ink);font-size:13px;
+  font-variant-numeric:tabular-nums}
+.roc-cal-head select.rm{
+  padding:3px 4px;border:var(--border);border-radius:var(--radius);
+  background:var(--paper);color:var(--ink);font-size:13px}
+.roc-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.roc-cal-grid .dow{
+  text-align:center;font-size:11px;color:var(--ink-faint);
+  padding:3px 0;font-family:var(--font-kai)}
+.roc-cal-grid .dow.sun{color:var(--seal)}
+.roc-cal-grid button{
+  border:1px solid transparent;border-radius:var(--radius);
+  background:transparent;color:var(--ink);cursor:pointer;
+  padding:5px 0;font-size:13px;font-variant-numeric:tabular-nums}
+.roc-cal-grid button:hover{background:var(--seal-wash);color:var(--seal)}
+.roc-cal-grid button.today{border-color:var(--seal);color:var(--seal);font-weight:700}
+.roc-cal-grid button.blank{visibility:hidden;cursor:default}
+.roc-cal-foot{
+  display:flex;gap:6px;justify-content:space-between;
+  margin-top:8px;padding-top:8px;border-top:var(--border)}
+.roc-cal-foot button{
+  border:var(--border);border-radius:var(--radius);background:var(--paper-raised);
+  color:var(--ink-soft);cursor:pointer;font-size:12px;padding:4px 10px;
+  font-family:var(--font-kai)}
+.roc-cal-foot button:hover{border-color:var(--seal);color:var(--seal)}
 
 /* ── 登入畫面（與其他系統相同帳號） ── */
 .login-wrap{min-height:calc(100vh - 41px);display:flex;align-items:center;justify-content:center;padding:24px;background:var(--paper)}
@@ -303,11 +341,11 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
   </div>
   <div class="field-row">
     <label>出生日</label>
-    <div class="date-wrap"><input type="text" id="d-dob" placeholder="民國18年12月28日" oninput="render()"><label class="date-pick" title="選擇日期">📅<input type="date" onchange="onDatePicked(this,false)" tabindex="-1" aria-label="選擇日期"></label></div>
+    <div class="date-wrap"><input type="text" id="d-dob" placeholder="民國18年12月28日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,false)">📅</button></div>
   </div>
   <div class="field-row">
     <label>死亡日</label>
-    <div class="date-wrap"><input type="text" id="d-dod" placeholder="民國115年4月2日" oninput="render()"><label class="date-pick" title="選擇日期">📅<input type="date" onchange="onDatePicked(this,false)" tabindex="-1" aria-label="選擇日期"></label></div>
+    <div class="date-wrap"><input type="text" id="d-dod" placeholder="民國115年4月2日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,false)">📅</button></div>
   </div>
 
   <!-- 配偶 -->
@@ -322,15 +360,15 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
     </div>
     <div class="field-row">
       <label>出生日</label>
-      <div class="date-wrap"><input type="text" id="sp-dob" placeholder="民國30年4月24日" oninput="render()"><label class="date-pick" title="選擇日期">📅<input type="date" onchange="onDatePicked(this,false)" tabindex="-1" aria-label="選擇日期"></label></div>
+      <div class="date-wrap"><input type="text" id="sp-dob" placeholder="民國30年4月24日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,false)">📅</button></div>
     </div>
     <div class="field-row">
       <label>死亡日</label>
-      <div class="date-wrap"><input type="text" id="sp-dod" placeholder="民國--年--月--日" oninput="render()"><label class="date-pick" title="選擇日期">📅<input type="date" onchange="onDatePicked(this,false)" tabindex="-1" aria-label="選擇日期"></label></div>
+      <div class="date-wrap"><input type="text" id="sp-dod" placeholder="民國--年--月--日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,false)">📅</button></div>
     </div>
     <div class="field-row">
       <label>離婚日</label>
-      <div class="date-wrap"><input type="text" id="sp-divorce" placeholder="（無則留空）" oninput="render()"><label class="date-pick" title="選擇日期">📅<input type="date" onchange="onDatePicked(this,false)" tabindex="-1" aria-label="選擇日期"></label></div>
+      <div class="date-wrap"><input type="text" id="sp-divorce" placeholder="（無則留空）" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,false)">📅</button></div>
     </div>
     <div class="field-row">
       <label>繼承情形</label>
@@ -370,7 +408,7 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
   <div class="section-head">申請日</div>
   <div class="field-row">
     <label>申請日期</label>
-    <div class="date-wrap"><input type="text" id="apply-date" placeholder="例：115年8月14日" oninput="render()"><label class="date-pick" title="選擇日期">📅<input type="date" onchange="onDatePicked(this,true)" tabindex="-1" aria-label="選擇日期"></label></div>
+    <div class="date-wrap"><input type="text" id="apply-date" placeholder="例：115年8月14日" oninput="render()"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,true)">📅</button></div>
   </div>
 
 </div><!-- /form-panel -->
@@ -434,16 +472,103 @@ function rocShort(iso){
   if(p.length!==3) return '';
   return `${parseInt(p[0],10)-1911}年${parseInt(p[1],10)}月${parseInt(p[2],10)}日`;
 }
-// 由疊在 📅 鈕上的原生 date 欄位觸發：選定後換算民國年寫回同列的文字欄
-function onDatePicked(dateInput, short){
-  if(!dateInput.value) return;
-  const wrap = dateInput.closest('.date-wrap');
-  const target = wrap && wrap.querySelector('input[type=text]');
-  if(!target) return;
-  target.value = short ? rocShort(dateInput.value) : rocFromISO(dateInput.value);
-  target.dispatchEvent(new Event('input',{bubbles:true})); // 觸發既有的 oninput 即時更新預覽
-  dateInput.value = '';
+/* ── 自製民國月曆（原生選擇器無法顯示民國年，故自建） ── */
+let _rcTarget=null, _rcShort=false, _rcY=0, _rcM=0;
+
+function rocParse(str){ // 「民國114年8月14日」/「114年8月14日」→ {y,m,d}（民國年）
+  const m = String(str||'').match(/(\d{1,3})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/);
+  return m ? {y:+m[1], m:+m[2], d:+m[3]} : null;
 }
+function rocCalEl(){
+  let el=document.getElementById('rocCal');
+  if(el) return el;
+  el=document.createElement('div');
+  el.id='rocCal'; el.className='roc-cal';
+  el.innerHTML=
+    '<div class="roc-cal-head">'+
+      '<button type="button" data-nav="-1" title="上個月">‹</button>'+
+      '<span class="lbl">民國</span><input class="ry" type="number" min="1" max="200" inputmode="numeric"><span class="lbl">年</span>'+
+      '<select class="rm">'+Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}月</option>`).join('')+'</select>'+
+      '<button type="button" data-nav="1" title="下個月" style="margin-left:auto">›</button>'+
+    '</div>'+
+    '<div class="roc-cal-grid" id="rocCalGrid"></div>'+
+    '<div class="roc-cal-foot">'+
+      '<button type="button" data-act="clear">清除</button>'+
+      '<button type="button" data-act="today">今天</button>'+
+    '</div>';
+  document.body.appendChild(el);
+  el.addEventListener('click',e=>{
+    const nav=e.target.closest('[data-nav]');
+    if(nav){ _rcM+=+nav.dataset.nav; if(_rcM<1){_rcM=12;_rcY--;} if(_rcM>12){_rcM=1;_rcY++;} rocCalDraw(); return; }
+    const act=e.target.closest('[data-act]');
+    if(act){
+      if(act.dataset.act==='clear'){ rocCalSet(''); }
+      else { const n=new Date(Date.now()+8*3600000);
+             rocCalPick(n.getUTCFullYear()-1911, n.getUTCMonth()+1, n.getUTCDate()); }
+      return;
+    }
+    const day=e.target.closest('[data-day]');
+    if(day) rocCalPick(_rcY,_rcM,+day.dataset.day);
+  });
+  el.querySelector('.ry').addEventListener('input',e=>{ const v=+e.target.value; if(v>0){ _rcY=v; rocCalDraw(true);} });
+  el.querySelector('.rm').addEventListener('change',e=>{ _rcM=+e.target.value; rocCalDraw(); });
+  el.addEventListener('mousedown',e=>e.stopPropagation());
+  return el;
+}
+function rocCalDraw(keepYearInput){
+  const el=rocCalEl();
+  if(!keepYearInput) el.querySelector('.ry').value=_rcY;
+  el.querySelector('.rm').value=_rcM;
+  const first=new Date(Date.UTC(_rcY+1911,_rcM-1,1));
+  const startDow=first.getUTCDay();
+  const days=new Date(Date.UTC(_rcY+1911,_rcM,0)).getUTCDate();
+  const now=new Date(Date.now()+8*3600000);
+  const tY=now.getUTCFullYear()-1911, tM=now.getUTCMonth()+1, tD=now.getUTCDate();
+  let h=['日','一','二','三','四','五','六']
+        .map((d,i)=>`<div class="dow${i===0?' sun':''}">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++) h+='<button class="blank" disabled></button>';
+  for(let d=1;d<=days;d++){
+    const isT=(_rcY===tY&&_rcM===tM&&d===tD);
+    h+=`<button type="button" data-day="${d}"${isT?' class="today"':''}>${d}</button>`;
+  }
+  document.getElementById('rocCalGrid').innerHTML=h;
+}
+function rocCalSet(val){
+  if(_rcTarget){
+    _rcTarget.value=val;
+    _rcTarget.dispatchEvent(new Event('input',{bubbles:true})); // 觸發既有預覽更新
+  }
+  rocCalClose();
+}
+function rocCalPick(y,m,d){
+  rocCalSet(_rcShort ? `${y}年${m}月${d}日` : `民國${y}年${m}月${d}日`);
+}
+function rocCalClose(){ const el=document.getElementById('rocCal'); if(el) el.classList.remove('on'); _rcTarget=null; }
+
+function openRocCal(btn, short){
+  const wrap=btn.closest('.date-wrap');
+  _rcTarget=wrap && wrap.querySelector('input[type=text]');
+  if(!_rcTarget) return;
+  _rcShort=!!short;
+  const cur=rocParse(_rcTarget.value);
+  const now=new Date(Date.now()+8*3600000);
+  _rcY = cur ? cur.y : now.getUTCFullYear()-1911;
+  _rcM = cur ? cur.m : now.getUTCMonth()+1;
+  const el=rocCalEl();
+  el.classList.add('on');
+  rocCalDraw();
+  // 定位：預設按鈕下方，超出視窗則往上／往左修正
+  const r=btn.getBoundingClientRect();
+  const w=el.offsetWidth, hh=el.offsetHeight;
+  let left=window.scrollX+r.left, top=window.scrollY+r.bottom+4;
+  if(left+w>window.scrollX+document.documentElement.clientWidth-8)
+    left=window.scrollX+document.documentElement.clientWidth-w-8;
+  if(r.bottom+hh+8>window.innerHeight) top=window.scrollY+r.top-hh-4;
+  el.style.left=Math.max(8,left)+'px';
+  el.style.top=Math.max(8,top)+'px';
+}
+document.addEventListener('mousedown',()=>rocCalClose());
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') rocCalClose(); });
 
 /* ═══════════════════════════════════════════════
    State
@@ -533,12 +658,12 @@ function renderForm(){
             <div class="field-row">
               <label>出生日</label>
               <div class="date-wrap"><input type="text" value="${p.dob}" placeholder="民國--年--月--日"
-                oninput="updateProxy(${m.id},${pi},'dob',this.value)"><label class="date-pick" title="選擇日期">📅<input type="date" onchange="onDatePicked(this,false)" tabindex="-1" aria-label="選擇日期"></label></div>
+                oninput="updateProxy(${m.id},${pi},'dob',this.value)"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,false)">📅</button></div>
             </div>
             <div class="field-row">
               <label>死亡日</label>
               <div class="date-wrap"><input type="text" value="${p.dod}" placeholder="民國--年--月--日"
-                oninput="updateProxy(${m.id},${pi},'dod',this.value)"><label class="date-pick" title="選擇日期">📅<input type="date" onchange="onDatePicked(this,false)" tabindex="-1" aria-label="選擇日期"></label></div>
+                oninput="updateProxy(${m.id},${pi},'dod',this.value)"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,false)">📅</button></div>
             </div>
             <div class="field-row">
               <label>繼承情形</label>
@@ -572,12 +697,12 @@ function renderForm(){
       <div class="field-row">
         <label>出生日</label>
         <div class="date-wrap"><input type="text" value="${m.dob}" placeholder="民國--年--月--日"
-          oninput="updateMember(${m.id},'dob',this.value)"><label class="date-pick" title="選擇日期">📅<input type="date" onchange="onDatePicked(this,false)" tabindex="-1" aria-label="選擇日期"></label></div>
+          oninput="updateMember(${m.id},'dob',this.value)"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,false)">📅</button></div>
       </div>
       <div class="field-row">
         <label>死亡日</label>
         <div class="date-wrap"><input type="text" value="${m.dod}" placeholder="民國--年--月--日"
-          oninput="updateMember(${m.id},'dod',this.value)"><label class="date-pick" title="選擇日期">📅<input type="date" onchange="onDatePicked(this,false)" tabindex="-1" aria-label="選擇日期"></label></div>
+          oninput="updateMember(${m.id},'dod',this.value)"><button type="button" class="date-pick" title="選擇日期" onmousedown="event.stopPropagation()" onclick="openRocCal(this,false)">📅</button></div>
       </div>
       <div class="field-row">
         <label>繼承情形</label>

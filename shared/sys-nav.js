@@ -69,6 +69,7 @@
     { id: "court",     href: "court_nav.html",   label: "🗺 開庭助理" },
     { id: "deadline",  href: "deadline.html",    label: "⏱ 時效計算器" },
     { id: "checklist",      href: "checklist.html",      label: "📋 開庭清單" },
+    { id: "heirship",       href: "heirship.html",       label: "🌳 繼承系統表" },
     { id: "receipt",        href: "receipt.html",        label: "🧾 掛號回執" },
   ];
 

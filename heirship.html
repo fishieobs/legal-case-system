@@ -133,42 +133,55 @@ body{margin:0;padding-top:41px;background:var(--paper);color:var(--ink);
   letter-spacing:.5em;border-bottom:1px solid #000;
   padding-bottom:8pt;margin-bottom:16pt}
 
-/* Top section: 被繼承人 + 配偶 */
-.p-top{
-  display:grid;grid-template-columns:45% 10% 45%;
-  margin-bottom:12pt;align-items:center}
-.p-box{
-  border:1px solid #000;padding:6pt 8pt;
-  font-size:9pt;line-height:1.8}
-.p-box p{margin:0}
-.p-connector-h{
-  display:flex;align-items:center;justify-content:center;
-  color:#000;font-size:11pt;letter-spacing:2pt}
-.p-spouse-empty{border:none}
+/* 版面度量（對齊實務範本）：主幹線位置、各框寬度 */
+.preview-page{--trunk:33mm;--childL:56mm;--boxW:42mm}
 
-/* Children section */
-.p-children{display:flex;flex-direction:column;gap:0}
+/* 上段：被繼承人（左）─虛線─ 配偶（右）
+   配偶以絕對定位，避免其較高的框撐高整列、使主幹線與被繼承人框之間出現空隙 */
+.p-top{position:relative;margin:0 0 0 8mm}
+.p-box{border:1px solid #000;padding:5pt 7pt;font-size:9pt;line-height:1.9}
+.p-box p{margin:0;white-space:nowrap}
+.p-decedent{width:88mm;min-height:24mm}
+.p-spouse-grp{
+  position:absolute;left:92mm;top:0;bottom:0;
+  display:flex;align-items:center}
+.p-conn-h{
+  flex:0 0 auto;width:8mm;
+  border-top:1px dashed #000;margin:0 2mm}
+.p-spouse{width:var(--boxW)}
+
+/* 下段：垂直主幹 ＋ 各子女虛線分支 */
+.p-tree{position:relative}
 .p-child-row{
-  display:grid;
-  grid-template-columns:56pt 56pt 1fr 18pt 1fr;
-  align-items:start;margin-bottom:4pt}
+  position:relative;display:flex;align-items:center;
+  padding-left:var(--childL);min-height:20mm}
+/* 主幹：逐列堆疊成一條連續直線；最後一列只畫到分支處 */
+.p-child-row::before{
+  content:"";position:absolute;left:var(--trunk);top:0;bottom:0;
+  border-left:1px solid #000}
+.p-child-row:last-child::before{bottom:50%}
+/* 分支：由主幹拉出的水平虛線 */
+.p-child-row::after{
+  content:"";position:absolute;left:var(--trunk);top:50%;
+  width:calc(var(--childL) - var(--trunk));border-top:1px dashed #000}
 .p-group-label{
-  display:flex;align-items:center;justify-content:center;
-  font-size:9pt;writing-mode:horizontal-tb;height:100%}
-.p-dash{
-  display:flex;align-items:flex-start;padding-top:6pt;
-  font-size:8pt;letter-spacing:-1pt;color:#000;
-  overflow:hidden;white-space:nowrap}
-.p-child-box{border:1px solid #000;padding:4pt 6pt;font-size:9pt;line-height:1.8}
-.p-child-box p{margin:0}
+  position:absolute;left:calc(var(--trunk) + 4mm);top:50%;
+  transform:translateY(-160%);font-size:9pt;background:#fff;
+  padding:0 2pt;z-index:1}
+.p-child-box{
+  border:1px solid #000;padding:4pt 6pt;font-size:9pt;
+  line-height:1.9;width:var(--boxW);flex:0 0 auto;position:relative;z-index:1}
+.p-child-box p{margin:0;white-space:nowrap}
+/* 代位繼承人：以短虛線連向右側，多人合併於同一框 */
 .p-proxy-conn{
-  display:flex;align-items:flex-start;padding-top:6pt;
-  font-size:8pt;justify-content:center;color:#000}
-.p-proxies{display:flex;flex-direction:column;gap:4pt}
-.p-proxy-box{border:1px solid #000;padding:4pt 6pt;font-size:8.5pt;line-height:1.75}
-.p-proxy-box p{margin:0}
-.p-no-proxy{border:none;height:auto}
-.p-no-proxy-conn{border:none}
+  flex:0 0 auto;align-self:center;width:8mm;
+  border-top:1px dashed #000;margin:0 2mm}
+.p-proxies{
+  border:1px solid #000;padding:4pt 6pt;font-size:9pt;
+  line-height:1.9;width:var(--boxW);flex:0 0 auto}
+.p-proxies .pg{margin:0}
+.p-proxies .pg+.pg{margin-top:8pt}
+.p-proxies p{margin:0;white-space:nowrap}
 
 /* ── Print Media ── */
 @media print{
@@ -669,15 +682,6 @@ function fmtDisDate(s){ return s&&s.trim() ? s.trim() : '民國--年--月--日';
 function boxHTML(lines){
   return `<div class="p-box">${lines.map(l=>`<p>${esc(l)}</p>`).join('')}</div>`;
 }
-function proxyBoxHTML(p){
-  return `<div class="p-proxy-box">
-    <p>姓名：${esc(p.name||'')}</p>
-    <p>稱謂：${esc(p.rel||'')}</p>
-    <p>出生日：${esc(fmtDate(p.dob))}</p>
-    <p>死亡日：${esc(fmtDate(p.dod))}</p>
-    <p>繼承情形：${esc(p.status||'繼承')}</p>
-  </div>`;
-}
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
 
 function render(){
@@ -693,72 +697,48 @@ function render(){
   const spStatus = document.getElementById('sp-status').value;
   const grpLabel = document.getElementById('grp-label').value.trim() || '子女';
 
-  /* 被繼承人 box */
-  const decedentBox = boxHTML([
-    `被繼承人：${dName}`,
-    `稱謂：${dRel}`,
-    `出生日：${fmtDate(dDob)}`,
-    `死亡日：${fmtDate(dDod)}`
-  ]);
+  /* 被繼承人 box（沿用實務範本用語「被繼承者」） */
+  const decedentBox = `<div class="p-box p-decedent">` +
+    [`被繼承者：${dName}`,`稱謂：${dRel}`,`出生日：${fmtDate(dDob)}`,`死亡日：${fmtDate(dDod)}`]
+      .map(l=>`<p>${esc(l)}</p>`).join('') + `</div>`;
 
-  /* 配偶 box */
-  let spouseBox = `<div class="p-spouse-empty"></div>`;
-  let connectorTop = `<div class="p-connector-h"></div>`;
+  /* 配偶：以短虛線連向右側 */
+  let spouseHTML = '';
   if(spOn && spName){
     const spLines = [
-      `姓名：${spName}`,
-      `稱謂：配偶`,
-      `離婚日：${fmtDisDate(spDiv)}`,
-      `出生日：${fmtDate(spDob)}`,
-      `死亡日：${fmtDate(spDod)}`,
+      `姓名：${spName}`, `稱謂：配偶`, `離婚日：${fmtDisDate(spDiv)}`,
+      `出生日：${fmtDate(spDob)}`, `死亡日：${fmtDate(spDod)}`,
       `繼承情形：${spStatus}`
     ];
-    spouseBox = boxHTML(spLines);
-    connectorTop = `<div class="p-connector-h">─ ─ ─</div>`;
+    spouseHTML = `<div class="p-spouse-grp"><div class="p-conn-h"></div><div class="p-box p-spouse">` +
+      spLines.map(l=>`<p>${esc(l)}</p>`).join('') + `</div></div>`;
   }
 
-  /* Children rows */
-  const midIdx = Math.floor(members.length / 2);
+  /* 子女列：主幹＋虛線分支；代位繼承人合併於同一框 */
   const childRows = members.map((m, idx)=>{
-    const hasProxy = m.status==='代位繼承' && m.proxies.length>0;
-    const label = idx===midIdx
-      ? `<div class="p-group-label">${esc(grpLabel)}</div>`
-      : `<div class="p-group-label"></div>`;
+    const proxies = (m.status==='代位繼承') ? (m.proxies||[]) : [];
+    const label = idx===0 ? `<div class="p-group-label">${esc(grpLabel)}</div>` : '';
 
-    const childLines = [
-      `姓名：${m.name||''}`,
-      `稱謂：${m.rel||''}`,
-      `出生日：${fmtDate(m.dob)}`,
-      `死亡日：${fmtDate(m.dod)}`,
-      `繼承情形：${m.status}`
-    ];
-    const childBox = `<div class="p-child-box">${childLines.map(l=>`<p>${esc(l)}</p>`).join('')}</div>`;
+    const childBox = `<div class="p-child-box">` +
+      [`姓名：${m.name||''}`,`稱謂：${m.rel||''}`,`出生日：${fmtDate(m.dob)}`,
+       `死亡日：${fmtDate(m.dod)}`,`繼承情形：${m.status}`]
+        .map(l=>`<p>${esc(l)}</p>`).join('') + `</div>`;
 
-    const proxiesHTML = hasProxy
-      ? `<div class="p-proxy-conn">─</div><div class="p-proxies">${m.proxies.map(proxyBoxHTML).join('')}</div>`
-      : `<div class="p-no-proxy-conn"></div><div class="p-no-proxy"></div>`;
+    const proxyHTML = proxies.length
+      ? `<div class="p-proxy-conn"></div><div class="p-proxies">` +
+        proxies.map(pr=>`<div class="pg">` +
+          [`姓名：${pr.name||''}`,`稱謂：${pr.rel||''}`,`出生日：${fmtDate(pr.dob)}`,
+           `死亡日：${fmtDate(pr.dod)}`,`繼承情形：${pr.status||'繼承'}`]
+            .map(l=>`<p>${esc(l)}</p>`).join('') + `</div>`).join('') + `</div>`
+      : '';
 
-    return `<div class="p-child-row">
-      ${label}
-      <div class="p-dash">──────────</div>
-      ${childBox}
-      ${proxiesHTML}
-    </div>`;
+    return `<div class="p-child-row">${label}${childBox}${proxyHTML}</div>`;
   }).join('');
 
-  /* Compose page（不含繼承人簽名欄與申請日） */
   document.getElementById('previewPage').innerHTML = `
     <div class="p-title">繼　承　系　統　表</div>
-
-    <div class="p-top">
-      ${decedentBox}
-      ${connectorTop}
-      ${spouseBox}
-    </div>
-
-    <div class="p-children">
-      ${childRows}
-    </div>
+    <div class="p-top">${decedentBox}${spouseHTML}</div>
+    <div class="p-tree">${childRows}</div>
   `;
 }
 

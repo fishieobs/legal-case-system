@@ -845,6 +845,11 @@ function App({user}){
             va=(a.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((x,y)=>x.date.localeCompare(y.date))[0]?.date||"9999";
             vb=(b.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((x,y)=>x.date.localeCompare(y.date))[0]?.date||"9999";
         }
+        else if(sortBy==="nextVerdict"){
+            // 未到之宣判日在前；已過或未排定者排最後
+            va=(a.verdictDate && daysUntil(a.verdictDate)>=0)?a.verdictDate:"9999";
+            vb=(b.verdictDate && daysUntil(b.verdictDate)>=0)?b.verdictDate:"9999";
+        }
         else if(sortBy==="todoCount"){
             va=(a.todos||[]).filter(t=>!t.done).length;
             vb=(b.todos||[]).filter(t=>!t.done).length;
@@ -1798,11 +1803,12 @@ function App({user}){
                     <select className="fsel" value={sortBy} onChange={e=>{
                         const v=e.target.value;
                         setSortBy(v);
-                        // 最近開庭預設由近到遠（升冪）；其餘預設由大到小（降冪）。仍可用 ↑/↓ 切換
-                        setSortDir(v==="nextHearing"?"asc":"desc");
+                        // 最近開庭／最近宣判預設由近到遠（升冪）；其餘預設由大到小（降冪）。仍可用 ↑/↓ 切換
+                        setSortDir((v==="nextHearing"||v==="nextVerdict")?"asc":"desc");
                     }}>
                         <option value="retainerDate">委任日期</option>
                         <option value="nextHearing">最近開庭</option>
+                        <option value="nextVerdict">最近宣判</option>
                         <option value="todoCount">待辦事項</option>
                         <option value="feeReceived">已收款</option>
                         <option value="feeUnpaid">未收款</option>

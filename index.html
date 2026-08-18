@@ -437,7 +437,7 @@ const emptyCase = {
     caseType:"民事", status:"進行中", instance:"地院", court:"台北地院",
     attorney:FIRM_ATTORNEY, retainerDate:"", opposingParty:"", opposingCounsel:[], caseReason:"", judgementLink:"", notes:"",
     verdictDate:"", verdictTime:"", judgmentReceivedDate:"", appealDeadline:"",
-    hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[], matters:[], shareToken:""
+    hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[], matters:[], alertsDone:[], shareToken:""
 };
 // 上訴/抗告不變期間（日）— 自判決送達翌日起算；末日為週末/國定假日順延至次工作日
 // 民訴§440(民事20)、刑訴§349(刑事20)、行訴§241(行政20)；勞動/智財準用民訴20；家事訴訟上訴20；非訟抗告10
@@ -870,35 +870,39 @@ function App({user}){
     const alerts = (()=>{
         const out=[];
         cases.forEach(c=>{
+            const done=c.alertsDone||[];           // 已標示處理完成的提醒（依 key）
+            const skip=k=>done.includes(k);
             // 上訴/抗告末日（手動優先，否則依收受判決日推算）
             const dl = c.appealDeadline || (c.judgmentReceivedDate?computeAppealDeadline(c.caseType,c.judgmentReceivedDate):"");
-            if(dl){
+            if(dl && !skip("dl:"+dl)){
                 const d=daysUntil(dl);
                 if(d!==null && d<=ALERT_WINDOW && d>=-3)
-                    out.push({d,kind:"末日",icon:"⏰",label:`${c.appealDeadline?"上訴/抗告末日":"上訴末日(推定)"}`,who:c.clientName,caseId:c.id,date:dl,critical:true});
+                    out.push({d,key:"dl:"+dl,kind:"末日",icon:"⏰",label:`${c.appealDeadline?"上訴/抗告末日":"上訴末日(推定)"}`,who:c.clientName,caseId:c.id,date:dl,critical:true});
             }
-            if(c.verdictDate){
+            if(c.verdictDate && !skip("vd:"+c.verdictDate)){
                 const d=daysUntil(c.verdictDate);
                 if(d!==null && d>=0 && d<=ALERT_WINDOW)
-                    out.push({d,kind:"宣判",icon:"📢",label:"宣判",who:c.clientName,caseId:c.id,date:c.verdictDate,time:c.verdictTime||""});
+                    out.push({d,key:"vd:"+c.verdictDate,kind:"宣判",icon:"📢",label:"宣判",who:c.clientName,caseId:c.id,date:c.verdictDate,time:c.verdictTime||""});
             }
             (c.hearings||[]).forEach(h=>{
+                const k="hr:"+(h.id||h.date+(h.time||""));
+                if(skip(k)) return;
                 const d=daysUntil(h.date);
                 if(d!==null && d>=0 && d<=ALERT_WINDOW)
-                    out.push({d,kind:"開庭",icon:"🏛",label:`開庭 ${h.agency||""}${h.courtroom?" "+h.courtroom:""}`.trim(),who:c.clientName,caseId:c.id,date:h.date,time:h.time||""});
+                    out.push({d,key:k,kind:"開庭",icon:"🏛",label:`開庭 ${h.agency||""}${h.courtroom?" "+h.courtroom:""}`.trim(),who:c.clientName,caseId:c.id,date:h.date,time:h.time||""});
             });
             (c.todos||[]).forEach(t=>{
                 if(t.done||!t.due) return;
                 const d=daysUntil(t.due);
                 if(d!==null && d<=ALERT_WINDOW && d>=-30)
-                    out.push({d,kind:"待辦",icon:"✅",label:t.text,who:c.clientName,caseId:c.id,date:t.due});
+                    out.push({d,kind:"待辦",icon:"✅",label:t.text,who:c.clientName,caseId:c.id,date:t.due,todoId:t.id});
             });
             // 事項末日（法院命補正等）— 未完成者納入提醒，逾期以失權風險視之
             (c.matters||[]).forEach(m=>{
                 if(m.done||!m.date) return;
                 const d=daysUntil(m.date);
                 if(d!==null && d<=ALERT_WINDOW && d>=-30)
-                    out.push({d,kind:"事項",icon:"📌",label:`${m.type||"事項"}末日${m.note?`（${m.note}）`:""}`,who:c.clientName,caseId:c.id,date:m.date,critical:true});
+                    out.push({d,kind:"事項",icon:"📌",label:`${m.type||"事項"}末日${m.note?`（${m.note}）`:""}`,who:c.clientName,caseId:c.id,date:m.date,critical:true,matterId:m.id});
             });
         });
         return out.sort((a,b)=>a.d-b.d);
@@ -1193,6 +1197,32 @@ function App({user}){
         try{
             await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",caseId),{matters});
             maybeRefreshShare({...c,matters});
+        }catch(e){ console.error(e); toast("⚠️ 更新失敗，請檢查網路後重試"); }
+    };
+    // 提醒列的「完成」：待辦／事項直接標記完成；其餘（末日、宣判、開庭）記入 alertsDone
+    const completeAlert=async(a)=>{
+        const c=cases.find(x=>x.id===a.caseId); if(!c) return;
+        try{
+            if(a.todoId){
+                const todos=(c.todos||[]).map(t=>t.id===a.todoId?{...t,done:true}:t);
+                await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{todos});
+            }else if(a.matterId){
+                const matters=(c.matters||[]).map(m=>m.id===a.matterId?{...m,done:true}:m);
+                await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{matters});
+                maybeRefreshShare({...c,matters});
+            }else if(a.key){
+                const alertsDone=[...new Set([...(c.alertsDone||[]),a.key])];
+                await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",c.id),{alertsDone});
+            }
+            toast("✅ 已完成，不再提醒");
+        }catch(e){ console.error(e); toast("⚠️ 更新失敗，請檢查網路後重試"); }
+    };
+    const restoreAlert=async(caseId,key)=>{
+        const c=cases.find(x=>x.id===caseId); if(!c) return;
+        try{
+            const alertsDone=(c.alertsDone||[]).filter(k=>k!==key);
+            await window.fbMethods.updateDoc(window.fbMethods.doc(window.db,"cases",caseId),{alertsDone});
+            toast("↩️ 已恢復提醒");
         }catch(e){ console.error(e); toast("⚠️ 更新失敗，請檢查網路後重試"); }
     };
     const deleteMatter=async(caseId,matterId)=>{
@@ -1683,12 +1713,18 @@ function App({user}){
                             const when = a.d<0 ? `已逾期 ${Math.abs(a.d)} 天` : a.d===0 ? "今天！" : a.d===1 ? "明天" : `${a.d} 天後`;
                             const urgent = a.d<=1 || a.critical;
                             return(
-                                <div key={i} onClick={()=>openDetail(a.caseId)}
-                                    style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,flexWrap:"wrap"}}>
-                                    <span style={{flexShrink:0}}>{a.icon}</span>
-                                    <span style={{fontWeight:700,color:"var(--text)"}}>{a.who||"（未填當事人）"}</span>
-                                    <span style={{color:"var(--text2)"}}>{a.label}</span>
-                                    <span style={{color:"var(--text3)",fontSize:11}}>{a.date}{a.time?` ${a.time}`:""}</span>
+                                <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:13,flexWrap:"wrap"}}>
+                                    <button onClick={()=>completeAlert(a)} title="標示完成，不再提醒"
+                                        style={{flexShrink:0,width:20,height:20,lineHeight:1,borderRadius:3,cursor:"pointer",
+                                            border:"1.5px solid var(--seal)",background:"transparent",color:"var(--seal)",
+                                            fontSize:12,fontWeight:900,padding:0}}>✓</button>
+                                    <span onClick={()=>openDetail(a.caseId)} title="開啟案件"
+                                        style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",cursor:"pointer",flex:1,minWidth:0}}>
+                                        <span style={{flexShrink:0}}>{a.icon}</span>
+                                        <span style={{fontWeight:700,color:"var(--text)"}}>{a.who||"（未填當事人）"}</span>
+                                        <span style={{color:"var(--text2)"}}>{a.label}</span>
+                                        <span style={{color:"var(--text3)",fontSize:11}}>{a.date}{a.time?` ${a.time}`:""}</span>
+                                    </span>
                                     <span style={{marginLeft:"auto",fontWeight:800,fontSize:12,padding:"1px 9px",borderRadius:2,
                                         background:urgent?"var(--seal)":"var(--warning-wash)",color:urgent?"#fff":"var(--warning)"}}>{when}</span>
                                 </div>
@@ -3113,6 +3149,25 @@ function App({user}){
                                             style={{marginLeft:"auto",background:"none",border:"none",color:"var(--text4)",cursor:"pointer",fontSize:12}}>🗑</button>
                                     </div>
                                     {m.note && <div style={{color:"var(--text3)",fontSize:12,marginTop:3}}>{m.note}</div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    )}
+                    {/* 已完成而不再提醒的期日（可恢復） */}
+                    {(selected.alertsDone||[]).length>0 && (
+                    <div className="card">
+                        <div className="card-title">🔕 已標示完成的提醒（{(selected.alertsDone||[]).length}）</div>
+                        <div style={{fontSize:11,color:"var(--text3)",marginBottom:8}}>這些期日不再出現於首頁提醒。若為誤按可按 ↩️ 恢復。</div>
+                        {(selected.alertsDone||[]).map(k=>{
+                            const [t,...rest]=k.split(":"); const v=rest.join(":");
+                            const name={dl:"上訴/抗告末日",vd:"宣判",hr:"開庭"}[t]||t;
+                            return(
+                                <div key={k} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid var(--border)",fontSize:13}}>
+                                    <span style={{color:"var(--text2)"}}>{name}</span>
+                                    <span style={{color:"var(--text3)",fontSize:11}}>{t==="hr"?"":v}</span>
+                                    <button onClick={()=>restoreAlert(selected.id,k)} title="恢復提醒"
+                                        style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:"var(--text4)",fontSize:13}}>↩️</button>
                                 </div>
                             );
                         })}

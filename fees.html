@@ -486,24 +486,33 @@ input:checked+.tog-slider:before{transform:translateX(16px);background:var(--pap
       📄 請款單預覽
       <div class="btn-row">
         <button class="btn btn-outline btn-sm" onclick="renderInvoice()">🔄 更新預覽</button>
+        <button class="btn btn-outline btn-sm" onclick="saveInvoice()">💾 存檔</button>
         <button class="btn btn-gold btn-sm" onclick="doPrint()">🖨 列印 ／ PDF</button>
       </div>
     </div>
-    <div class="hint">列印時選「另存為 PDF」即可匯出 PDF 檔案。建議使用 Chrome ／ Edge。</div>
+    <div class="hint">列印時選「另存為 PDF」即可匯出 PDF 檔案。建議使用 Chrome ／ Edge。<br>
+      按「💾 存檔」可將本張請款單留存，日後於下方「已存請款單」重新開啟並輸出 PDF。</div>
     <div id="invoice-area"><div class="empty">填寫上方資料後點擊「更新預覽」</div></div>
+  </div>
+
+  <!-- ── 已存請款單 ── -->
+  <div class="card" id="saved-card" style="display:none">
+    <div class="card-title">🗂 已存請款單 <span id="saved-count" class="hint" style="font-weight:400"></span></div>
+    <div class="hint">點「開啟」載入該張請款單內容（含費用明細），即可重新列印或另存 PDF。</div>
+    <div id="saved-list"></div>
   </div>
 
 </div>
 
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import{getFirestore,doc,onSnapshot,setDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import{getFirestore,doc,onSnapshot,setDoc,collection,deleteDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 const cfg={apiKey:"AIzaSyB2sIWbUmp2TvnDGulat2BQGb7HMYBvfA0",authDomain:"legalcasemanageer.firebaseapp.com",projectId:"legalcasemanageer",storageBucket:"legalcasemanageer.firebasestorage.app",messagingSenderId:"559838504556",appId:"1:559838504556:web:ba10c071a12650bbd85a49"};
 const app=initializeApp(cfg);
 window.db=getFirestore(app);
 window.auth=getAuth(app);
-window.fbMethods={doc,onSnapshot,setDoc};
+window.fbMethods={doc,onSnapshot,setDoc,collection,deleteDoc};
 window.fbAuth={signInWithEmailAndPassword,signOut,onAuthStateChanged};
 window.firebaseReady=true;
 </script>
@@ -631,23 +640,66 @@ function move(id,dir){
 }
 function save(){ persistAll(); }
 
+let editingId=null;   // 目前正在編輯的費用項目
+
+function startEdit(id){ editingId=id; renderItems();
+  const f=document.getElementById("ed-label"); if(f){ f.focus(); f.select(); } }
+function cancelEdit(){ editingId=null; renderItems(); }
+function saveEdit(id){
+  const it=items.find(x=>x.id===id); if(!it) return;
+  const label=(document.getElementById("ed-label")?.value||"").trim();
+  const amt=Math.round(Number(document.getElementById("ed-amt")?.value)||0);
+  const note=(document.getElementById("ed-note")?.value||"").trim();
+  if(!label){ toast("請填寫項目名稱"); return; }
+  it.label=label; it.amt=amt; it.note=note;
+  editingId=null; save(); renderItems();
+  toast("✅ 已更新項目");
+}
+
 function renderItems(){
   renderTotals();
   const el=document.getElementById("items-list");
   if(!items.length){ el.innerHTML=`<div class="empty">尚無費用項目<br>使用上方計算器或手動新增</div>`; return; }
-  el.innerHTML=items.map((x,i)=>`
+  el.innerHTML=items.map((x,i)=>{
+    if(x.id===editingId){
+      return `
+      <div class="item-row" style="flex-wrap:wrap;gap:6px;align-items:flex-end;border:1px solid var(--seal);">
+        <div class="fg" style="flex:2 1 150px;margin:0">
+          <label class="fl">項目名稱</label>
+          <input class="fi" id="ed-label" value="${esc(x.label)}"
+            onkeydown="if(event.key==='Enter')saveEdit('${x.id}');if(event.key==='Escape')cancelEdit()">
+        </div>
+        <div class="fg" style="flex:1 1 110px;margin:0">
+          <label class="fl">金額</label>
+          <input class="fi" id="ed-amt" type="number" step="1" value="${x.amt}"
+            onkeydown="if(event.key==='Enter')saveEdit('${x.id}');if(event.key==='Escape')cancelEdit()">
+        </div>
+        <div class="fg" style="flex:2 1 150px;margin:0">
+          <label class="fl">備註</label>
+          <input class="fi" id="ed-note" value="${esc(x.note||'')}"
+            onkeydown="if(event.key==='Enter')saveEdit('${x.id}');if(event.key==='Escape')cancelEdit()">
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick="cancelEdit()">取消</button>
+          <button class="btn btn-gold btn-sm" onclick="saveEdit('${x.id}')">儲存</button>
+        </div>
+      </div>`;
+    }
+    return `
     <div class="item-row">
       <div style="display:flex;flex-direction:column;gap:2px;margin-right:2px;">
         <button class="btn btn-outline btn-sm" style="padding:2px 7px;font-size:10px;" ${i===0?"disabled":""} onclick="move('${x.id}',-1)">▲</button>
         <button class="btn btn-outline btn-sm" style="padding:2px 7px;font-size:10px;" ${i===items.length-1?"disabled":""} onclick="move('${x.id}',1)">▼</button>
       </div>
-      <div class="item-name">
+      <div class="item-name" style="cursor:pointer" title="點擊編輯" onclick="startEdit('${x.id}')">
         <div class="item-name-text">${esc(x.label)}</div>
         ${x.note?`<div class="item-note-text">${esc(x.note)}</div>`:""}
       </div>
-      <div class="item-amount">NT$${n(x.amt)}</div>
-      <button class="btn btn-danger btn-sm" style="padding:5px 9px;" onclick="del('${x.id}')">✕</button>
-    </div>`).join("");
+      <div class="item-amount" style="cursor:pointer" title="點擊編輯" onclick="startEdit('${x.id}')">NT$${n(x.amt)}</div>
+      <button class="btn btn-outline btn-sm" style="padding:5px 9px;" title="編輯" onclick="startEdit('${x.id}')">✎</button>
+      <button class="btn btn-danger btn-sm" style="padding:5px 9px;" title="刪除" onclick="del('${x.id}')">✕</button>
+    </div>`;
+  }).join("");
 }
 
 function renderTotals(){
@@ -795,6 +847,73 @@ function n(v){ return Math.round(v).toLocaleString("zh-TW"); }
 function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function toast(msg,dur=2200){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),dur); }
 
+// ── 已存請款單（存內容而非 PDF 檔：可重新開啟並輸出同樣的 PDF，且不佔空間）──
+let savedInvoices = [];
+
+function saveInvoice(){
+  if(!window.auth || !window.auth.currentUser){ toast("請先登入"); return; }
+  if(!items.length){ toast("尚無費用項目，無法存檔"); return; }
+  const sub=items.reduce((s,x)=>s+x.amt,0);
+  const taxOn=!!document.getElementById("tax-chk")?.checked;
+  const grand=sub+(taxOn?Math.round(sub*0.05):0);
+  const id="inv_"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  const rec={
+    id,
+    client:g("i-client"), caseName:g("i-case"),
+    invDate:g("i-date"), dueDate:g("i-due"), invNo:g("i-no"), notes:g("i-notes"),
+    taxOn, items:JSON.parse(JSON.stringify(items)),
+    subtotal:sub, grand,
+    atty: ATTY_IDS.reduce((o,k)=>{ o[k]=document.getElementById(k)?.value||""; return o; },{}),
+    savedAt:new Date().toISOString(),
+  };
+  window.fbMethods.setDoc(window.fbMethods.doc(window.db,"invoices",id),rec)
+    .then(()=>toast("✅ 請款單已存檔"))
+    .catch(e=>{ console.error(e); toast("⚠️ 存檔失敗，請檢查網路後重試"); });
+}
+
+function loadInvoice(id){
+  const r=savedInvoices.find(x=>x.id===id); if(!r) return;
+  if(!confirm(`載入「${r.client||"（未填委託人）"}」這張請款單？\n目前畫面上的費用明細與請款單設定將被取代。`)) return;
+  items = JSON.parse(JSON.stringify(r.items||[]));
+  const set=(k,v)=>{ const el=document.getElementById(k); if(el) el.value=v||""; };
+  set("i-client",r.client); set("i-case",r.caseName); set("i-date",r.invDate);
+  set("i-due",r.dueDate); set("i-no",r.invNo); set("i-notes",r.notes);
+  const tx=document.getElementById("tax-chk"); if(tx) tx.checked=!!r.taxOn;
+  Object.entries(r.atty||{}).forEach(([k,v])=>set(k,v));
+  editingId=null; renderItems(); renderInvoice(); save();
+  toast("✅ 已載入，可直接列印／另存 PDF");
+  document.getElementById("invoice-area")?.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function deleteInvoice(id){
+  const r=savedInvoices.find(x=>x.id===id); if(!r) return;
+  if(!confirm(`確定刪除「${r.client||"（未填委託人）"}」${r.invDate||""} 這張已存請款單？`)) return;
+  window.fbMethods.deleteDoc(window.fbMethods.doc(window.db,"invoices",id))
+    .then(()=>toast("🗑 已刪除"))
+    .catch(e=>{ console.error(e); toast("⚠️ 刪除失敗，請檢查網路後重試"); });
+}
+
+function renderSavedInvoices(){
+  const card=document.getElementById("saved-card");
+  const list=document.getElementById("saved-list");
+  const cnt=document.getElementById("saved-count");
+  if(!card||!list) return;
+  if(!savedInvoices.length){ card.style.display="none"; return; }
+  card.style.display="";
+  cnt.textContent=`（${savedInvoices.length} 張）`;
+  const rows=[...savedInvoices].sort((a,b)=>(b.savedAt||"").localeCompare(a.savedAt||""));
+  list.innerHTML=rows.map(r=>`
+    <div class="item-row">
+      <div class="item-name">
+        <div class="item-name-text">${esc(r.client||"（未填委託人）")}${r.caseName?` · ${esc(r.caseName)}`:""}</div>
+        <div class="item-note-text">${esc(r.invNo||"")}${r.invDate?` · 開立 ${esc(r.invDate)}`:""} · 存檔 ${esc((r.savedAt||"").slice(0,10))}</div>
+      </div>
+      <div class="item-amount">NT$${n(r.grand||0)}</div>
+      <button class="btn btn-outline btn-sm" style="padding:5px 9px" onclick="loadInvoice('${r.id}')">開啟</button>
+      <button class="btn btn-danger btn-sm" style="padding:5px 9px" onclick="deleteInvoice('${r.id}')">✕</button>
+    </div>`).join("");
+}
+
 // ── cloud sync (Firestore) ─────────────────────────────
 let cloudBootstrapped = false;
 
@@ -851,6 +970,11 @@ function initAppData(){
     }
     cloudBootstrapped = true;
   });
+  // 已存請款單（即時同步）
+  window.fbMethods.onSnapshot(window.fbMethods.collection(window.db,"invoices"), snap=>{
+    savedInvoices = snap.docs.map(d=>({...d.data(),id:d.id}));
+    renderSavedInvoices();
+  }, e=>console.warn("invoices listen failed:",e));
 }
 
 // ── auth gate ───────────────────────────────────────────

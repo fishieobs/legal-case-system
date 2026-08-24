@@ -436,7 +436,7 @@ const emptyCase = {
     totalFee:0, payments:[], disbursements:0,
     caseType:"民事", status:"進行中", instance:"地院", court:"台北地院",
     attorney:FIRM_ATTORNEY, retainerDate:"", opposingParty:"", opposingCounsel:[], caseReason:"", judgementLink:"", notes:"",
-    verdictDate:"", verdictTime:"", judgmentReceivedDate:"", appealDeadline:"",
+    verdictDate:"", verdictTime:"", verdictText:"", judgmentReceivedDate:"", appealDeadline:"",
     hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[], matters:[], alertsDone:[], shareToken:""
 };
 // 上訴/抗告不變期間（日）— 自判決送達翌日起算；末日為週末/國定假日順延至次工作日
@@ -821,7 +821,7 @@ function App({user}){
             c.clientName, c.firmCaseNo, c.opposingParty, c.attorney,
             ...(c.clientParties||[]).flatMap(p=>[p.name,p.phone]),
             ...(c.opposingCounsel||[]).flatMap(L=>[L.name,L.mobile,L.tel,L.office]),
-            c.court, c.division, c.notes, c.judgementLink, ...(c.judgementLinks||[]), c.caseReason||"",
+            c.court, c.division, c.notes, c.verdictText||"", c.judgementLink, ...(c.judgementLinks||[]), c.caseReason||"",
             ...(c.courtCaseNos||[]),
             ...(c.hearings||[]).map(h=>[h.agency,h.note,h.courtroom].filter(Boolean).join(" ")),
             ...(c.todos||[]).map(t=>t.text),
@@ -3135,6 +3135,19 @@ function App({user}){
                             </div>
                         ))}
                     </div>
+                    {/* 判決主文 */}
+                    {(selected.verdictText||"").trim() && (
+                    <div className="card">
+                        <div className="card-title" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                            <span>⚖ 判決主文{selected.verdictDate?`（${selected.verdictDate} 宣判）`:""}</span>
+                            <button className="btn btn-outline btn-sm no-print" title="複製主文"
+                                onClick={()=>{ try{ navigator.clipboard.writeText(selected.verdictText); toast("✅ 已複製判決主文"); }catch(_){ toast("請手動選取複製"); } }}>📋 複製</button>
+                        </div>
+                        <div style={{whiteSpace:"pre-wrap",lineHeight:1.9,fontSize:14,color:"var(--text)",
+                            background:"var(--paper-sunken)",border:"1px solid var(--rule)",borderLeft:"3px solid var(--seal)",
+                            borderRadius:3,padding:"12px 14px"}}>{selected.verdictText}</div>
+                    </div>
+                    )}
                     {/* 事項末日 */}
                     {(selected.matters||[]).length>0 && (
                     <div className="card">
@@ -4080,6 +4093,15 @@ function App({user}){
                             <input className="fi" type={t} placeholder={p} value={F[k]||""} onChange={e=>sf(k,e.target.value)}/>
                         </div>
                     ))}
+                </div>
+                <div className="fg" style={{marginBottom:12}}>
+                    <label className="fl" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <span>⚖ 判決主文</span>
+                        <span style={{fontWeight:400,fontSize:11,color:"var(--text4)"}}>可自主文公告或判決書直接貼上</span>
+                    </label>
+                    <textarea className="fi" style={{minHeight:120,lineHeight:1.9,fontFamily:"var(--font-song)"}}
+                        placeholder={"例：\n一、被告應給付原告新臺幣壹佰萬元，及自民國115年1月1日起至清償日止，按年息百分之五計算之利息。\n二、訴訟費用由被告負擔。\n三、本判決第一項得假執行。"}
+                        value={F.verdictText||""} onChange={e=>sf("verdictText",e.target.value)}/>
                 </div>
                 <div className="fg" style={{marginBottom:12}}>
                     <label className="fl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>

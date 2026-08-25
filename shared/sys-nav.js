@@ -71,6 +71,8 @@
     { id: "checklist",      href: "checklist.html",      label: "📋 開庭清單" },
     { id: "heirship",       href: "heirship.html",       label: "🌳 繼承系統表" },
     { id: "receipt",        href: "receipt.html",        label: "🧾 掛號回執" },
+    // 站外工具（另開分頁，避免離開系統）
+    { id: "legalcalc", href: "https://fishieobs.github.io/Legal-calculation/", label: "🧮 法律試算", ext: true },
   ];
 
   // ── Global theme (dark / light), shared across all pages ──
@@ -146,7 +148,8 @@
     if (p.id === active) {
       html += '<span class="sys-nav-item active">' + p.label + "</span>";
     } else {
-      html += '<a class="sys-nav-item" href="' + p.href + '">' + p.label + "</a>";
+      html += '<a class="sys-nav-item" href="' + p.href + '"' +
+        (p.ext ? ' target="_blank" rel="noopener"' : '') + ">" + p.label + "</a>";
     }
   }
   // 介面配色選擇器（靠右）

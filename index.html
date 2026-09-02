@@ -512,6 +512,14 @@ function loadJsQR(){
 }
 // 書狀種類
 const FILING_TYPES = ["起訴狀","答辯狀","準備書狀","準備程序書狀","言詞辯論意旨狀","上訴狀","上訴理由狀","抗告狀","聲請狀","陳報狀","調查證據聲請狀","刑事辯護意旨狀","告訴狀","再議聲請狀","強制執行聲請狀","其他"];
+// 信函種類（與信函管理系統一致；書狀代撰另由「新增遞狀」處理）
+const LETTER_TYPE_OPTS = [
+    {key:"attorney",  label:"律師函",   icon:"⚖"},
+    {key:"certified", label:"存證信函", icon:"📮"},
+    {key:"demand",    label:"催告函",   icon:"⚡"},
+    {key:"warning",   label:"警告函",   icon:"⚠️"},
+    {key:"other",     label:"其他",     icon:"📄"},
+];
 // 事項末日種類（法院命補正、限期提出等）
 const MATTER_TYPES = ["補繳裁判費","補正戶籍謄本","補提書狀","限期陳報","補正訴之聲明","補正委任狀","提出證據","聲請調查證據","繳納擔保金","其他"];
 
@@ -715,6 +723,8 @@ function App({user}){
     const [restoreModal, setRestoreModal] = useState(null); // null | array of {items,at}
     const [calFilingForm, setCalFilingForm] = useState(null); // null | {caseId,type,summary}（月曆手動新增遞狀）
     const [calMatterForm, setCalMatterForm] = useState(null); // null | {caseId,type,note}（月曆新增事項末日）
+    const [calLetterForm, setCalLetterForm] = useState(null); // null | {caseId,type,subject,clientName}（月曆新增寄出信函）
+    const [letterSent, setLetterSent] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("letterSent_cache")||"[]"); }catch(e){ return []; } }); // 信函寄送記錄（依寄出日）
     const [scanState, setScanState] = useState(null); // null | {mode:'scanning'|'form'|'error', ...}（掃傳票排庭）
     const scanVideoRef = React.useRef(null);
     const scanStreamRef = React.useRef(null);
@@ -784,9 +794,17 @@ function App({user}){
             }, e=>console.warn("calFilings listen failed:",e));
             // Load 信函系統「書狀代撰」草稿（type==="draft"），供月曆顯示 & 統整費用/統計
             onSnapshot(collection(window.db,"letters"), snap=>{
-                const drafts=snap.docs.map(d=>({...d.data(),id:d.id})).filter(l=>l.type==="draft");
+                const all=snap.docs.map(d=>({...d.data(),id:d.id}));
+                const drafts=all.filter(l=>l.type==="draft");
                 setLetterDrafts(drafts);
                 try{ localStorage.setItem("letterDrafts_cache",JSON.stringify(drafts)); }catch(_){}
+                // 非書狀代撰之信函：依各筆寄送記錄攤平，供月曆依「寄出日」顯示
+                const sent=[];
+                all.filter(l=>l.type!=="draft").forEach(l=>{
+                    (l.shippings||[]).forEach(s=>{ if(s.date) sent.push({...s,letterId:l.id,type:l.type,subject:l.subject,clientName:l.clientName,caseId:l.caseId||""}); });
+                });
+                setLetterSent(sent);
+                try{ localStorage.setItem("letterSent_cache",JSON.stringify(sent)); }catch(_){}
             }, e=>console.warn("letters listen failed:",e));
             // Load widgetHearings from Firebase (realtime)
             onSnapshot(window.fbMethods.doc(window.db,"widgetHearings","shared"), snap=>{
@@ -1216,6 +1234,36 @@ function App({user}){
             setCalFilingForm(null);
         }catch(e){ console.error(e); toast("⚠️ 新增失敗，請檢查網路後重試"); }
     };
+    // 月曆新增「寄出信函」：一律寫入信函系統（費用／統計於該系統管理），可選擇關聯案件
+    const addCalLetter=async(dateStr)=>{
+        const f=calLetterForm; if(!f) return;
+        const linked = f.caseId && f.caseId!=="__standalone__";
+        const c = linked ? cases.find(x=>x.id===f.caseId) : null;
+        if(linked && !c){ toast("找不到案件"); return; }
+        const clientName = (linked ? (c.clientName||"") : (f.clientName||"")).trim();
+        if(!clientName){ toast("請填寫委託人／名稱"); return; }
+        const subject=(f.subject||"").trim();
+        const typeLabel=(LETTER_TYPE_OPTS.find(t=>t.key===f.type)||{}).label||"信函";
+        const id=uid();
+        const rec={
+            id, type:f.type||"attorney",
+            subject: subject || typeLabel,
+            clientName, clientPhone: linked ? (c.phone||"") : "",
+            opposingParty: linked ? (c.opposingParty||"") : "", opposingAddress:"",
+            retainerDate:dateStr,
+            totalFee:0, payments:[], disbursements:0,
+            templateId:"", docLinks:[],
+            shippings:[{id:uid(),date:dateStr,method:"掛號郵寄",trackNo:"",note:""}],
+            replyStatus:"未回覆", notes:"", tags:[],
+            caseId: linked ? c.id : "", caseNo: linked ? (c.firmCaseNo||"") : "",
+            createdAt:new Date().toISOString(),
+        };
+        try{
+            await window.fbMethods.setDoc(window.fbMethods.doc(window.db,"letters",id), rec);
+            toast("✅ 已新增寄出信函（可於信函系統管理費用與回覆狀態）");
+            setCalLetterForm(null);
+        }catch(e){ console.error(e); toast("⚠️ 新增失敗，請檢查網路後重試"); }
+    };
     // 月曆新增「事項末日」（法院命補正、限期提出等，寫回所選案件的 matters）
     const addCalMatter=async(dateStr)=>{
         const f=calMatterForm;
@@ -1369,7 +1417,7 @@ function App({user}){
         saveCalTodos(calTodos.map(t=>t.id===calEditTodoId?{...t,text:calEditTodoText.trim(),time:calEditTodoTime||""}:t));
         cancelEditCalTodo();
     };
-    const closeCalTodoModal=()=>{ setCalTodoModal(null); setCalEditHearing(null); cancelEditCalTodo(); setCalFilingForm(null); setCalMatterForm(null); };
+    const closeCalTodoModal=()=>{ setCalTodoModal(null); setCalEditHearing(null); cancelEditCalTodo(); setCalFilingForm(null); setCalMatterForm(null); setCalLetterForm(null); };
 
     // ── Calendar hearings (case hearings + 臨時庭期) ──
     const saveWidgetHearings=(updated)=>{
@@ -1977,6 +2025,13 @@ function App({user}){
                         if(!filingMap[d]) filingMap[d]=[];
                         filingMap[d].push({type:l.filingType||"書狀",summary:l.notes||"",clientName:l.clientName||"",caseId:null,letterId:l.id,fromLetters:true});
                     });
+                    // 信函寄出日
+                    const letterMap={};
+                    (letterSent||[]).forEach(s=>{
+                        if(!s.date) return;
+                        const tl=(LETTER_TYPE_OPTS.find(t=>t.key===s.type)||{});
+                        (letterMap[s.date]=letterMap[s.date]||[]).push({...s,label:tl.label||"信函"});
+                    });
                     const cells=[];
                     // Previous month padding
                     const prevDays=new Date(y,m,0).getDate();
@@ -2063,6 +2118,7 @@ function App({user}){
                                     (deadlineMap[ds]||[]).forEach(dl=>rows.push({date:ds,time:"",icon:"⏰",label:`${dl.kind==="末日"?(dl.auto?"上訴末日(推定)":"上訴/抗告末日"):dl.kind==="宣判"?"宣判":dl.kind==="事項"?`${dl.matterType}末日${dl.done?"(已完成)":""}`:dl.kind==="行政末日"?dl.adminLabel:"收受判決"} · ${dl.clientName}`,detail:dl.auto?"依收受判決日推算，未計在途期間":"",caseId:dl.caseId,color:"var(--seal)",bold:true}));
                                     (hearingMap[ds]||[]).forEach(h=>rows.push({date:ds,time:h.time,icon:h.isWidget?"⚡":"🏛",label:h.clientName,detail:h.note,caseId:h.caseId,color:h.isWidget?"#9E2A24":(TYPE_COLOR[h.caseType]||"#8A8377")}));
                                     (filingMap[ds]||[]).forEach(f=>rows.push({date:ds,time:"",icon:"📄",label:`${f.type} · ${f.clientName}`,detail:f.summary,caseId:f.caseId,color:"var(--navy)"}));
+                                    (letterMap[ds]||[]).forEach(s=>rows.push({date:ds,time:"",icon:"📮",label:`${s.label} · ${s.clientName||"—"}`,detail:s.subject||"已寄出",caseId:s.caseId||null,color:"var(--seal)"}));
                                     calTodos.filter(t=>t.date===ds && !t.archived).forEach(t=>rows.push({date:ds,time:"",icon:t.done?"✓":"○",label:t.text,detail:t.done?"已完成":"待辦",caseId:null,color:t.done?"var(--positive)":"var(--warning)"}));
                                     (caseTodoMap[ds]||[]).forEach(t=>rows.push({date:ds,time:"",icon:t.done?"✓":"○",label:`${t.text} · ${t.clientName}`,detail:t.done?"已完成":"案件待辦",caseId:t.caseId,color:t.done?"var(--positive)":"var(--warning)"}));
                                 }
@@ -2144,11 +2200,12 @@ function App({user}){
                                                     ○ {t.clientName}·{t.text}
                                                 </div>
                                             ))}
-                                            {(events.length>2||dateTodos.length>2||(dateStr&&(filingMap[dateStr]||[]).length>0)||(dateStr&&(caseTodoMap[dateStr]||[]).filter(t=>!t.done).length>2)) && (
+                                            {(events.length>2||dateTodos.length>2||(dateStr&&(filingMap[dateStr]||[]).length>0)||(dateStr&&(letterMap[dateStr]||[]).length>0)||(dateStr&&(caseTodoMap[dateStr]||[]).filter(t=>!t.done).length>2)) && (
                                                 <div style={{fontSize:8,color:"var(--text4)",paddingLeft:2,lineHeight:1.3}}>
                                                     {[
                                                         events.length>2?`+${events.length-2}庭`:null,
                                                         (dateStr&&(filingMap[dateStr]||[]).length>0)?`📄${filingMap[dateStr].length}狀`:null,
+                                                        (dateStr&&(letterMap[dateStr]||[]).length>0)?`📮${letterMap[dateStr].length}函`:null,
                                                         dateTodos.length>2?`+${dateTodos.length-2}待辦`:null,
                                                         (dateStr&&(caseTodoMap[dateStr]||[]).filter(t=>!t.done).length>2)?`+${(caseTodoMap[dateStr]||[]).filter(t=>!t.done).length-2}案件待辦`:null,
                                                     ].filter(Boolean).join(" ")}
@@ -2353,6 +2410,7 @@ function App({user}){
                                             });
                                             (calFilings||[]).forEach(f=>{ if(f.date===ds) items.push({t:`📄 ${f.type}（撰狀）：${f.clientName||"—"}${f.summary?`（${f.summary}）`:""}`,c:"var(--navy)",b:false,standalone:true,filingId:f.id}); });
                                             (letterDrafts||[]).forEach(l=>{ const d=l.filingDate||l.retainerDate; if(d===ds) items.push({t:`📄 ${l.filingType||l.subject||"書狀"}（撰狀）：${l.clientName||"—"}${l.notes?`（${l.notes}）`:""}`,c:"var(--navy)",b:false,fromLetters:true,letterId:l.id}); });
+                                            (letterSent||[]).forEach(s=>{ if(s.date===ds){ const tl=(LETTER_TYPE_OPTS.find(t=>t.key===s.type)||{}); items.push({t:`📮 ${tl.label||"信函"}（寄出）：${s.clientName||"—"}${s.subject?`（${s.subject}）`:""}`,c:"var(--seal)",b:false,fromLetters:true,letterId:s.letterId}); } });
                                             return items.map((it,ii)=>(
                                                 it.matter ? (
                                                     <div key={ii} style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
@@ -2379,6 +2437,59 @@ function App({user}){
                                         })()}
                                     </div>
                                     <button onClick={closeCalTodoModal} style={{background:"var(--bg4)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",color:"var(--text2)",fontSize:16}}>✕</button>
+                                </div>
+
+                                {/* 新增寄出信函（寫入信函系統，可關聯案件或獨立） */}
+                                <div style={{marginBottom:10}}>
+                                    {calLetterForm===null ? (
+                                        <button className="btn btn-outline btn-sm" onClick={()=>setCalLetterForm({caseId:"",type:"attorney",subject:"",clientName:"",caseQuery:""})}>📮 ＋ 新增寄出信函</button>
+                                    ) : (
+                                        <div style={{border:"1px solid var(--seal)",borderRadius:8,padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
+                                            <div style={{fontSize:11,color:"var(--seal)",fontWeight:700}}>📮 新增寄出信函（{ds}）</div>
+                                            {calLetterForm.caseId==="__standalone__" ? (
+                                                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                                    <span style={{flex:1,fontSize:13,color:"var(--seal)",fontWeight:700}}>📮 未關聯案件</span>
+                                                    <button className="btn btn-sm" onClick={()=>setCalLetterForm(s=>({...s,caseId:""}))}>改選案件</button>
+                                                </div>
+                                            ) : calLetterForm.caseId ? (()=>{
+                                                const c=cases.find(x=>x.id===calLetterForm.caseId);
+                                                return <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                                    <span style={{flex:1,fontSize:13,fontWeight:700}}>{c?`${c.firmCaseNo} · ${c.clientName}`:"（已選案件）"}</span>
+                                                    <button className="btn btn-sm" onClick={()=>setCalLetterForm(s=>({...s,caseId:""}))}>換一個</button>
+                                                </div>;
+                                            })() : (<>
+                                                <input className="fi" placeholder="輸入案號或當事人搜尋案件…" value={calLetterForm.caseQuery||""} onChange={e=>setCalLetterForm(s=>({...s,caseQuery:e.target.value}))}/>
+                                                <div style={{border:"1px solid var(--border)",borderRadius:6,maxHeight:150,overflowY:"auto"}}>
+                                                    <div onClick={()=>setCalLetterForm(s=>({...s,caseId:"__standalone__"}))}
+                                                        style={{padding:"8px 10px",cursor:"pointer",fontSize:13,borderBottom:"1px solid var(--border)",color:"var(--seal)",fontWeight:700}}>
+                                                        📮 未關聯案件（獨立新增）
+                                                    </div>
+                                                    {(()=>{
+                                                        const q=(calLetterForm.caseQuery||"").trim().toLowerCase();
+                                                        let list=[...cases].sort((a,b)=>(b.firmCaseNo||"").localeCompare(a.firmCaseNo||""));
+                                                        if(q) list=list.filter(c=>[c.firmCaseNo,c.clientName,c.opposingParty].some(x=>(x||"").toLowerCase().includes(q)));
+                                                        return <>
+                                                            {list.slice(0,8).map(c=><div key={c.id} onClick={()=>setCalLetterForm(s=>({...s,caseId:c.id}))} style={{padding:"8px 10px",cursor:"pointer",fontSize:13,borderBottom:"1px solid var(--border)"}}><span style={{color:"var(--gold)",fontFamily:"monospace",fontSize:11}}>{c.firmCaseNo}</span> · {c.clientName}</div>)}
+                                                            {list.length===0 && <div style={{padding:"8px 10px",fontSize:12,color:"var(--text4)"}}>查無符合的案件</div>}
+                                                            {list.length>8 && <div style={{padding:"6px 10px",fontSize:11,color:"var(--text4)"}}>還有 {list.length-8} 筆，請輸入更精確的關鍵字</div>}
+                                                        </>;
+                                                    })()}
+                                                </div>
+                                            </>)}
+                                            {calLetterForm.caseId==="__standalone__" && (
+                                                <input className="fi" placeholder="委託人／名稱（必填）" value={calLetterForm.clientName} onChange={e=>setCalLetterForm(s=>({...s,clientName:e.target.value}))}/>
+                                            )}
+                                            <select className="fi" value={calLetterForm.type} onChange={e=>setCalLetterForm(s=>({...s,type:e.target.value}))}>
+                                                {LETTER_TYPE_OPTS.map(t=><option key={t.key} value={t.key}>{t.icon} {t.label}</option>)}
+                                            </select>
+                                            <input className="fi" placeholder="主旨（選填，例：催告給付貨款）" value={calLetterForm.subject} onChange={e=>setCalLetterForm(s=>({...s,subject:e.target.value}))}/>
+                                            <div style={{fontSize:10,color:"var(--text4)"}}>寄出日將記為 {ds}（掛號郵寄），後續可於信函系統補追蹤號碼與回覆狀態。</div>
+                                            <div style={{display:"flex",gap:6}}>
+                                                <button className="btn btn-sm" onClick={()=>setCalLetterForm(null)} style={{marginLeft:"auto"}}>取消</button>
+                                                <button className="btn btn-gold btn-sm" onClick={()=>addCalLetter(ds)} disabled={!calLetterForm.caseId}>儲存</button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* 新增事項末日（法院命補正、限期提出等） */}

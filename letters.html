@@ -298,6 +298,7 @@ function App(){
     const[tmplEditId,setTmplEditId]=useState(null);
     const[search,setSearch]=useState("");
     const[filterType,setFilterType]=useState("全部");
+    const[filterYear,setFilterYear]=useState("全部");   // 年度瀏覽（依委任日期）
     const[filterStatus,setFilterStatus]=useState("全部");
     const[delConfirm,setDelConfirm]=useState(null);
     const[newPay,setNewPay]=useState({amount:"",date:today(),method:"匯款",note:""});
@@ -342,8 +343,20 @@ function App(){
 
     const selected=letters.find(l=>l.id===selectedId);
 
+    // 年度（依委任日期）；未填日期者歸為「未填日期」，仍可於「全部年度」看到
+    const yearOf=l=>(l.retainerDate||"").slice(0,4)||"未填日期";
+    const yearOpts=(()=>{
+        const c={};
+        letters.forEach(l=>{const y=yearOf(l);c[y]=(c[y]||0)+1;});
+        const ys=Object.keys(c).filter(y=>y!=="未填日期").sort((a,b)=>b.localeCompare(a));
+        if(c["未填日期"]) ys.push("未填日期");
+        return ys.map(y=>[y,c[y]]);
+    })();
+    // 依年度篩選後的母體：列表與統計皆以此為準，避免兩者數字不一致
+    const inYear=filterYear==="全部"?letters:letters.filter(l=>yearOf(l)===filterYear);
+
     // Filtered letters
-    const filtered=letters.filter(l=>{
+    const filtered=inYear.filter(l=>{
         const q=search.toLowerCase();
         const ms=!q||[l.clientName,l.subject,l.opposingParty,l.notes,...(l.tags||[])].some(x=>(x||"").toLowerCase().includes(q));
         const mt=filterType==="全部"||l.type===filterType;
@@ -446,11 +459,11 @@ function App(){
                     {/* Stats row */}
                     <div className="stat-grid">
                         {[
-                            ["信函總數",letters.length+"件","var(--gold)"],
-                            ["應收費用",letters.reduce((s,l)=>s+Number(l.totalFee||0),0).toLocaleString()+" 元","var(--text2)"],
-                            ["已收款",letters.reduce((s,l)=>s+getRecv(l),0).toLocaleString()+" 元","var(--green)"],
-                            ["未收款",letters.reduce((s,l)=>s+getUnpaid(l),0).toLocaleString()+" 元","var(--red)"],
-                            ["未回覆",letters.filter(l=>l.replyStatus==="未回覆"&&l.type!=="draft").length+"件","var(--yellow)"],
+                            [filterYear==="全部"?"信函總數":`${filterYear==="未填日期"?"未填日期":filterYear+"年"}信函`,inYear.length+"件","var(--gold)"],
+                            ["應收費用",inYear.reduce((s,l)=>s+Number(l.totalFee||0),0).toLocaleString()+" 元","var(--text2)"],
+                            ["已收款",inYear.reduce((s,l)=>s+getRecv(l),0).toLocaleString()+" 元","var(--green)"],
+                            ["未收款",inYear.reduce((s,l)=>s+getUnpaid(l),0).toLocaleString()+" 元","var(--red)"],
+                            ["未回覆",inYear.filter(l=>l.replyStatus==="未回覆"&&l.type!=="draft").length+"件","var(--yellow)"],
                         ].map(([l,v,c])=>(
                             <div key={l} className="stat-card">
                                 <div className="stat-val" style={{color:c}}>{v}</div>
@@ -468,6 +481,11 @@ function App(){
                         <select className="fi" style={{flex:"0 0 120px"}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
                             <option value="全部">全部狀態</option>
                             {REPLY_STATUS.map(s=><option key={s}>{s}</option>)}
+                        </select>
+                        <select className="fi" style={{flex:"0 0 130px"}} value={filterYear} onChange={e=>setFilterYear(e.target.value)}
+                            title="依委任日期之年度瀏覽">
+                            <option value="全部">全部年度（{letters.length}）</option>
+                            {yearOpts.map(([y,n])=><option key={y} value={y}>{y==="未填日期"?"未填日期":`${y} 年`}（{n}）</option>)}
                         </select>
                         <span style={{fontSize:12,color:"var(--text4)",whiteSpace:"nowrap"}}>{filtered.length} 件</span>
                     </div>
@@ -543,18 +561,27 @@ function App(){
             {/* ── STATS TAB ── */}
             {tab==="stats"&&(()=>{
                 const byType={};LETTER_TYPES.forEach(t=>byType[t.key]=0);
-                letters.forEach(l=>byType[l.type]=(byType[l.type]||0)+1);
+                inYear.forEach(l=>byType[l.type]=(byType[l.type]||0)+1);
                 const byStatus={};REPLY_STATUS.forEach(s=>byStatus[s]=0);
-                letters.filter(l=>l.type!=="draft").forEach(l=>byStatus[l.replyStatus]=(byStatus[l.replyStatus]||0)+1);
-                const totalFee=letters.reduce((s,l)=>s+Number(l.totalFee||0),0);
-                const recv=letters.reduce((s,l)=>s+getRecv(l),0);
+                inYear.filter(l=>l.type!=="draft").forEach(l=>byStatus[l.replyStatus]=(byStatus[l.replyStatus]||0)+1);
+                const totalFee=inYear.reduce((s,l)=>s+Number(l.totalFee||0),0);
+                const recv=inYear.reduce((s,l)=>s+getRecv(l),0);
                 const pct=totalFee>0?Math.min(100,(recv/totalFee*100)).toFixed(1):0;
                 return(
                     <div className="content">
+                        <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
+                            <select className="fi" style={{flex:"0 0 150px"}} value={filterYear} onChange={e=>setFilterYear(e.target.value)}>
+                                <option value="全部">全部年度（{letters.length}）</option>
+                                {yearOpts.map(([y,n])=><option key={y} value={y}>{y==="未填日期"?"未填日期":`${y} 年`}（{n}）</option>)}
+                            </select>
+                            <span style={{fontSize:12,color:"var(--text4)"}}>
+                                {filterYear==="全部"?"全部年度":filterYear==="未填日期"?"未填日期":`${filterYear} 年`}統計，共 {inYear.length} 件
+                            </span>
+                        </div>
                         <div className="detail-grid">
                             <div className="card">
                                 <div className="card-title">💰 費用總覽</div>
-                                {[["應收合計",fmt(totalFee),"var(--gold)"],["已收款",fmt(recv),"var(--green)"],["未收款",fmt(letters.reduce((s,l)=>s+getUnpaid(l),0)),"var(--red)"],["代墊款",fmt(letters.reduce((s,l)=>s+Number(l.disbursements||0),0)),"var(--purple)"]].map(([l,v,c])=>(
+                                {[["應收合計",fmt(totalFee),"var(--gold)"],["已收款",fmt(recv),"var(--green)"],["未收款",fmt(inYear.reduce((s,l)=>s+getUnpaid(l),0)),"var(--red)"],["代墊款",fmt(inYear.reduce((s,l)=>s+Number(l.disbursements||0),0)),"var(--purple)"]].map(([l,v,c])=>(
                                     <div key={l} className="info-row"><div className="info-lbl">{l}</div><div className="info-val" style={{color:c,fontWeight:700}}>{v}</div></div>
                                 ))}
                                 {totalFee>0&&<>

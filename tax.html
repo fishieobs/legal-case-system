@@ -237,12 +237,13 @@ onAuthStateChanged(auth,u=>{
     // 讀取信函管理系統的收款（含律師函、書狀代撰）
     try{const c=localStorage.getItem("tax_letters_cache");if(c)S.letters=JSON.parse(c);}catch(_){}
     onSnapshot(collection(db,"letters"),snap=>{
-      S.letters=snap.docs.map(d=>({...d.data(),id:d.id}));
+      S.letters=snap.docs.map(d=>({...d.data(),id:d.id})).filter(l=>!l.deleted);
       try{localStorage.setItem("tax_letters_cache",JSON.stringify(S.letters));}catch(_){}
       render();
     },err=>{console.warn("letters 同步失敗：",err.code||err.message);});
     onSnapshot(collection(db,"cases"),snap=>{
-      S.cases=snap.docs.map(d=>({...d.data(),id:d.id}));
+      // 排除已軟刪除（移至回收桶）的案件，避免其收款仍計入稅務統計
+      S.cases=snap.docs.map(d=>({...d.data(),id:d.id})).filter(c=>!c.deleted);
       try{localStorage.setItem("tax_cases_cache",JSON.stringify(S.cases));}catch(_){}
       render();
     },err=>{ console.warn("cases 同步失敗：",err.code||err.message); });
@@ -315,6 +316,48 @@ function letterIncomes(){
 }
 // 全部收入 = 案件收款 + 信函收款 + 手動收入
 function allIncomes(){ return [...caseIncomes(), ...letterIncomes(), ...S.incomes]; }
+
+// ── 應收帳款：案件系統＋信函系統的委任報酬，扣除已收款 ──
+// 收入是「已實現」的現金流（用於報稅）；應收是「已約定但未取得」的報酬，
+// 兩者分開統計，未收款不計入當年度所得。
+function receivables(){
+  const out=[];
+  const pick=(rows,source)=>rows.forEach(r=>{
+    const fee=Number(r.totalFee||0);
+    const recv=(r.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+    if(fee<=0&&recv<=0) return;                         // 未設定報酬且無收款者不列入
+    // 已收大於約定報酬時（溢收，或報酬未登載），以實收金額為基準，
+    // 使「約定總額 − 已收 = 未收」在彙總後恆等，不致看似算錯。
+    const total=Math.max(fee,recv);
+    const dates=(r.payments||[]).map(p=>p.date).filter(Boolean).sort();
+    out.push({
+      source, id:r.id,
+      client:r.clientName||"（未填委託人）",
+      ref: source==="case" ? (r.firmCaseNo||"") : (r.subject||""),
+      sub:  source==="case" ? (r.caseReason||r.caseType||"") : (LETTER_TYPE_LABEL[r.type]||"信函"),
+      status:r.status||"", total, recv,
+      unpaid: total-recv,
+      over: Math.max(0,recv-fee),                       // 溢收／報酬未登載（提示至來源系統補正）
+      pct: total>0 ? Math.round(recv/total*100) : 0,
+      lastPay: dates.length?dates[dates.length-1]:"",
+      since: r.retainerDate||"",
+    });
+  });
+  pick(S.cases||[],"case");
+  pick(S.letters||[],"letter");
+  return out;
+}
+const LETTER_TYPE_LABEL={attorney:"律師函",certified:"存證信函",demand:"催告函",warning:"警告函",draft:"書狀代撰",other:"信函"};
+function receivableTotals(){
+  const rs=receivables();
+  return {
+    rows:rs,
+    total:rs.reduce((s,r)=>s+r.total,0),
+    recv: rs.reduce((s,r)=>s+r.recv,0),
+    unpaid:rs.reduce((s,r)=>s+r.unpaid,0),
+    openCount:rs.filter(r=>r.unpaid>0).length,
+  };
+}
 
 function getYearIncomes(y){return allIncomes().filter(i=>i.date?.startsWith(y));}
 function getYearExpenses(y){return S.expenses.filter(e=>e.date?.startsWith(y));}
@@ -422,7 +465,7 @@ function bindLogin(){
 // ══════════════════════════════════════════
 function renderApp(){
   const thIcon=S.themeMode==="dark"?"🌙":S.themeMode==="light"?"☀️":"🕐";
-  const tabs=[["dashboard","🏠 總覽"],["income","💵 收入"],["expense","📤 支出"],["incometax","📊 所得稅"],["health","🏥 二代健保"],["deadlines","⏰ 申報期限"]];
+  const tabs=[["dashboard","🏠 總覽"],["income","💵 收入"],["receivable","🧾 應收帳款"],["expense","📤 支出"],["incometax","📊 所得稅"],["health","🏥 二代健保"],["deadlines","⏰ 申報期限"]];
   return`
 <div class="app">
   <div class="hdr">
@@ -443,13 +486,14 @@ function renderApp(){
   <div class="content">
     ${S.tab==="dashboard"?renderDashboard():""}
     ${S.tab==="income"?renderIncome():""}
+    ${S.tab==="receivable"?renderReceivable():""}
     ${S.tab==="expense"?renderExpense():""}
     ${S.tab==="incometax"?renderIncomeTax():""}
     ${S.tab==="health"?renderHealth():""}
     ${S.tab==="deadlines"?renderDeadlines():""}
   </div>
   <div class="bnav">
-    ${[["dashboard","🏠","總覽"],["income","💵","收入"],["expense","📤","支出"],["incometax","📊","所得稅"],["deadlines","⏰","期限"]]
+    ${[["dashboard","🏠","總覽"],["income","💵","收入"],["receivable","🧾","應收"],["expense","📤","支出"],["incometax","📊","所得稅"]]
       .map(([k,ico,l])=>`<button class="bnav-btn${S.tab===k?" active":""}" data-tab="${k}"><span class="bnav-icon">${ico}</span>${l}</button>`).join("")}
   </div>
   ${S.showIncomeForm?renderIncomeForm():""}
@@ -479,6 +523,19 @@ function renderDashboard(){
     ].map(([v,l,c])=>`<div class="stat-card"><div class="stat-val" style="color:${c}">${v?fmt(v):"NT$ 0"}</div><div class="stat-lbl">${l}</div></div>`).join("")}
     <div class="stat-card"><div class="stat-val" style="color:var(--purple)">${allIncomes().filter(i=>i.date?.startsWith(y)).length}筆</div><div class="stat-lbl">收入筆數</div></div>
   </div>
+
+  ${(()=>{const T=receivableTotals();if(T.unpaid<=0)return"";return`
+  <div class="card" style="border-color:rgba(239,68,68,.35);margin-bottom:12px;cursor:pointer" data-tab="receivable">
+    <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">
+      <span>🧾 尚未取得之報酬</span>
+      <span style="font-size:11px;color:var(--text3);font-weight:400">${T.openCount} 件未收清 ›</span>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+      <span style="font-size:22px;font-weight:800;color:var(--red)">${fmt(T.unpaid)}</span>
+      <span style="font-size:11px;color:var(--text3)">約定 ${fmt(T.total)}　已收 ${fmt(T.recv)}（${T.total>0?Math.round(T.recv/T.total*100):0}%）</span>
+    </div>
+    <div style="font-size:10px;color:var(--text4);margin-top:5px">跨年度累計，未實現故不計入上方年度收入與所得稅</div>
+  </div>`;})()}
 
   ${urgent.length?`<div class="card" style="border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.04);margin-bottom:12px">
     <div class="card-hdr" style="color:var(--red)">⚠️ 即將到期申報</div>
@@ -523,6 +580,72 @@ function renderDashboard(){
   </div>`;}
 
 // ── 收入 ──
+// 應收帳款總覽（跨年度，反映當下實際債權狀態，非年度報稅數字）
+function renderReceivable(){
+  const T=receivableTotals();
+  const f=S.recvFilter||"unpaid";
+  let rows=T.rows.filter(r=>f==="unpaid"?r.unpaid>0:f==="paid"?(r.unpaid<=0&&r.total>0):true);
+  rows.sort((a,b)=> b.unpaid-a.unpaid || b.total-a.total || (a.client||"").localeCompare(b.client||""));
+  const collectRate=T.total>0?Math.round(T.recv/T.total*100):0;
+  const badge=r=>r.source==="case"
+    ? `<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:rgba(59,130,246,.14);color:var(--blue)">📁 案件</span>`
+    : `<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:rgba(168,85,247,.14);color:var(--purple)">📮 信函</span>`;
+  return`
+  <div class="stat-grid" style="margin-bottom:14px">
+    <div class="stat-card"><div class="stat-val" style="color:var(--gold)">${fmt(T.total)}</div><div class="stat-lbl">委任報酬總額</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--green)">${fmt(T.recv)}</div><div class="stat-lbl">已收（收款率 ${collectRate}%）</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--red)">${fmt(T.unpaid)}</div><div class="stat-lbl">尚未取得之報酬</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--purple)">${T.openCount}件</div><div class="stat-lbl">尚有未收款之案件</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div style="height:9px;border-radius:5px;background:rgba(239,68,68,.18);overflow:hidden;margin-bottom:6px">
+      <div style="height:100%;width:${collectRate}%;background:var(--green)"></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3)">
+      已收 ${fmt(T.recv)}　·　未收 ${fmt(T.unpaid)}　·　合計 ${fmt(T.total)}
+    </div>
+    <div style="font-size:11px;color:var(--text4);margin-top:4px">
+      資料自動取自案件系統與信函系統的委任金額與收款記錄，於各該系統維護即可，此處唯讀。
+      未收款屬尚未實現之報酬，<b>不計入</b>當年度所得與二代健保補充保費。
+    </div>
+  </div>
+
+  <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+    ${[["unpaid",`未收清 (${T.rows.filter(r=>r.unpaid>0).length})`],["paid",`已收清 (${T.rows.filter(r=>r.unpaid<=0&&r.total>0).length})`],["all",`全部 (${T.rows.length})`]]
+      .map(([k,l])=>`<button class="btn btn-sm ${f===k?"btn-green":"btn-outline"}" data-recvfilter="${k}">${esc(l)}</button>`).join("")}
+  </div>
+
+  ${rows.length===0?`<div class="card" style="text-align:center;color:var(--text3);padding:28px 12px">
+      ${f==="unpaid"?"🎉 目前沒有未收款項":"沒有符合條件的資料"}
+    </div>`:`
+  <div class="card" style="padding:0;overflow:hidden">
+    ${rows.map(r=>`
+      <div style="padding:11px 13px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+          <div style="min-width:0;flex:1">
+            <div style="font-size:14px;font-weight:700;color:var(--text)">${esc(r.client)} ${badge(r)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">
+              ${r.ref?`<span style="font-family:monospace;color:var(--gold)">${esc(r.ref)}</span>　`:""}${esc(r.sub)}${r.status?`　·　${esc(r.status)}`:""}
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:15px;font-weight:800;color:${r.unpaid>0?"var(--red)":"var(--green)"}">
+              ${r.unpaid>0?`未收 ${fmt(r.unpaid)}`:"✓ 已收清"}
+            </div>
+            <div style="font-size:11px;color:var(--text3)">約定 ${fmt(r.total)}　已收 ${fmt(r.recv)}</div>
+          </div>
+        </div>
+        <div style="height:5px;border-radius:3px;background:rgba(239,68,68,.16);overflow:hidden;margin-top:7px">
+          <div style="height:100%;width:${r.pct}%;background:${r.unpaid>0?"var(--gold)":"var(--green)"}"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text4);margin-top:4px">
+          收款進度 ${r.pct}%${r.lastPay?`　·　最近收款 ${esc(r.lastPay)}`:"　·　尚無收款記錄"}${r.since?`　·　委任 ${esc(r.since)}`:""}${r.over>0?`　·　<span style="color:var(--blue)">溢收 ${fmt(r.over)}</span>`:""}
+        </div>
+      </div>`).join("")}
+  </div>`}`;
+}
+
 function renderIncome(){
   const y=String(S.year);
   const list=allIncomes().filter(i=>i.date?.startsWith(y)).sort((a,b)=>b.date.localeCompare(a.date));
@@ -808,6 +931,7 @@ function bindApp(){
   document.getElementById("btn-logout")?.addEventListener("click",async()=>{if(confirm("確認登出？"))await signOut(auth);});
   document.getElementById("sel-year")?.addEventListener("change",e=>{S.year=parseInt(e.target.value);render();});
   document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{S.tab=b.dataset.tab;render();}));
+  document.querySelectorAll("[data-recvfilter]").forEach(b=>b.addEventListener("click",()=>{S.recvFilter=b.dataset.recvfilter;render();}));
   document.getElementById("btn-add-income")?.addEventListener("click",()=>{S.incomeForm={date:twToday(),type:"律師費",amount:"",client:"",note:"",hasSuppPremium:false};S.editIncomeId=null;S.showIncomeForm=true;render();});
   document.getElementById("btn-add-expense")?.addEventListener("click",()=>{S.expenseForm={date:twToday(),category:"辦公室租金",amount:"",note:"",receipt:false};S.editExpenseId=null;S.showExpenseForm=true;render();});
 

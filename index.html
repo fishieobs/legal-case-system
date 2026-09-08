@@ -135,7 +135,7 @@ textarea.fi{resize:vertical;min-height:80px;}
 }
 
 /* ── OVERLAY ── */
-.overlay{position:fixed;inset:0;background:rgba(33,30,26,.45);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.overlay{position:fixed;inset:0;background:rgba(33,30,26,.45);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;}
 .dialog{background:var(--paper-raised);border:1px solid var(--rule-strong);border-radius:4px;padding:24px;max-width:380px;width:100%;box-shadow:var(--shadow-raised);}
 
 /* ── LOADING ── */
@@ -144,13 +144,13 @@ textarea.fi{resize:vertical;min-height:80px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);border:1px solid var(--ink);color:var(--paper);padding:10px 20px;border-radius:2px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);border:1px solid var(--ink);color:var(--paper);padding:10px 20px;border-radius:2px;font-size:13px;font-weight:500;z-index:10010;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 #toast.show{opacity:1;}
 
 /* ── CAL TODO ── */
 .cal-todo-dot{display:flex;align-items:center;gap:3px;padding:1px 4px;border-radius:2px;font-size:8px;font-weight:700;margin-bottom:1px;cursor:pointer;background:var(--warning-wash);color:var(--warning);border:1px solid transparent;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cal-todo-dot.done{opacity:.45;text-decoration:line-through;}
-.cal-todo-modal{position:fixed;inset:0;background:rgba(33,30,26,.45);display:flex;align-items:flex-end;justify-content:center;z-index:600;padding:0;}
+.cal-todo-modal{position:fixed;inset:0;background:rgba(33,30,26,.45);display:flex;align-items:flex-end;justify-content:center;z-index:10001;padding:0;}
 @media(min-width:600px){.cal-todo-modal{align-items:center;padding:20px;}}
 .cal-todo-sheet{background:var(--paper-raised);border:1px solid var(--rule-strong);border-radius:4px 4px 0 0;width:100%;max-width:520px;padding:24px 20px 32px;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-raised);}
 @media(min-width:600px){.cal-todo-sheet{border-radius:4px;}}
@@ -301,7 +301,7 @@ textarea.fi{resize:vertical;min-height:80px;}
 .tool-del:hover{background:var(--seal);color:var(--paper-raised);border-color:var(--seal);}
 .tool-add-card{background:transparent;border:1.5px dashed var(--rule-strong);border-radius:3px;padding:18px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .2s;color:var(--ink-faint);}
 .tool-add-card:hover{border-color:var(--seal);color:var(--seal);}
-.tool-modal-overlay{position:fixed;inset:0;background:rgba(33,30,26,.45);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.tool-modal-overlay{position:fixed;inset:0;background:rgba(33,30,26,.45);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;}
 .tool-modal{background:var(--paper-raised);border:1px solid var(--rule-strong);border-radius:4px;padding:24px;width:100%;max-width:420px;box-shadow:var(--shadow-raised);}
 .color-dot{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s;flex-shrink:0;}
 .color-dot.selected{border-color:var(--ink);transform:scale(1.2);}

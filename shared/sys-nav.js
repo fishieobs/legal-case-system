@@ -56,21 +56,22 @@
     document.head.appendChild(ts);
   }
 
+  // 顯示順序＝陣列順序。常用四項置前，其餘依原順序排列。
   var pages = [
-    { id: "cases",     href: "index.html",      label: "⚖ 案件系統" },
+    { id: "cases",     href: "index.html",       label: "⚖ 案件系統" },
+    { id: "letters",   href: "letters.html",     label: "📮 信函管理" },
+    { id: "fees",      href: "fees.html",        label: "💰 律師費計算" },
+    { id: "tax",       href: "tax.html",         label: "💰 稅務管理" },
     { id: "widget",    href: "widget.html",      label: "📅 庭期 Widget" },
     { id: "clients",   href: "clients.html",     label: "👥 客戶管理" },
-    { id: "fees",           href: "fees.html",           label: "💰 律師費計算" },
     { id: "judgments", href: "judgments.html",   label: "🔨 判決書管理" },
-    { id: "letters",   href: "letters.html",     label: "📮 信函管理" },
     { id: "documents", href: "documents.html",   label: "📁 文件管理" },
     { id: "templates", href: "templates.html",   label: "📚 文書範本" },
-    { id: "tax",       href: "tax.html",         label: "💰 稅務管理" },
     { id: "court",     href: "court_nav.html",   label: "🗺 開庭助理" },
     { id: "deadline",  href: "deadline.html",    label: "⏱ 時效計算器" },
-    { id: "checklist",      href: "checklist.html",      label: "📋 開庭清單" },
-    { id: "heirship",       href: "heirship.html",       label: "🌳 繼承系統表" },
-    { id: "receipt",        href: "receipt.html",        label: "🧾 掛號回執" },
+    { id: "checklist", href: "checklist.html",   label: "📋 開庭清單" },
+    { id: "heirship",  href: "heirship.html",    label: "🌳 繼承系統表" },
+    { id: "receipt",   href: "receipt.html",     label: "🧾 掛號回執" },
     // 站外工具（另開分頁，避免離開系統）
     { id: "legalcalc", href: "https://fishieobs.github.io/Legal-calculation/", label: "🧮 法律試算", ext: true },
   ];

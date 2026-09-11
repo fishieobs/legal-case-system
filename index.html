@@ -712,6 +712,8 @@ function App({user}){
     const [editingNote, setEditingNote] = useState(null); // {id, text, tag}
     const [expandedNotes, setExpandedNotes] = useState({});
     const [listTab, setListTab] = useState("list"); // list | calendar
+    const [closedOpen, setClosedOpen] = useState(()=>{ try{ return localStorage.getItem("closedOpen")!=="0"; }catch(e){ return true; } }); // 已結案分區是否展開
+    const toggleClosed = ()=>setClosedOpen(v=>{ const n=!v; try{ localStorage.setItem("closedOpen", n?"1":"0"); }catch(e){} return n; });
     const [statsYear, setStatsYear] = useState("全部");
     const [statsMonth, setStatsMonth] = useState("全部");
     const [calDate, setCalDate] = useState(new Date());
@@ -896,6 +898,10 @@ function App({user}){
         if(va>vb) return sortDir==="asc"?1:-1;
         return 0;
     });
+
+    // 列表分區：未結案件在前，已結案另置一區（各區內維持原排序）
+    const openCases   = sortedFiltered.filter(c=>c.status!=="已結案");
+    const closedCases = sortedFiltered.filter(c=>c.status==="已結案");
 
     const upcoming = [];
     cases.forEach(c=>{
@@ -2719,7 +2725,22 @@ function App({user}){
                 {/* Mobile cards */}
                 {listTab==="list" && <div className="case-cards">
                     {sortedFiltered.length===0 && <div className="empty"><div className="ico">📂</div>查無案件</div>}
-                    {sortedFiltered.map(c=>{
+                    {[["open","進行中案件",openCases],["closed","已結案",closedCases]].map(([key,title,list])=>{
+                      if(list.length===0) return null;
+                      const isClosed=key==="closed";
+                      const collapsed=isClosed&&!closedOpen;
+                      return <React.Fragment key={key}>
+                        <div onClick={isClosed?toggleClosed:undefined}
+                            style={{display:"flex",alignItems:"center",gap:8,padding:"10px 2px 2px",
+                                borderBottom:"1px solid var(--rule)",marginTop:key==="closed"?14:0,
+                                cursor:isClosed?"pointer":"default",userSelect:"none"}}>
+                            <span style={{fontSize:13,fontWeight:700,color:isClosed?"var(--text3)":"var(--seal)"}}>
+                                {isClosed?"📁":"📌"} {title}
+                            </span>
+                            <span style={{fontSize:11,color:"var(--text4)"}}>{list.length} 件</span>
+                            {isClosed && <span style={{marginLeft:"auto",fontSize:11,color:"var(--text4)"}}>{collapsed?"▸ 展開":"▾ 收合"}</span>}
+                        </div>
+                        {!collapsed && list.map(c=>{
                         const nh=(c.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
                         const pt=(c.todos||[]).filter(t=>!t.done).length;
                         return(
@@ -2749,6 +2770,8 @@ function App({user}){
                                 </div>
                             </div>
                         );
+                        })}
+                      </React.Fragment>;
                     })}
                 </div>}
 
@@ -2762,7 +2785,21 @@ function App({user}){
                         </tr></thead>
                         <tbody>
                             {sortedFiltered.length===0 && <tr><td colSpan={14} style={{textAlign:"center",padding:40,color:"var(--text3)"}}>查無案件</td></tr>}
-                            {sortedFiltered.map(c=>{
+                            {[["open","進行中案件",openCases],["closed","已結案",closedCases]].map(([key,title,list])=>{
+                              if(list.length===0) return null;
+                              const isClosed=key==="closed";
+                              const collapsed=isClosed&&!closedOpen;
+                              return <React.Fragment key={key}>
+                                <tr onClick={isClosed?toggleClosed:undefined}
+                                    style={{background:"var(--paper-sunk, rgba(0,0,0,.03))",cursor:isClosed?"pointer":"default",userSelect:"none"}}>
+                                    <td colSpan={14} style={{padding:"8px 10px",fontSize:12,fontWeight:700,
+                                        color:isClosed?"var(--text3)":"var(--seal)",borderTop:"1px solid var(--rule)"}}>
+                                        {isClosed?"📁":"📌"} {title}
+                                        <span style={{color:"var(--text4)",fontWeight:400,marginLeft:8}}>{list.length} 件</span>
+                                        {isClosed && <span style={{float:"right",color:"var(--text4)",fontWeight:400}}>{collapsed?"▸ 展開":"▾ 收合"}</span>}
+                                    </td>
+                                </tr>
+                                {!collapsed && list.map(c=>{
                                 const nh=(c.hearings||[]).filter(h=>daysUntil(h.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
                                 const pt=(c.todos||[]).filter(t=>!t.done).length;
                                 return(
@@ -2785,6 +2822,8 @@ function App({user}){
                                         </td>
                                     </tr>
                                 );
+                                })}
+                              </React.Fragment>;
                             })}
                         </tbody>
                     </table>

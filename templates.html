@@ -1114,7 +1114,7 @@ function bindListEvents(){
   // Logout
   document.getElementById("btn-logout")?.addEventListener("click",async()=>{if(confirm("確認登出？"))await window._fbAuth.signOut(window._auth);});
   // Search
-  document.getElementById("search-inp")?.addEventListener("input",e=>{S.search=e.target.value;render();});
+  document.getElementById("search-inp")?.addEventListener("input",e=>{S.search=e.target.value;const pos=e.target.selectionStart;render();const n=document.getElementById("search-inp");if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(_){}}});
   // DocType filter
   document.getElementById("filter-doctype")?.addEventListener("change",e=>{S.docType=e.target.value;render();});
   // Category sidebar

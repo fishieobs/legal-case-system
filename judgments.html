@@ -862,8 +862,8 @@ function bindList(){
   document.getElementById("btn-logout")?.addEventListener("click",async()=>{if(confirm("確認登出？"))await signOut(auth);});
   document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{S.tab=b.dataset.tab;render();}));
   document.querySelectorAll("[data-bnav]").forEach(b=>b.addEventListener("click",()=>{S.tab=b.dataset.bnav;render();}));
-  document.getElementById("s-inp")?.addEventListener("input",e=>{S.search=e.target.value;render();});
-  document.getElementById("s-inp2")?.addEventListener("input",e=>{S.search=e.target.value;render();});
+  document.getElementById("s-inp")?.addEventListener("input",e=>{S.search=e.target.value;const pos=e.target.selectionStart;render();const n=document.getElementById("s-inp");if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(_){}}});
+  document.getElementById("s-inp2")?.addEventListener("input",e=>{S.search=e.target.value;const pos=e.target.selectionStart;render();const n=document.getElementById("s-inp2");if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(_){}}});
   document.getElementById("f-type")?.addEventListener("change",e=>{S.filterType=e.target.value;render();});
   document.getElementById("f-result")?.addEventListener("change",e=>{S.filterResult=e.target.value;render();});
   document.getElementById("f-year")?.addEventListener("change",e=>{S.filterYear=e.target.value;render();});

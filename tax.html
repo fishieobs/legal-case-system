@@ -646,6 +646,41 @@ function renderReceivable(){
   </div>`}`;
 }
 
+// 收入依類型分項統計（諮詢費、律師費等各佔多少）
+function renderIncomeByType(list){
+  if(list.length===0) return"";
+  const agg={};
+  list.forEach(i=>{
+    const t=i.type||"其他收入";
+    if(!agg[t]) agg[t]={amount:0,count:0};
+    agg[t].amount+=Number(i.amount||0);
+    agg[t].count++;
+  });
+  const total=Object.values(agg).reduce((s,v)=>s+v.amount,0);
+  // 依金額由大到小；金額相同時依既有類型順序，未列於清單者排最後
+  const rows=Object.entries(agg).sort((a,b)=>b[1].amount-a[1].amount
+    || (INCOME_TYPES.indexOf(a[0])+1||99)-(INCOME_TYPES.indexOf(b[0])+1||99));
+  const COLORS={"律師費":"var(--green)","諮詢費":"var(--blue)","顧問費":"var(--purple)",
+                "出庭費":"var(--gold)","文件費":"var(--orange)","其他收入":"var(--text3)"};
+  return`<div class="card" style="margin-bottom:12px">
+    <div class="card-hdr">📊 收入類型分項（${S.year}年）</div>
+    ${rows.map(([t,v])=>{
+      const pct=total>0?(v.amount/total*100):0;
+      const c=COLORS[t]||"var(--text3)";
+      return`<div style="margin-bottom:9px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;margin-bottom:3px">
+          <span style="color:var(--text2);font-weight:700">${esc(t)}<span style="color:var(--text4);font-weight:400;margin-left:6px">${v.count}筆</span></span>
+          <span style="color:${c};font-weight:700">${fmt(v.amount)}<span style="color:var(--text4);font-weight:400;margin-left:6px">${pct.toFixed(1)}%</span></span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:var(--paper-sunken);overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${c}"></div>
+        </div>
+      </div>`;}).join("")}
+    <div style="font-size:10px;color:var(--text4);margin-top:8px">
+      案件與信函系統匯入的收款一律歸為「律師費」；諮詢費等其他類型請於本系統以「＋ 收入」新增時選擇。
+    </div>
+  </div>`;
+}
 function renderIncome(){
   const y=String(S.year);
   const list=allIncomes().filter(i=>i.date?.startsWith(y)).sort((a,b)=>b.date.localeCompare(a.date));
@@ -662,6 +697,7 @@ function renderIncome(){
     <div style="font-size:12px;color:var(--blue)">二代健保補充保費已扣：${fmt(totalSupp)}</div>
   </div>
   ${(caseCount>0||letterCount>0)?`<div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:8px 12px;background:var(--paper-sunken);border:1px solid var(--rule);border-radius:3px">其中${caseCount>0?` 📁 ${caseCount} 筆來自案件管理系統`:""}${letterCount>0?`${caseCount>0?"、":" "}📮 ${letterCount} 筆來自信函管理系統`:""}的收款（唯讀，請於各原系統修改）</div>`:""}
+  ${renderIncomeByType(list)}
   ${list.length===0?`<div class="empty"><div class="empty-ico">💵</div><div>尚無${S.year}年收入記錄</div></div>`:""}
   ${list.map(i=>`
   <div class="rec-card">
@@ -865,10 +901,24 @@ function renderDeadlines(){
   </div>`;}
 
 // ── Income Form ──
+// 二代健保補充保費區塊：獨立成函式，供金額輸入時單獨更新，
+// 不必重繪整個表單（重繪會使輸入框被銷毀而失去焦點）。
+function renderSuppBox(f){
+  const amt=parseFloat(f.amount)||0;
+  if(amt<SUPP_PREMIUM_THRESHOLD)
+    return`<div style="font-size:11px;color:var(--text4);margin-bottom:12px">金額未達2萬元，無需扣繳二代健保補充保費</div>`;
+  const supp=Math.round(amt*SUPP_PREMIUM_RATE);
+  return`<div style="background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px">
+    <div style="font-size:12px;color:var(--blue);font-weight:700;margin-bottom:6px">🏥 二代健保補充保費（此筆超過2萬元）</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">應扣補充保費：<strong style="color:var(--blue)">${fmt(supp)}</strong>（${(SUPP_PREMIUM_RATE*100)}%）</div>
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text2)">
+      <input type="checkbox" id="if-supp" ${f.hasSuppPremium?"checked":""}>
+      委託人已代扣補充保費，記錄此筆
+    </label>
+  </div>`;
+}
 function renderIncomeForm(){
   const f=S.incomeForm;
-  const amt=parseFloat(f.amount)||0;
-  const supp=amt>=SUPP_PREMIUM_THRESHOLD?Math.round(amt*SUPP_PREMIUM_RATE):0;
   return`<div class="overlay"><div class="dialog">
   <div class="dialog-title">💵 ${S.editIncomeId?"編輯收入":"新增收入"}</div>
   <div class="form-grid">
@@ -878,15 +928,7 @@ function renderIncomeForm(){
     <div class="fg"><label class="fl">委託人</label><input class="fi" id="if-client" value="${esc(f.client||"")}" placeholder="當事人姓名"></div>
   </div>
   <div class="fg" style="margin-bottom:12px"><label class="fl">備註</label><input class="fi" id="if-note" value="${esc(f.note||"")}" placeholder="案號、摘要…"></div>
-  ${amt>=SUPP_PREMIUM_THRESHOLD?`
-  <div style="background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px">
-    <div style="font-size:12px;color:var(--blue);font-weight:700;margin-bottom:6px">🏥 二代健保補充保費（此筆超過2萬元）</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">應扣補充保費：<strong style="color:var(--blue)">${fmt(supp)}</strong>（${(SUPP_PREMIUM_RATE*100)}%）</div>
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text2)">
-      <input type="checkbox" id="if-supp" ${f.hasSuppPremium?"checked":""}>
-      委託人已代扣補充保費，記錄此筆
-    </label>
-  </div>`:`<div style="font-size:11px;color:var(--text4);margin-bottom:12px">金額未達2萬元，無需扣繳二代健保補充保費</div>`}
+  <div id="if-supp-box">${renderSuppBox(f)}</div>
   <div style="display:flex;gap:10px;justify-content:flex-end">
     <button class="btn btn-outline btn-sm" id="if-cancel">取消</button>
     <button class="btn btn-green btn-sm" id="if-save">💾 儲存</button>
@@ -936,9 +978,16 @@ function bindApp(){
   document.getElementById("btn-add-expense")?.addEventListener("click",()=>{S.expenseForm={date:twToday(),category:"辦公室租金",amount:"",note:"",receipt:false};S.editExpenseId=null;S.showExpenseForm=true;render();});
 
   // Income form
-  const ifAmt=document.getElementById("if-amount");
-  ifAmt?.addEventListener("input",e=>{S.incomeForm.amount=e.target.value;render();});
-  document.getElementById("if-supp")?.addEventListener("change",e=>{S.incomeForm.hasSuppPremium=e.target.checked;});
+  // 金額輸入只更新補充保費區塊，不重繪整頁，輸入焦點才不會中斷
+  document.getElementById("if-amount")?.addEventListener("input",e=>{
+    S.incomeForm.amount=e.target.value;
+    const box=document.getElementById("if-supp-box");
+    if(box) box.innerHTML=renderSuppBox(S.incomeForm);
+  });
+  // 補充保費勾選採事件委派：該區塊會隨金額重建，直接綁在元素上會失效
+  document.getElementById("if-supp-box")?.addEventListener("change",e=>{
+    if(e.target&&e.target.id==="if-supp") S.incomeForm.hasSuppPremium=e.target.checked;
+  });
   document.getElementById("if-cancel")?.addEventListener("click",()=>{S.showIncomeForm=false;S.editIncomeId=null;render();});
   document.getElementById("if-save")?.addEventListener("click",()=>{
     S.incomeForm.date=document.getElementById("if-date")?.value||S.incomeForm.date;

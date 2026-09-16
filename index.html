@@ -438,7 +438,7 @@ const emptyCase = {
     attorney:FIRM_ATTORNEY, retainerDate:"", opposingParty:"", opposingCounsel:[], caseReason:"", judgementLink:"", notes:"",
     verdictDate:"", verdictTime:"", verdictText:"", judgmentReceivedDate:"", appealDeadline:"",
     admonitionDate:"", appealDecisionDate:"",   // 收受告誡處分書日、收受訴願決定書日（行政救濟）
-    hearings:[], todos:[], driveFolderUrl:"", docs:[], filings:[], matters:[], alertsDone:[], shareToken:""
+    hearings:[], todos:[], driveFolderUrl:"", icloudFolderUrl:"", docs:[], filings:[], matters:[], alertsDone:[], shareToken:""
 };
 // 上訴/抗告不變期間（日）— 自判決送達翌日起算；末日為週末/國定假日順延至次工作日
 // 民訴§440(民事20)、刑訴§349(刑事20)、行訴§241(行政20)；勞動/智財準用民訴20；家事訴訟上訴20；非訟抗告10
@@ -520,6 +520,18 @@ const LETTER_TYPE_OPTS = [
     {key:"warning",   label:"警告函",   icon:"⚠️"},
     {key:"other",     label:"其他",     icon:"📄"},
 ];
+// 依連結網域判斷雲端服務，供卷證連結顯示對應圖示／名稱
+const CLOUD_SERVICES = [
+    { key:"icloud", name:"iCloud",       icon:"☁️", color:"#3D8BD3", hosts:["icloud.com"] },
+    { key:"drive",  name:"Google Drive", icon:"📂", color:"#4285F4", hosts:["drive.google.com","docs.google.com"] },
+    { key:"onedrive",name:"OneDrive",    icon:"🗄", color:"#0A66C2", hosts:["onedrive.live.com","1drv.ms","sharepoint.com"] },
+    { key:"dropbox",name:"Dropbox",      icon:"📦", color:"#0061FF", hosts:["dropbox.com"] },
+];
+function cloudOf(url){
+    let host="";
+    try{ host=new URL(String(url||"").trim()).hostname.toLowerCase(); }catch(_){ return null; }
+    return CLOUD_SERVICES.find(s=>s.hosts.some(h=>host===h||host.endsWith("."+h))) || null;
+}
 // 事項末日種類（法院命補正、限期提出等）
 const MATTER_TYPES = ["補繳裁判費","補正戶籍謄本","補提書狀","限期陳報","補正訴之聲明","補正委任狀","提出證據","聲請調查證據","繳納擔保金","其他"];
 
@@ -1540,7 +1552,7 @@ function App({user}){
             judgementLink:"",
             judgmentReceivedDate:"",
             appealDeadline:"",
-            driveFolderUrl:"",
+            driveFolderUrl:"", icloudFolderUrl:"",
             docs:[],
         };
         setFormData(withParties(newCase)); setEditId(null); setView("form");
@@ -3415,32 +3427,47 @@ function App({user}){
                     <div className="card">
                         <div className="card-title">📁 開庭筆錄 & 電子卷證</div>
 
-                        {/* Drive 資料夾 */}
-                        {selected.driveFolderUrl ? (
-                            <a className="drive-btn" href={selected.driveFolderUrl} target="_blank" rel="noreferrer" style={{marginBottom:16,display:"flex"}}>
-                                <span className="drive-icon">📂</span>
-                                <div>
-                                    <div style={{color:"#4285f4",fontWeight:700,fontSize:14}}>開啟 Google Drive 卷證資料夾</div>
-                                    <div style={{color:"var(--text3)",fontSize:11,marginTop:2}}>點擊開啟雲端資料夾</div>
+                        {/* 雲端卷證資料夾（Google Drive／iCloud，可並存） */}
+                        {(()=>{
+                            const folders=[
+                                ["driveFolderUrl", selected.driveFolderUrl, CLOUD_SERVICES[1]],
+                                ["icloudFolderUrl", selected.icloudFolderUrl, CLOUD_SERVICES[0]],
+                            ].filter(([,url])=>!!url);
+                            if(folders.length===0) return(
+                                <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0",borderBottom:"1px solid var(--border)",marginBottom:12}}>
+                                    尚未設定卷證資料夾，請編輯案件填入 Google Drive 或 iCloud 連結
                                 </div>
-                                <span style={{marginLeft:"auto",fontSize:18,color:"#4285f4"}}>→</span>
-                            </a>
-                        ) : (
-                            <div style={{color:"var(--text4)",fontSize:13,padding:"12px 0",borderBottom:"1px solid var(--border)",marginBottom:12}}>
-                                尚未設定 Drive 資料夾，請編輯案件填入連結
-                            </div>
-                        )}
+                            );
+                            return folders.map(([k,url,svc],i)=>{
+                                const s=cloudOf(url)||svc;   // 以實際網址判斷，抓錯欄位貼上也能正確顯示
+                                return(
+                                    <a key={k} className="drive-btn" href={url} target="_blank" rel="noreferrer"
+                                        style={{marginBottom:i===folders.length-1?16:8,display:"flex"}}>
+                                        <span className="drive-icon">{s.icon}</span>
+                                        <div>
+                                            <div style={{color:s.color,fontWeight:700,fontSize:14}}>開啟 {s.name} 卷證資料夾</div>
+                                            <div style={{color:"var(--text3)",fontSize:11,marginTop:2}}>點擊開啟雲端資料夾</div>
+                                        </div>
+                                        <span style={{marginLeft:"auto",fontSize:18,color:s.color}}>→</span>
+                                    </a>
+                                );
+                            });
+                        })()}
 
                         {/* 個別文件連結 */}
                         {(selected.docs||[]).length > 0 && <>
                             <div style={{fontSize:11,color:"var(--text3)",fontWeight:700,letterSpacing:".06em",marginBottom:8,textTransform:"uppercase"}}>個別文件連結</div>
-                            {(selected.docs||[]).map((d,i)=>(
+                            {(selected.docs||[]).map((d,i)=>{
+                                const s=cloudOf(d.url);
+                                return(
                                 <div key={i} className="drive-doc-row">
                                     <span style={{fontSize:16,flexShrink:0}}>{d.type==="筆錄"?"📝":d.type==="書狀"?"📄":d.type==="證物"?"🗂":"🔗"}</span>
                                     <a href={d.url} target="_blank" rel="noreferrer">{d.label||d.url}</a>
+                                    {s && <span title={s.name} style={{color:s.color,fontSize:11,flexShrink:0}}>{s.icon}</span>}
                                     <span style={{color:"var(--text4)",fontSize:11,flexShrink:0}}>{d.type||""}</span>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </>}
 
                         {(selected.docs||[]).length === 0 && !selected.driveFolderUrl && null}
@@ -4261,8 +4288,8 @@ function App({user}){
 
                 {/* 電子卷證 */}
                 <div className="section-hdr">📁 開庭筆錄 & 電子卷證</div>
-                <div className="fg" style={{marginBottom:16}}>
-                    <label className="fl">Google Drive 卷證資料夾連結</label>
+                <div className="fg" style={{marginBottom:12}}>
+                    <label className="fl">📂 Google Drive 卷證資料夾連結</label>
                     <div style={{display:"flex",gap:8,alignItems:"center"}}>
                         <input className="fi" type="url" style={{flex:1}} value={F.driveFolderUrl||""} onChange={e=>sf("driveFolderUrl",e.target.value)} placeholder="貼上 Google Drive 資料夾的分享連結…"/>
                         {F.driveFolderUrl && <a href={F.driveFolderUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{flexShrink:0,textDecoration:"none"}}>開啟 →</a>}
@@ -4270,6 +4297,28 @@ function App({user}){
                     <div style={{color:"var(--text4)",fontSize:11,marginTop:5}}>
                         💡 在 Google Drive 資料夾按右鍵 →「共用」→「複製連結」貼上即可
                     </div>
+                </div>
+                <div className="fg" style={{marginBottom:16}}>
+                    <label className="fl">☁️ iCloud 雲碟卷證資料夾連結</label>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <input className="fi" type="url" style={{flex:1}} value={F.icloudFolderUrl||""} onChange={e=>sf("icloudFolderUrl",e.target.value)} placeholder="貼上 iCloud 雲碟資料夾的分享連結…"/>
+                        {F.icloudFolderUrl && <a href={F.icloudFolderUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{flexShrink:0,textDecoration:"none"}}>開啟 →</a>}
+                    </div>
+                    <div style={{color:"var(--text4)",fontSize:11,marginTop:5}}>
+                        💡 iPhone／iPad：在「檔案」App 長按資料夾 →「共享」→「複製連結」；
+                        Mac：於 Finder 按住 Control 點選 →「共享」→「複製連結」。
+                        連結須設為「知道連結的任何人」才能在其他裝置開啟。
+                    </div>
+                    {F.icloudFolderUrl && !cloudOf(F.icloudFolderUrl) && (
+                        <div style={{color:"var(--warning)",fontSize:11,marginTop:4}}>
+                            ⚠️ 這似乎不是 iCloud 連結，仍可儲存，但請確認是否貼錯欄位。
+                        </div>
+                    )}
+                    {(()=>{ const s=cloudOf(F.icloudFolderUrl); return s&&s.key!=="icloud" ? (
+                        <div style={{color:"var(--warning)",fontSize:11,marginTop:4}}>
+                            ⚠️ 這是 {s.name} 的連結，仍可儲存並正常開啟。
+                        </div>
+                    ) : null; })()}
                 </div>
 
                 {/* 個別文件連結 */}
@@ -4279,7 +4328,7 @@ function App({user}){
                         <span style={{fontSize:15,flexShrink:0}}>{d.type==="筆錄"?"📝":d.type==="書狀"?"📄":d.type==="證物"?"🗂":"🔗"}</span>
                         <div style={{flex:1,minWidth:0}}>
                             <div style={{color:"var(--text)",fontSize:13}}>{d.label||"（未命名）"}</div>
-                            <div style={{color:"var(--text3)",fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.url}</div>
+                            <div style={{color:"var(--text3)",fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(()=>{const s=cloudOf(d.url);return s?`${s.icon} ${s.name} · `:"";})()}{d.url}</div>
                         </div>
                         <span style={{color:"var(--text4)",fontSize:11,flexShrink:0}}>{d.type}</span>
                         <button className="btn btn-danger btn-icon" onClick={()=>removeDoc(i)}>✕</button>
@@ -4291,8 +4340,8 @@ function App({user}){
                         <input className="fi" value={newDoc.label} onChange={e=>setNewDoc(d=>({...d,label:e.target.value}))} placeholder="113年4月22日準備程序筆錄"/>
                     </div>
                     <div className="fg" style={{flex:"2 1 200px"}}>
-                        <label className="fl">文件連結（Drive/雲端連結）</label>
-                        <input className="fi" type="url" value={newDoc.url} onChange={e=>setNewDoc(d=>({...d,url:e.target.value}))} placeholder="https://drive.google.com/..."/>
+                        <label className="fl">文件連結（Drive／iCloud／其他雲端）</label>
+                        <input className="fi" type="url" value={newDoc.url} onChange={e=>setNewDoc(d=>({...d,url:e.target.value}))} placeholder="https://drive.google.com/… 或 https://www.icloud.com/…"/>
                     </div>
                     <div className="fg" style={{flex:"0 0 100px"}}>
                         <label className="fl">類型</label>

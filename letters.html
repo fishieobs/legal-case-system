@@ -578,6 +578,79 @@ function App(){
                                 {filterYear==="全部"?"全部年度":filterYear==="未填日期"?"未填日期":`${filterYear} 年`}統計，共 {inYear.length} 件
                             </span>
                         </div>
+                        {/* 應收帳款：跨年度當下債權狀態，與稅務／案件系統同一套算法 */}
+                        {(()=>{
+                            const rows=[];
+                            letters.forEach(l=>{
+                                const fee=Number(l.totalFee||0);
+                                const rc=getRecv(l);
+                                if(fee<=0&&rc<=0) return;
+                                // 已收大於約定報酬時以實收為基準，使「總額 − 已收 = 未收」恆等
+                                const tot=Math.max(fee,rc);
+                                const dates=(l.payments||[]).map(p=>p.date).filter(Boolean).sort();
+                                rows.push({id:l.id,subject:l.subject||"（未填主旨）",clientName:l.clientName||"（未填委託人）",
+                                    type:l.type,total:tot,recv:rc,unpaid:tot-rc,over:Math.max(0,rc-fee),
+                                    pct:tot>0?Math.round(rc/tot*100):0,
+                                    lastPay:dates.length?dates[dates.length-1]:"",
+                                    year:(l.retainerDate||"").slice(0,4)});
+                            });
+                            if(rows.length===0) return null;
+                            const T={total:rows.reduce((s,r)=>s+r.total,0),recv:rows.reduce((s,r)=>s+r.recv,0),
+                                     unpaid:rows.reduce((s,r)=>s+r.unpaid,0)};
+                            const open=rows.filter(r=>r.unpaid>0).sort((a,b)=>b.unpaid-a.unpaid);
+                            const rate=T.total>0?Math.round(T.recv/T.total*100):0;
+                            return(
+                            <div className="card" style={{marginBottom:12}}>
+                                <div className="card-title" style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                                    <span>🧾 應收帳款</span>
+                                    <span style={{fontSize:11,fontWeight:400,color:"var(--text4)"}}>全部年度累計</span>
+                                </div>
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                                    {[["委任報酬總額",fmt(T.total),"var(--gold)"],["已收",fmt(T.recv),"var(--green)"],
+                                      ["尚未取得之報酬",fmt(T.unpaid),"var(--red)"],["未收清件數",open.length+" 件","var(--purple)"]].map(([l,v,c])=>(
+                                        <div key={l} style={{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"9px 11px"}}>
+                                            <div style={{fontSize:10,color:"var(--text4)",marginBottom:3}}>{l}</div>
+                                            <div style={{fontSize:14,fontWeight:800,color:c}}>{v}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"var(--text3)",marginBottom:4}}><span>收款率</span><span>{rate}%</span></div>
+                                <div style={{background:"var(--bg4)",borderRadius:6,height:10,overflow:"hidden",marginBottom:12}}>
+                                    <div style={{background:"var(--green)",height:"100%",width:`${rate}%`,borderRadius:6,transition:"width .6s"}}/>
+                                </div>
+                                {open.length===0 ? (
+                                    <div style={{textAlign:"center",color:"var(--text3)",fontSize:13,padding:"12px 0"}}>🎉 目前沒有未收款項</div>
+                                ) : (<>
+                                    <div style={{fontSize:11,color:"var(--text3)",fontWeight:700,letterSpacing:".06em",marginBottom:6}}>未收款項（依金額排序）</div>
+                                    {open.map(r=>{
+                                        const t=TYPE_MAP[r.type]||TYPE_MAP.other;
+                                        return(
+                                        <div key={r.id} onClick={()=>openDetail(r.id)}
+                                            style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)",cursor:"pointer"}}>
+                                            <div style={{minWidth:0,flex:1}}>
+                                                <div style={{fontSize:13,fontWeight:700,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                                                    {t.icon} {r.subject}
+                                                </div>
+                                                <div style={{fontSize:10,color:"var(--text4)"}}>
+                                                    {r.clientName} · {t.label}{r.year?` · ${r.year}年`:""}{r.lastPay?` · 最近收款 ${r.lastPay}`:" · 尚無收款"}
+                                                    {r.over>0?` · 溢收 ${fmt(r.over)}`:""}
+                                                </div>
+                                            </div>
+                                            <div style={{textAlign:"right",flexShrink:0}}>
+                                                <div style={{fontSize:13,fontWeight:800,color:"var(--red)"}}>{fmt(r.unpaid)}</div>
+                                                <div style={{fontSize:10,color:"var(--text4)"}}>已收 {r.pct}%</div>
+                                            </div>
+                                        </div>
+                                        );
+                                    })}
+                                </>)}
+                                <div style={{fontSize:10,color:"var(--text4)",marginTop:8}}>
+                                    此區為跨年度之當下債權狀態，不受上方年度篩選影響；點擊可開啟該筆信函。
+                                </div>
+                            </div>
+                            );
+                        })()}
+
                         <div className="detail-grid">
                             <div className="card">
                                 <div className="card-title">💰 費用總覽</div>
